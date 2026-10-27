@@ -152,6 +152,7 @@ async function principal() {
       try {
         const p = await precioDe(t.cand);
         precios[t.clave] = { ticker: t.tk, precio: p.precio, divisa: p.divisa, fecha_precio: p.fecha, hora: p.hora, simbolo: p.simbolo, fuente: p.fuente, actualizado: ahora };
+        const ant = (previo.precios || {})[t.clave]; if (ant && ant.divisa === p.divisa && num(ant.precio) && Math.abs(p.precio / ant.precio - 1) > 0.15) precios[t.clave].salto = Math.round((p.precio / ant.precio - 1) * 1000) / 10;   // % frente al precio anterior: revisar
         hechos++;
       } catch (e) {
         fallos.push({ ticker: t.clave, motivo: e.message.slice(0, 300) });
