@@ -12,6 +12,8 @@ async function equipo(browser, nombre) {
   await ctx.route('https://www.googleapis.com/**', async r => {
     const q = r.request(), u = new URL(q.url()), m = q.method(); log.push(nombre + ' ' + m + ' ' + u.pathname);
     const json = o => r.fulfill({ contentType: 'application/json', body: JSON.stringify(o) });
+    if (m === 'GET' && u.pathname === '/drive/v3/files' && /informes/.test(u.searchParams.get('q') || '')) return json({ files: inf ? [{ id: 'F2', modifiedTime: new Date().toISOString() }] : [] });
+    if (m === 'GET' && u.pathname === '/drive/v3/files/F2') return r.fulfill({ contentType: 'application/json', body: inf });
     if (m === 'GET' && u.pathname === '/drive/v3/files') return json({ files: file ? [{ id: 'F1', modifiedTime: new Date().toISOString() }] : [] });
     if (m === 'GET') return r.fulfill({ contentType: 'application/json', body: file });
     if (m === 'PATCH') { file = q.postData(); return json({ id: 'F1' }); }
@@ -20,6 +22,7 @@ async function equipo(browser, nombre) {
   });
   await pg.goto('http://localhost:' + srv.address().port + '/'); return pg;
 }
+let inf = null;
 const espera = ms => new Promise(r => setTimeout(r, ms));
 (async () => {
   const b = await chromium.launch(), movil = await equipo(b, 'movil'), pc = await equipo(b, 'pc');
@@ -47,5 +50,9 @@ const espera = ms => new Promise(r => setTimeout(r, ms));
   console.log('4 ok · tras elegir Drive:', await quien.evaluate(() => Store.get().posiciones.length), 'posiciones');
   // 5) precios automáticos no cuentan como edición
   const u0 = await pc.evaluate(() => Store.get().updatedAt); await pc.evaluate(() => Store.cargarPreciosAuto()); assert.equal(await pc.evaluate(() => Store.get().updatedAt), u0); console.log('5 ok');
+  // 6) el índice de informes subido desde el PC (script) llega a la app sin tocar nada
+  inf = JSON.stringify({ version: 1, generado: '2026-10-27T17:00:00', empresas: [{ nombre: 'Linde', carpeta: 'x', ticker: 'LIN', documentos: [], datos: null }] });
+  const u1 = await pc.evaluate(() => Store.get().updatedAt); await pc.click('#btn-ajustes'); await pc.click('#dr-now'); await espera(900);
+  assert.equal(await pc.evaluate(() => Store.get().informes && Store.get().informes.empresas[0].nombre), 'Linde'); assert.equal(await pc.evaluate(() => Store.get().updatedAt), u1, 'no cuenta como edición'); console.log('6 ok');
   console.log(log.length, 'llamadas a Drive simuladas'); await b.close(); srv.close();
 })().catch(e => { console.error('FALLO', e.message); process.exit(1); });

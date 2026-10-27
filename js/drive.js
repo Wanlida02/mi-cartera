@@ -3,7 +3,7 @@
    El ID de cliente no es secreto (identifica la app, no da acceso a nada). */
 const Drive = (function () {
   const CLIENT_ID = '480691248279-u661oqhnte0qa5ffna3dkr6vf6c1q4gr.apps.googleusercontent.com';
-  const SCOPE = 'https://www.googleapis.com/auth/drive.file', NAME = 'mi-cartera-datos.json', MK = 'mi-cartera:drive';
+  const SCOPE = 'https://www.googleapis.com/auth/drive.file', NAME = 'mi-cartera-datos.json', NAME_INF = 'mi-cartera-informes.json', MK = 'mi-cartera:drive';
   const API = 'https://www.googleapis.com/drive/v3/files', UP = 'https://www.googleapis.com/upload/drive/v3/files';
   let token = null, tokenExp = 0, client = null, estado = 'off', detalle = '', timer = null, ocupado = false, pendiente = false, onEstado = () => { }, onDatos = () => { }, preguntar = null;
 
@@ -51,12 +51,25 @@ const Drive = (function () {
     return (await r.json()).id;
   }
 
+  /* Índice de informes anuales: lo sube herramientas/indice_informes.py (con --drive) desde tu PC; aquí solo se lee.
+     Se adopta si es más reciente que el que ya tienes. No cuenta como edición tuya (no dispara subidas). */
+  async function traerInformes() {
+    try {
+      const r = await api(API + '?q=' + encodeURIComponent("name='" + NAME_INF + "' and trashed=false") + '&fields=files(id,modifiedTime)&spaces=drive&pageSize=5');
+      const f = ((await r.json()).files || []).sort((a, b) => (a.modifiedTime < b.modifiedTime ? 1 : -1))[0]; if (!f) return false;
+      const o = await bajar(f.id), d = Store.get();
+      if (!o || !Array.isArray(o.empresas) || (d.informes && (d.informes.generado || '') >= (o.generado || ''))) return false;
+      d.informes = o; Store.save(true); onDatos(); return true;
+    } catch (e) { if (/sesión caducada/.test(e.message)) throw e; return false; }
+  }
+
   /* Sincroniza: decide si bajar, subir o preguntar. «synced» = updatedAt de la última versión que coincidió con Drive. */
   async function sincronizar(interactivo) {
     if (ocupado) { pendiente = true; return; }
     ocupado = true; set('sync', 'sincronizando…');
     try {
       await conseguirToken(interactivo);
+      await traerInformes();
       const loc = Store.get(), m = meta(); let f = null;
       if (m.fileId) { try { f = { id: m.fileId }; var remoto = await bajar(m.fileId); } catch (e) { if (/404/.test(e.message)) { f = null; } else throw e; } }
       if (!f) { f = await buscar(); if (f) var remoto = await bajar(f.id); }

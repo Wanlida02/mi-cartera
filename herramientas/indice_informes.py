@@ -18,6 +18,7 @@ Solo biblioteca estándar. Es seguro ejecutarlo todas las veces que quieras: no 
 from __future__ import annotations
 
 import argparse
+import sys
 import csv
 import datetime as dt
 import json
@@ -115,6 +116,7 @@ def main():
     ap = argparse.ArgumentParser(description="Genera indice_informes.json para la app Mi Cartera.")
     ap.add_argument("--carpeta", type=Path, default=CARPETA_BASE, help="Carpeta de valoraciones")
     ap.add_argument("--salida", type=Path, help="Archivo de salida (por defecto, dentro de la carpeta)")
+    ap.add_argument("--drive", action="store_true", help="Sube también el índice a tu Google Drive (ver subir_drive.py)")
     a = ap.parse_args()
     empresas = []
     for c in sorted(a.carpeta.iterdir(), key=lambda x: x.name.lower()):
@@ -126,6 +128,10 @@ def main():
     salida.write_text(json.dumps({"version": 1, "generado": dt.datetime.now().isoformat(timespec="seconds"),
                                   "empresas": empresas}, ensure_ascii=False, indent=1), encoding="utf-8")
     print(f"{len(empresas)} empresas indexadas → {salida}")
+    if a.drive:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import subir_drive
+        subir_drive.subir(salida)
     for e in empresas:
         print(f"  {e['nombre']:<22} {len(e['documentos'])} informes · último {e['ultimo_anio']}" + ("  · con cifras" if e["datos"] else ""))
 
