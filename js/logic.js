@@ -19,7 +19,7 @@ const Logic = (function () {
     fx: { EUR: 1, USD: 1.1193, CNY: 7.466, TWD: 36.5, fecha: '2026-10-23' }  // unidades de divisa por 1 EUR
   });
   function nuevoDatos() {
-    return { version: 1, posiciones: [], movimientos: [], otras: { accounts: [] }, ajustes: AJUSTES(), fichas: {}, precios: {}, resultados: [], updatedAt: 0 };
+    return { version: 1, posiciones: [], movimientos: [], otras: { accounts: [] }, ajustes: AJUSTES(), fichas: {}, precios: {}, resultados: [], informes: null, updatedAt: 0 };
   }
   /* Rellena lo que falte sin pisar lo que existe (datos importados de versiones anteriores) */
   function normalizar(d) {
@@ -222,6 +222,35 @@ const Logic = (function () {
     } catch (e) { return { tk, nombre: f0.nombre || tk, error: e.message }; }
   }
 
+  /* ───── Informes anuales: cruza el índice (indice_informes.json) con cartera y watchlist ───── */
+  const baseTk = t => (t || '').toUpperCase().split('.')[0];
+  function informes(d, hoy) {
+    const idx = d.informes, anioHoy = Number((hoy || today()).slice(0, 4));
+    if (!idx || !Array.isArray(idx.empresas)) return null;
+    const enCartera = new Set(d.posiciones.map(p => tickerDe(d, p)).filter(Boolean));
+    const lista = [], usados = new Set();
+    const buscar = (tk, nombre) => idx.empresas.findIndex((e, i) => !usados.has(i) && ((tk && baseTk(e.ticker) === baseTk(tk)) ||
+      (coreName(e.nombre) && coreName(nombre) && (coreName(nombre) === coreName(e.nombre) || coreName(nombre).indexOf(coreName(e.nombre) + ' ') === 0))));
+    const objetivos = [];
+    Object.keys(d.fichas).forEach(tk => {
+      const f = d.fichas[tk], estado = enCartera.has(tk) ? 'cartera' : f.estado === 'watchlist' ? 'watchlist' : null;
+      if (estado) objetivos.push({ tk, nombre: f.nombre || tk, estado });
+    });
+    d.posiciones.forEach(p => { const tk = tickerDe(d, p); if (!tk || !d.fichas[tk]) objetivos.push({ tk: tk || (p.ticker || ''), nombre: p.empresa, estado: 'cartera' }); });
+    const sin = [];
+    objetivos.forEach(o => {
+      const i = buscar(o.tk, o.nombre);
+      if (i < 0) { sin.push(o); return; }
+      usados.add(i); const e = idx.empresas[i];
+      lista.push(Object.assign({ tk: o.tk, estado: o.estado, desactualizado: e.ultimo_anio != null && e.ultimo_anio < anioHoy - 1 }, e));
+    });
+    idx.empresas.forEach((e, i) => { if (!usados.has(i)) lista.push(Object.assign({ tk: baseTk(e.ticker), estado: 'otra', desactualizado: false }, e)); });
+    const orden = { cartera: 0, watchlist: 1, otra: 2 };
+    lista.sort((a, b) => orden[a.estado] - orden[b.estado] || a.nombre.localeCompare(b.nombre));
+    sin.sort((a, b) => (orden[a.estado] - orden[b.estado]) || a.nombre.localeCompare(b.nombre));
+    return { generado: idx.generado, lista, sin };
+  }
+
   /* ───── Pesos y límites ───── */
   function pesos(d) {
     const filas = d.posiciones.map(p => ({ p, tk: tickerDe(d, p), eur: valorEur(d, p), sector: p.sector || (d.fichas[tickerDe(d, p)] || {}).sector || 'Sin sector' }));
@@ -268,6 +297,6 @@ const Logic = (function () {
   }
 
   return { isN, today, clone, nuevoDatos, normalizar, norm, coreName, sameCompany, findExisting, tickerDe, fxPorEur, aEur, precioPos, costeEur, mercadoEur, valorEur, variacion, diasDesde,
-    compra, venta, editar, eliminar, borrarMov, reverseMov, precioManual, precioFicha, valoracion, pesos, dashboard, V };
+    compra, venta, editar, eliminar, borrarMov, reverseMov, precioManual, precioFicha, valoracion, pesos, dashboard, informes, V };
 })();
 if (typeof module !== 'undefined') module.exports = Logic;

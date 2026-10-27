@@ -153,6 +153,8 @@
       (Drive.estado().conectado ? '<button class="btn" id="dr-now">Sincronizar ahora</button><button class="btn sec" id="dr-off">Desconectar</button>' : '<button class="btn" id="dr-on">Conectar con Drive</button>') + '</div>' +
       '<h3 style="margin-top:18px">Datos</h3><p class="small mut">Ahora se guardan en este dispositivo. Última copia exportada: ' + (cp ? new Date(cp).toLocaleString('es-ES') : 'nunca') + '.</p>' +
       '<div class="acts" style="justify-content:flex-start"><button class="btn sec" id="a-exp">Exportar copia</button><label class="btn sec" style="margin:0;color:var(--ink)">Importar archivo<input id="a-imp" type="file" accept=".json,application/json" hidden></label></div>' +
+      '<h3 style="margin-top:18px">Informes anuales</h3><p class="small mut">Carga el <code>indice_informes.json</code> que genera <code>herramientas/indice_informes.py</code> en tu PC.</p>' +
+      '<div class="acts" style="justify-content:flex-start"><label class="btn sec" style="margin:0;color:var(--ink)">Cargar índice de informes<input id="a-inf" type="file" accept=".json,application/json" hidden></label></div>' +
       '<div class="acts"><button class="btn sec" data-a="cerrar">Cerrar</button></div>',
       dd => {
         dd.querySelector('#a-ok').onclick = () => {
@@ -164,6 +166,7 @@
         };
         const bo = (id, f) => { const b = dd.querySelector(id); if (b) b.onclick = f; };
         bo('#dr-on', () => { Drive.conectar(); cerrar(); }); bo('#dr-now', () => { Drive.ahora(); cerrar(); }); bo('#dr-off', () => { if (confirm('¿Desconectar de Drive? Los datos se quedan en este dispositivo y en tu Drive.')) { Drive.desconectar(); cerrar(); } });
+        dd.querySelector('#a-inf').onchange = e => { if (e.target.files[0]) cargarIndiceInformes(e.target.files[0]); };
         dd.querySelector('#a-exp').onclick = () => {
           const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([Store.exportar()], { type: 'application/json' }));
           a.download = 'datos-' + L.today() + '.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); Store.marcarCopia(); toast('Copia exportada');
@@ -176,6 +179,49 @@
           });
         };
       });
+  }
+
+  /* ───── Informes anuales (índice generado en tu PC por herramientas/indice_informes.py) ───── */
+  let filtroInf = '', infLista = [];
+  const ESTADO_TXT = { cartera: 'En cartera', watchlist: 'Watchlist', otra: 'Otra' };
+  function vistaInformes() {
+    const d = Store.get(), I = L.informes(d);
+    if (!I) return '<div class="card empty"><h2>Informes anuales</h2><p>Aquí verás los informes que ya has descargado con <code>informes_anuales.py</code>: años disponibles, enlaces y cifras clave.</p>' +
+      '<p class="small">1) En tu PC ejecuta <code>python herramientas/indice_informes.py</code> (genera <code>indice_informes.json</code>).<br>2) En ⚙ Ajustes pulsa «Cargar índice de informes» y elige ese archivo.</p><button class="btn" data-a="ajustes">Abrir ajustes</button></div>';
+    const q = L.norm(filtroInf); infLista = I.lista;
+    const filas = I.lista.map((e, i) => ({ e, i })).filter(x => !q || L.norm(x.e.nombre + ' ' + (x.e.tk || '')).includes(q));
+    let h = '<div class="tools"><input id="qi" type="search" placeholder="Buscar empresa o ticker" value="' + esc(filtroInf) + '"></div>' +
+      '<p class="mut small">Índice del ' + esc((I.generado || '').slice(0, 10)) + ' · ' + I.lista.length + ' empresas con informes. Para actualizarlo, vuelve a ejecutar el script en tu PC y cárgalo en ⚙.</p>';
+    h += '<div class="card">' + (filas.length ? filas.map(({ e, i }) => {
+      const pill = e.estado === 'cartera' ? 'ok' : e.estado === 'watchlist' ? 'warn' : '';
+      return '<div class="row click" data-inf="' + i + '"><div class="main"><div class="name">' + esc(e.nombre) + '</div><div class="meta">' + esc(e.tk || '') + ' · ' + e.documentos.length + ' informes · último ' + esc(e.ultimo_anio || '—') + (e.datos && e.datos.anios ? ' · con cifras' : '') + '</div></div>' +
+        '<div class="num"><span class="pill ' + pill + '">' + ESTADO_TXT[e.estado] + '</span>' + (e.desactualizado ? '<div class="meta down">falta el último</div>' : '') + '</div></div>';
+    }).join('') : '<div class="empty">Sin coincidencias.</div>') + '</div>';
+    if (I.sin.length) h += '<div class="sec-t"><h2>Sin informes descargados</h2></div><div class="card">' + I.sin.map(o =>
+      '<div class="row"><div class="main"><div class="name">' + esc(o.nombre) + '</div><div class="meta">Ejecuta: <code>python informes_anuales.py ' + esc(o.tk || o.nombre) + '</code></div></div><span class="pill ' + (o.estado === 'cartera' ? 'ok' : 'warn') + '">' + ESTADO_TXT[o.estado] + '</span></div>').join('') + '</div>';
+    return h;
+  }
+  function detalleInforme(i) {
+    const e = infLista[i]; if (!e) return;
+    const dt = e.datos && e.datos.metricas && e.datos.anios ? e.datos : null;
+    const f = (v, m) => v == null ? '—' : nf(v, /%|\/|BPA/.test(m) ? 2 : 0);
+    dlg('<h2>' + esc(e.nombre) + '</h2><p class="mut small">' + esc(e.tk || '') + (e.ident ? ' · ' + esc(e.ident) : '') + '</p>' +
+      '<h3>Informes anuales</h3><div>' + e.documentos.slice().reverse().map(x =>
+        '<div class="row"><div class="main"><div class="name">' + esc(x.anio) + ' · ' + esc(x.tipo || '') + (x.idioma ? ' (' + esc(x.idioma) + ')' : '') + '</div><div class="meta">' + esc(x.archivo || 'solo enlace') + (x.kb ? ' · ' + nf(x.kb / 1024, 1) + ' MB' : '') + '</div></div>' +
+        (x.url ? '<a class="btn sec sm" href="' + esc(x.url) + '" target="_blank" rel="noopener">Abrir original</a>' : '') + '</div>').join('') + '</div>' +
+      '<p class="small mut">Los PDF están en tu PC: carpeta «' + esc(e.carpeta) + '».</p>' +
+      (dt ? '<h3 style="margin-top:12px">Cifras clave (' + esc(dt.divisa || '') + ' millones)</h3><div style="overflow:auto"><table style="border-collapse:collapse;font-size:13px;width:100%"><tr><th></th>' + dt.anios.map(a => '<th style="text-align:right;padding:3px 6px">' + a + '</th>').join('') + '</tr>' +
+        Object.keys(dt.metricas).map(m => '<tr><td style="padding:3px 6px 3px 0;white-space:nowrap">' + esc(m) + '</td>' + dt.metricas[m].map(v => '<td style="text-align:right;padding:3px 6px">' + f(v, m) + '</td>').join('') + '</tr>').join('') + '</table></div>' +
+        '<p class="small mut">Detalle completo en ' + esc(e.csv || 'el CSV') + '.</p>' : '') +
+      '<div class="acts"><button class="btn sec" data-a="cerrar">Cerrar</button></div>');
+  }
+  function cargarIndiceInformes(file) {
+    file.text().then(t => {
+      try {
+        const o = JSON.parse(t); if (!o || !Array.isArray(o.empresas)) throw new Error('no parece un indice_informes.json');
+        Store.get().informes = o; Store.save(); cerrar(); render(); toast('Índice cargado: ' + o.empresas.length + ' empresas');
+      } catch (err) { toast('No se pudo cargar: ' + err.message); }
+    });
   }
 
   /* ───── Drive ───── */
@@ -206,15 +252,18 @@
     const d = Store.get(); if (!d) return;
     document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
     const v = $('#vista'), keep = document.activeElement && document.activeElement.id === 'q';
-    v.innerHTML = tab === 'inicio' ? vistaInicio() : tab === 'cartera' ? vistaCartera() :
+    const keepI = document.activeElement && document.activeElement.id === 'qi';
+    v.innerHTML = tab === 'inicio' ? vistaInicio() : tab === 'cartera' ? vistaCartera() : tab === 'informes' ? vistaInformes() :
       '<div class="card empty"><h2>' + PEND[tab][0] + '</h2><p>' + PEND[tab][1] + '</p></div>';
     const fx = d.ajustes.fx.fecha;
     $('#sub').textContent = d.posiciones.length ? d.posiciones.length + ' posiciones · divisas ' + (fx || '') : 'sin datos';
     if (keep) { const q = $('#q'); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }
+    if (keepI) { const q = $('#qi'); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }
   }
 
   document.addEventListener('click', e => {
-    const t = e.target.closest('[data-tab],[data-a],[data-pos],[data-undo]'); if (!t) return;
+    const t = e.target.closest('[data-tab],[data-a],[data-pos],[data-undo],[data-inf]'); if (!t) return;
+    if (t.dataset.inf != null) return detalleInforme(+t.dataset.inf);
     if (t.dataset.tab) { tab = t.dataset.tab; render(); window.scrollTo(0, 0); return; }
     if (t.dataset.pos) return detalle(+t.dataset.pos);
     if (t.dataset.undo) {
@@ -233,7 +282,7 @@
       case 'eliminar': if (confirm('¿Eliminar la ficha sin registrar venta? Para vender usa «Vender».')) guardar(L.eliminar(Store.get(), i)); break;
     }
   });
-  document.addEventListener('input', e => { if (e.target.id === 'q') { filtro = e.target.value; render(); } });
+  document.addEventListener('input', e => { if (e.target.id === 'q') { filtro = e.target.value; render(); } if (e.target.id === 'qi') { filtroInf = e.target.value; render(); } });
   document.addEventListener('change', e => { if (e.target.id === 'ord') { orden = e.target.value; render(); } });
   $('#btn-ajustes').onclick = ajustes;
   $('#btn-sync').onclick = () => { const e = Drive.estado(); if (!e.conectado) ajustes(); else if (e.estado === 'conflicto' || e.estado === 'reconectar' || e.estado === 'error') Drive.ahora(); else toast(textoDrive()); };
