@@ -11,11 +11,11 @@ const Store = (function () {
     catch (e) { data = Logic.normalizar(null); aviso = 'No se pudo leer lo guardado en este dispositivo.'; }
     return data;
   }
-  function save() {
-    data.updatedAt = Date.now();
+  function save(silencioso) {
+    if (!silencioso) data.updatedAt = Date.now();   // los precios automáticos no cuentan como edición tuya (no disparan sincronización)
     try { localStorage.setItem(KEY, JSON.stringify(data)); aviso = ''; }
     catch (e) { aviso = 'No se pudo guardar en este dispositivo (¿navegación privada o sin espacio?). Exporta una copia.'; }
-    subs.forEach(f => f());
+    if (!silencioso) subs.forEach(f => f());
     return !aviso;
   }
   function validar(o) {
@@ -29,6 +29,11 @@ const Store = (function () {
     try { const prev = localStorage.getItem(KEY); if (prev) localStorage.setItem(BK, prev); } catch (e) { /* sin copia previa */ }
     data = Logic.normalizar(o);
     return save();
+  }
+  /* Adopta datos que vienen de Drive sin tocar su updatedAt (así no se vuelven a subir) */
+  function adopt(o) {
+    data = Logic.normalizar(validar(o));
+    try { localStorage.setItem(KEY, JSON.stringify(data)); aviso = ''; } catch (e) { aviso = 'No se pudo guardar en este dispositivo.'; }
   }
   function exportar() { return JSON.stringify(data); }
   function marcarCopia() { try { localStorage.setItem(META, JSON.stringify({ copia: Date.now() })); } catch (e) { } }
@@ -45,9 +50,9 @@ const Store = (function () {
         if (!ant || (nuevo.fecha_precio || '') > (ant.fecha_precio || '') || ((nuevo.fecha_precio || '') === (ant.fecha_precio || '') && ant.fuente !== 'manual')) { data.precios[tk] = nuevo; n++; }
       });
       if (j.fx && (j.fx.fecha || '') > (data.ajustes.fx.fecha || '')) { data.ajustes.fx = Object.assign({}, data.ajustes.fx, j.fx); n++; }
-      if (n) save();
+      if (n) save(true);
       return n;
     } catch (e) { return false; }
   }
-  return { load, save, importar, exportar, marcarCopia, ultimaCopia, cargarPreciosAuto, get: () => data, aviso: () => aviso, onChange: f => subs.push(f) };
+  return { load, save, adopt, importar, exportar, marcarCopia, ultimaCopia, cargarPreciosAuto, get: () => data, aviso: () => aviso, onChange: f => subs.push(f) };
 })();

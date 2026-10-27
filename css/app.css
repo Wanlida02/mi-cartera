@@ -60,3 +60,8 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 .small{font-size:12px}
 details summary{cursor:pointer;font-weight:600;padding:6px 0}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+
+.top-in>div{flex:1;min-width:0}
+#btn-sync{position:relative;font-size:18px}
+#btn-sync::after{content:"";position:absolute;right:6px;top:6px;width:9px;height:9px;border-radius:50%;background:#9aa4b2;border:2px solid var(--pri)}
+#btn-sync.on::after{background:#4cc38a}#btn-sync.sync::after{background:#f5b45a}#btn-sync.error::after,#btn-sync.reconectar::after,#btn-sync.conflicto::after{background:#ff6b5e}

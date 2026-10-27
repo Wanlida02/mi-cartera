@@ -143,6 +143,8 @@
       '<h3 style="margin-top:14px">Límites de cartera</h3><div class="f2">' + campo('a-le', 'Máx. por empresa %', A.lim_empresa, 'number') + campo('a-ls', 'Máx. por sector %', A.lim_sector, 'number') + '</div>' +
       '<h3 style="margin-top:14px">Divisas (unidades por 1 €) <span class="mut small">' + esc(A.fx.fecha || '') + '</span></h3><div class="f2">' + campo('a-usd', 'USD', A.fx.USD, 'number') + campo('a-cny', 'CNY', A.fx.CNY, 'number') + campo('a-twd', 'TWD', A.fx.TWD, 'number') + '</div>' +
       '<div class="acts" style="justify-content:flex-start"><button class="btn" id="a-ok">Guardar ajustes</button></div>' +
+      '<h3 style="margin-top:18px">Google Drive</h3><p class="small mut" id="dr-t">' + textoDrive() + '</p><div class="acts" style="justify-content:flex-start">' +
+      (Drive.estado().conectado ? '<button class="btn" id="dr-now">Sincronizar ahora</button><button class="btn sec" id="dr-off">Desconectar</button>' : '<button class="btn" id="dr-on">Conectar con Drive</button>') + '</div>' +
       '<h3 style="margin-top:18px">Datos</h3><p class="small mut">Ahora se guardan en este dispositivo. Última copia exportada: ' + (cp ? new Date(cp).toLocaleString('es-ES') : 'nunca') + '.</p>' +
       '<div class="acts" style="justify-content:flex-start"><button class="btn sec" id="a-exp">Exportar copia</button><label class="btn sec" style="margin:0;color:var(--ink)">Importar archivo<input id="a-imp" type="file" accept=".json,application/json" hidden></label></div>' +
       '<div class="acts"><button class="btn sec" data-a="cerrar">Cerrar</button></div>',
@@ -154,6 +156,8 @@
           Object.assign(A, { umbral_barata: v.b, umbral_cara: v.c, lim_empresa: v.e, lim_sector: v.s }); Object.assign(A.fx, { USD: v.u, CNY: v.y, TWD: v.t, fecha: L.today() });
           guardar({ ok: true, msg: 'Ajustes guardados' });
         };
+        const bo = (id, f) => { const b = dd.querySelector(id); if (b) b.onclick = f; };
+        bo('#dr-on', () => { Drive.conectar(); cerrar(); }); bo('#dr-now', () => { Drive.ahora(); cerrar(); }); bo('#dr-off', () => { if (confirm('¿Desconectar de Drive? Los datos se quedan en este dispositivo y en tu Drive.')) { Drive.desconectar(); cerrar(); } });
         dd.querySelector('#a-exp').onclick = () => {
           const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([Store.exportar()], { type: 'application/json' }));
           a.download = 'datos-' + L.today() + '.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); Store.marcarCopia(); toast('Copia exportada');
@@ -166,6 +170,23 @@
           });
         };
       });
+  }
+
+  /* ───── Drive ───── */
+  const TXT = { off: 'Sin conectar. Conecta para tener los mismos datos en el móvil y en el PC.', on: 'Conectado', sync: 'Sincronizando…', reconectar: 'Hay que volver a dar permiso (toca el icono ☁).', error: 'Error', conflicto: 'Hay cambios distintos en Drive y aquí.' };
+  function textoDrive() { const e = Drive.estado(); return esc((TXT[e.estado] || '') + (e.detalle && e.estado !== 'off' ? ' · ' + e.detalle : '')); }
+  function pintaSync(est) {
+    const b = $('#btn-sync'); b.className = 'icon-btn ' + est; b.title = 'Drive: ' + textoDrive();
+    const t = document.getElementById('dr-t'); if (t) t.innerHTML = textoDrive();
+  }
+  function preguntarConflicto(lU, rU) {
+    const f = t => t ? new Date(t).toLocaleString('es-ES') : 'nunca';
+    return new Promise(res => {
+      const d = dlg('<h2>Datos distintos</h2><p>Has cambiado datos aquí y también en Drive desde la última sincronización. No se mezclan: elige cuál conservar (el otro se pierde).</p>' +
+        '<p class="small mut">Este dispositivo: ' + f(lU) + '<br>Drive: ' + f(rU) + '</p><div class="acts"><button class="btn sec" id="k-c">Decidir luego</button><button class="btn sec" id="k-d">Usar Drive</button><button class="btn" id="k-l">Usar este dispositivo</button></div>');
+      d.addEventListener('close', () => res('cancelar'), { once: true });
+      d.querySelector('#k-d').onclick = () => { res('drive'); cerrar(); }; d.querySelector('#k-l').onclick = () => { res('local'); cerrar(); }; d.querySelector('#k-c').onclick = () => { res('cancelar'); cerrar(); };
+    });
   }
 
   /* ───── Pestañas pendientes ───── */
@@ -209,8 +230,10 @@
   document.addEventListener('input', e => { if (e.target.id === 'q') { filtro = e.target.value; render(); } });
   document.addEventListener('change', e => { if (e.target.id === 'ord') { orden = e.target.value; render(); } });
   $('#btn-ajustes').onclick = ajustes;
+  $('#btn-sync').onclick = () => { const e = Drive.estado(); if (!e.conectado) ajustes(); else if (e.estado === 'conflicto' || e.estado === 'reconectar' || e.estado === 'error') Drive.ahora(); else toast(textoDrive()); };
 
   Store.load(); render();
+  Drive.init({ onEstado: pintaSync, onDatos: () => { render(); toast('Datos actualizados desde Drive'); Store.cargarPreciosAuto().then(n => n && render()); }, preguntar: preguntarConflicto });
   if (Store.aviso()) toast(Store.aviso());
   Store.cargarPreciosAuto().then(n => { if (n) { render(); toast('Precios actualizados'); } });
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => { });
