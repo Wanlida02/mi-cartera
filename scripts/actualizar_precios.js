@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* Actualiza precios.json: precio de cada valor (Yahoo Finance, con Stooq de respaldo para EE. UU.) y divisas (por 1 €).
+/* Actualiza precios.json: precio de cada valor (Yahoo Finance; respaldo Google Finance y Stooq) y divisas (por 1 €).
    Se ejecuta en GitHub Actions (L-V 9:35 y 15:35 hora de Madrid) o a mano: node scripts/actualizar_precios.js [--sin-red]
    Reglas: nunca borra un precio bueno si falla la descarga (lo conserva y lo marca como obsoleto); normaliza peniques (GBp);
    la fecha del precio es la de la última cotización en la hora local de la bolsa. */
@@ -37,7 +37,13 @@ function leerYahoo(j) {
   const t = m.regularMarketTime || (r.timestamp || []).slice(-1)[0];
   return { precio: Math.round(precio * 1e4) / 1e4, divisa: div, fecha: t ? fechaLocal(t, m.exchangeTimezoneName) : null, hora: t ? new Date(t * 1000).toISOString() : null };
 }
+let n429 = 0, yahooBloqueado = false;            // si Yahoo responde 429 (limitado) varias veces seguidas, se deja de insistir en esta ejecución
 async function yahoo(sym) {
+  if (yahooBloqueado) throw new Error('Yahoo limitado (429): se omite');
+  try { const p = await yahoo1(sym); n429 = 0; return p; }
+  catch (e) { if (/429/.test(e.message) && ++n429 >= 6) yahooBloqueado = true; throw e; }
+}
+async function yahoo1(sym) {
   for (const host of ['query1', 'query2']) {
     try { const r = await pedir('https://' + host + '.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(sym) + '?range=5d&interval=1d', 2); return leerYahoo(await r.json()); }
     catch (e) { if (host === 'query2') throw e; }
@@ -53,10 +59,25 @@ async function stooq(sym) {
   if (sym.includes('.')) throw new Error('Stooq solo cubre EE. UU.');
   const r = await pedir('https://stooq.com/q/l/?s=' + sym.toLowerCase() + '.us&f=sd2t2c&h&e=csv', 2); return leerStooq(await r.text());
 }
+/* Google Finance (HTML): data-last-price, data-currency-code y marca de tiempo de la cotización principal */
+function leerGoogle(html) {
+  const p = html.match(/data-last-price="([\d.,]+)"/), c = html.match(/data-currency-code="([A-Z]{3})"/), t = html.match(/data-last-normal-market-timestamp="(\d+)"/);
+  const precio = p && num(Number(p[1].replace(/,/g, ''))); if (!precio || !c) throw new Error('Google sin precio');
+  const ts = t ? Number(t[1]) : null;
+  return { precio: Math.round(precio * 1e4) / 1e4, divisa: c[1], fecha: ts ? new Date(ts * 1000).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10), hora: ts ? new Date(ts * 1000).toISOString() : null };
+}
+const GEX = { MC: 'BME', PA: 'EPA', AT: 'ATH', TW: 'TPE', SZ: 'SHE', HK: 'HKG', L: 'LON', DE: 'ETR', MI: 'BIT', AS: 'AMS', SW: 'SWX', T: 'TYO', LS: 'ELI', BR: 'EBR', ST: 'STO', CO: 'CPH', HE: 'HEL', OL: 'OSL', VI: 'VIE', SS: 'SHA', F: 'FRA' };
+async function google(sym) {
+  const m = sym.match(/^(.+)\.([A-Z]+)$/);
+  const cand = m ? (GEX[m[2]] ? [m[1].replace(/^0+(?=\d)/, '') + ':' + GEX[m[2]]] : []) : [sym + ':NASDAQ', sym + ':NYSE', sym + ':NYSEARCA', sym + ':NYSEAMERICAN'];
+  if (!cand.length) throw new Error('Google: bolsa desconocida');
+  let ult; for (const c of cand) { try { const r = await pedir('https://www.google.com/finance/quote/' + encodeURIComponent(c).replace('%3A', ':') + '?hl=en', 2); return leerGoogle(await r.text()); } catch (e) { ult = e; } }
+  throw ult;
+}
 async function precioDe(candidatos) {
   const errores = [];
   for (const s of candidatos) {
-    for (const [nombre, f] of [['yahoo', yahoo], ['stooq', stooq]]) {
+    for (const [nombre, f] of [['yahoo', yahoo], ['google', google], ['stooq', stooq]]) {
       try { const p = await f(s); return Object.assign(p, { simbolo: s, fuente: nombre }); } catch (e) { errores.push(s + '/' + nombre + ': ' + e.message); }
     }
   }
@@ -68,6 +89,7 @@ async function divisas(lista) {
   for (const d of lista) {
     try { const p = await yahoo('EUR' + d + '=X'); fx[d] = p.precio; fx['_f_' + d] = p.fecha; continue; } catch (e) { /* respaldo */ }
     try { const r = await pedir('https://api.frankfurter.app/latest?from=EUR&to=' + d, 2); const j = await r.json(); if (num(j.rates && j.rates[d])) { fx[d] = j.rates[d]; fx['_f_' + d] = j.date; continue; } } catch (e) { /* sin dato */ }
+    try { const r = await pedir('https://open.er-api.com/v6/latest/EUR', 2); const j = await r.json(); if (num(j.rates && j.rates[d])) { fx[d] = j.rates[d]; fx['_f_' + d] = new Date((j.time_last_update_unix || Date.now() / 1000) * 1000).toISOString().slice(0, 10); continue; } } catch (e) { /* sin dato */ }
     fallos.push(d);
   }
   const fechas = Object.keys(fx).filter(k => k.startsWith('_f_')).map(k => fx[k]).sort(); lista.forEach(d => delete fx['_f_' + d]);
@@ -111,4 +133,4 @@ async function principal() {
   if (fallos.length > tareas.length / 2) process.exit(1);                    // casi todo falla: que el Action avise
 }
 if (require.main === module) principal().catch(e => { console.error(e); process.exit(1); });
-module.exports = { leerYahoo, leerStooq, fechaLocal };
+module.exports = { leerYahoo, leerStooq, leerGoogle, fechaLocal };

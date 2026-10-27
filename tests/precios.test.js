@@ -9,6 +9,8 @@ r = P.leerYahoo({ chart: { result: [{ meta: { currency: 'GBp', regularMarketPric
 r = P.leerYahoo({ chart: { result: [{ meta: { currency: 'EUR', regularMarketTime: 1792800000, exchangeTimezoneName: 'Europe/Paris' }, indicators: { quote: [{ close: [190, 192.5, null] }] } }] } }); assert.equal(r.precio, 192.5);
 assert.throws(() => P.leerYahoo({ chart: { result: null } })); assert.throws(() => P.leerYahoo({ chart: { result: [{ meta: { currency: 'USD' } }] } }));
 // Stooq
+r = P.leerGoogle('<div class="x" data-source="AIR" data-currency-code="EUR" data-last-price="1,234.56" data-last-normal-market-timestamp="1793000000"></div>'); assert.equal(r.precio, 1234.56); assert.equal(r.divisa, 'EUR');
+assert.throws(() => P.leerGoogle('<html>nada</html>'));
 r = P.leerStooq('Symbol,Date,Time,Close\r\nTSM.US,2026-10-23,22:00:09,418.51\r\n'); assert.equal(r.precio, 418.51); assert.equal(r.fecha, '2026-10-23');
 assert.throws(() => P.leerStooq('Symbol,Date,Time,Close\r\nXXX.US,N/D,N/D,N/D\r\n'));
 
