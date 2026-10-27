@@ -76,3 +76,7 @@ details summary{cursor:pointer;font-weight:600;padding:6px 0}
 .small{font-size:13px}.mut{color:var(--mut)}
 .btn.sm{padding:7px 12px;min-height:36px;font-size:14px}
 textarea{width:100%;font:inherit;border:1px solid var(--line,#ccd);border-radius:10px;padding:8px;background:var(--card,#fff);color:inherit}
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tbl{border-collapse:collapse;width:100%;font-size:13px}.tbl th,.tbl td{padding:5px 6px;text-align:right;border-top:1px solid var(--line)}.tbl th:first-child,.tbl td:first-child{text-align:left}
+.tbl input{width:100%;min-width:64px;padding:5px;min-height:32px;text-align:right}
+.c-g{color:var(--ok);font-weight:700}.c-y{color:var(--warn);font-weight:700}.c-r{color:var(--bad);font-weight:700}
