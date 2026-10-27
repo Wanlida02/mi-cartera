@@ -18,7 +18,7 @@
     return d;
   }
   const cerrar = () => { const d = $('#dlg'); if (d.open) d.close(); };
-  const UI = window.UI = { vistas: {}, clicks: [], changes: [] };   // enganches para módulos que añaden pestañas (cribado, valoración…)
+  const UI = window.UI = { vistas: {}, clicks: [], changes: [], pies: {} };   // enganches para módulos que añaden pestañas (cribado, valoración…)
   function guardar(res, ok) {
     if (!res.ok) { toast(res.msg); return false; }
     Store.save(); const av = Store.aviso(); cerrar(); render(); toast(av || res.msg); if (ok) ok(); return true;
@@ -258,6 +258,7 @@
     const keepI = document.activeElement && document.activeElement.id === 'qi';
     v.innerHTML = tab === 'inicio' ? vistaInicio() : tab === 'cartera' ? vistaCartera() : tab === 'informes' ? vistaInformes() : UI.vistas[tab] ? UI.vistas[tab]() :
       '<div class="card empty"><h2>' + PEND[tab][0] + '</h2><p>' + PEND[tab][1] + '</p></div>';
+    (UI.pies[tab] || []).forEach(fn => { v.insertAdjacentHTML('beforeend', fn()); });
     const fx = d.ajustes.fx.fecha;
     $('#sub').textContent = d.posiciones.length ? d.posiciones.length + ' posiciones · divisas ' + (fx || '') : 'sin datos';
     if (keep) { const q = $('#q'); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }
