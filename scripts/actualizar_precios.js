@@ -102,7 +102,10 @@ async function principal() {
   const fxFinal = Object.assign({}, previo.fx || {}, fx);                  // si una divisa falla, queda la anterior
   const salida = { generado: ahora, estado: { ok: hechos, total: tareas.length, fallos, divisas_fallidas: fxFallos }, fx: fxFinal, precios };
   const ordenado = Object.assign({}, salida, { precios: Object.fromEntries(Object.keys(precios).sort().map(k => [k, precios[k]])) });
-  if (hechos === 0 && tareas.length) { console.error('No se obtuvo ningún precio; no se sobrescribe precios.json'); fallos.slice(0, 3).forEach(f => console.error(f.ticker, f.motivo)); process.exit(1); }
+  if (hechos === 0 && tareas.length) {
+    console.error('No se obtuvo ningún precio; no se sobrescribe precios.json (diagnóstico en precios_diag.json)'); fallos.slice(0, 3).forEach(f => console.error(f.ticker, f.motivo));
+    fs.writeFileSync(path.join(RAIZ, 'precios_diag.json'), JSON.stringify({ generado: ahora, fallos, divisas_fallidas: fxFallos, fx }, null, 1) + '\n'); process.exit(1);
+  }
   fs.writeFileSync(OUT, JSON.stringify(ordenado, null, 1) + '\n');
   console.log('Precios: ' + hechos + '/' + tareas.length + ' · fallos: ' + (fallos.map(f => f.ticker).join(', ') || 'ninguno') + ' · divisas: ' + Object.keys(fx).join(','));
   if (fallos.length > tareas.length / 2) process.exit(1);                    // casi todo falla: que el Action avise
