@@ -65,3 +65,14 @@ details summary{cursor:pointer;font-weight:600;padding:6px 0}
 #btn-sync{position:relative;font-size:18px}
 #btn-sync::after{content:"";position:absolute;right:6px;top:6px;width:9px;height:9px;border-radius:50%;background:#9aa4b2;border:2px solid var(--pri)}
 #btn-sync.on::after{background:#4cc38a}#btn-sync.sync::after{background:#f5b45a}#btn-sync.error::after,#btn-sync.reconectar::after,#btn-sync.conflicto::after{background:#ff6b5e}
+/* Cribado */
+.crl{list-style:none;margin:8px 0 0;padding:0}
+.crl li{display:flex;gap:10px;padding:9px 0;border-top:1px solid var(--line,#e4e7ec)}
+.crl .bdg{flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:13px;background:var(--chip)}
+.crl .s-g .bdg{background:var(--ok-bg);color:var(--ok)}.crl .s-y .bdg{background:var(--warn-bg);color:var(--warn)}.crl .s-r .bdg{background:var(--bad-bg);color:var(--bad)}
+.sec2 summary{cursor:pointer;list-style:none}.sec2 summary::-webkit-details-marker{display:none}
+.bar3{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--chip)}
+.bar3 i.g{background:var(--ok)}.bar3 i.y{background:var(--warn)}.bar3 i.r{background:var(--bad)}
+.small{font-size:13px}.mut{color:var(--mut)}
+.btn.sm{padding:7px 12px;min-height:36px;font-size:14px}
+textarea{width:100%;font:inherit;border:1px solid var(--line,#ccd);border-radius:10px;padding:8px;background:var(--card,#fff);color:inherit}

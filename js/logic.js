@@ -19,7 +19,7 @@ const Logic = (function () {
     fx: { EUR: 1, USD: 1.1193, CNY: 7.466, TWD: 36.5, fecha: '2026-10-23' }  // unidades de divisa por 1 EUR
   });
   function nuevoDatos() {
-    return { version: 1, posiciones: [], movimientos: [], otras: { accounts: [] }, ajustes: AJUSTES(), fichas: {}, precios: {}, resultados: [], informes: null, updatedAt: 0 };
+    return { version: 1, posiciones: [], movimientos: [], otras: { accounts: [] }, ajustes: AJUSTES(), fichas: {}, precios: {}, cribado: {}, resultados: [], informes: null, updatedAt: 0 };
   }
   /* Rellena lo que falte sin pisar lo que existe (datos importados de versiones anteriores) */
   function normalizar(d) {
@@ -28,7 +28,7 @@ const Logic = (function () {
     out.ajustes = Object.assign({}, b.ajustes, d.ajustes || {});
     out.ajustes.fx = Object.assign({}, b.ajustes.fx, (d.ajustes && d.ajustes.fx) || {});
     ['posiciones', 'movimientos', 'resultados'].forEach(k => { if (!Array.isArray(out[k])) out[k] = []; });
-    ['fichas', 'precios'].forEach(k => { if (!out[k] || typeof out[k] !== 'object') out[k] = {}; });
+    ['fichas', 'precios', 'cribado'].forEach(k => { if (!out[k] || typeof out[k] !== 'object') out[k] = {}; });
     if (!out.otras || !Array.isArray(out.otras.accounts)) out.otras = { accounts: [] };
     return out;
   }

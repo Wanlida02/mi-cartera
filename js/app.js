@@ -18,6 +18,7 @@
     return d;
   }
   const cerrar = () => { const d = $('#dlg'); if (d.open) d.close(); };
+  const UI = window.UI = { vistas: {}, clicks: [], changes: [] };   // enganches para módulos que añaden pestañas (cribado, valoración…)
   function guardar(res, ok) {
     if (!res.ok) { toast(res.msg); return false; }
     Store.save(); const av = Store.aviso(); cerrar(); render(); toast(av || res.msg); if (ok) ok(); return true;
@@ -174,6 +175,8 @@
         dd.querySelector('#a-imp').onchange = e => {
           const f = e.target.files[0]; if (!f) return;
           f.text().then(t => {
+            let j = null; try { j = JSON.parse(t); } catch (er) {}
+            if (j && j.tipo === 'cribado' && j.cribado) { const n = UI.fusionarCribado(j.cribado); cerrar(); render(); return toast(n + ' cribado(s) añadidos; el resto de tus datos no se ha tocado'); }
             if (Store.get().posiciones.length && !confirm('Esto reemplaza los datos de este dispositivo (se guarda una copia previa). ¿Continuar?')) return;
             try { Store.importar(t); cerrar(); render(); toast('Datos importados'); } catch (err) { toast('No se pudo importar: ' + err.message); }
           });
@@ -253,7 +256,7 @@
     document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
     const v = $('#vista'), keep = document.activeElement && document.activeElement.id === 'q';
     const keepI = document.activeElement && document.activeElement.id === 'qi';
-    v.innerHTML = tab === 'inicio' ? vistaInicio() : tab === 'cartera' ? vistaCartera() : tab === 'informes' ? vistaInformes() :
+    v.innerHTML = tab === 'inicio' ? vistaInicio() : tab === 'cartera' ? vistaCartera() : tab === 'informes' ? vistaInformes() : UI.vistas[tab] ? UI.vistas[tab]() :
       '<div class="card empty"><h2>' + PEND[tab][0] + '</h2><p>' + PEND[tab][1] + '</p></div>';
     const fx = d.ajustes.fx.fecha;
     $('#sub').textContent = d.posiciones.length ? d.posiciones.length + ' posiciones · divisas ' + (fx || '') : 'sin datos';
@@ -262,6 +265,7 @@
   }
 
   document.addEventListener('click', e => {
+    for (const f of UI.clicks) if (f(e)) return;
     const t = e.target.closest('[data-tab],[data-a],[data-pos],[data-undo],[data-inf]'); if (!t) return;
     if (t.dataset.inf != null) return detalleInforme(+t.dataset.inf);
     if (t.dataset.tab) { tab = t.dataset.tab; render(); window.scrollTo(0, 0); return; }
@@ -284,9 +288,12 @@
   });
   document.addEventListener('input', e => { if (e.target.id === 'q') { filtro = e.target.value; render(); } if (e.target.id === 'qi') { filtroInf = e.target.value; render(); } });
   document.addEventListener('change', e => { if (e.target.id === 'ord') { orden = e.target.value; render(); } });
+  document.addEventListener('input', e => UI.changes.forEach(f => f(e)));
+  document.addEventListener('change', e => UI.changes.forEach(f => f(e)));
   $('#btn-ajustes').onclick = ajustes;
   $('#btn-sync').onclick = () => { const e = Drive.estado(); if (!e.conectado) ajustes(); else if (e.estado === 'conflicto' || e.estado === 'reconectar' || e.estado === 'error') Drive.ahora(); else toast(textoDrive()); };
 
+  Object.assign(UI, { dlg, cerrar, toast, esc, nf, pct, money, eur, guardar, render, campo, val, cls });
   Store.load(); render();
   Drive.init({ onEstado: pintaSync, onDatos: () => { render(); toast('Datos actualizados desde Drive'); Store.cargarPreciosAuto().then(n => n && render()); }, preguntar: preguntarConflicto });
   if (Store.aviso()) toast(Store.aviso());

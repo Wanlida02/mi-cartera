@@ -1,0 +1,511 @@
+{
+ "version": 1,
+ "tipo": "cribado",
+ "cribado": {
+  "AAPL": {
+   "acciones_cagr_10y": -4.3,
+   "analistas_n": 52,
+   "anio_dato": 2026,
+   "bolsa": "NASDAQ",
+   "bpa_anios_negativos_10y": 0,
+   "bpa_cagr_10y": 12.5,
+   "bpa_cagr_5y": 17.9,
+   "bpa_ttm": 8.73,
+   "confianza": "alta",
+   "control_familiar": false,
+   "crisis": {
+    "caida_ebit_pct": 0,
+    "caida_ventas_pct": 0,
+    "perdidas": false
+   },
+   "cualitativo": {
+    "b1": {
+     "motivo": "Negocio claro: hardware + servicios (26 % de ingresos).",
+     "nivel": "verde"
+    },
+    "b2": {
+     "motivo": "Márgenes brutos del 40 % al 47 % en 10 años.",
+     "precio_sobre_inflacion": true
+    },
+    "b3": {
+     "fuentes": [
+      "marca",
+      "costes de cambio",
+      "efecto red",
+      "escala/coste"
+     ],
+     "motivo": "Ecosistema con costes de cambio altos.",
+     "nivel": "verde"
+    },
+    "b4": {
+     "motivo": "Tecnología de consumo con servicios.",
+     "score": 7
+    },
+    "b5": {
+     "motivo": "M5 cita a Apple como dueña de su destino.",
+     "poco_capital": true,
+     "sin_dependencia_externa": true,
+     "sin_deuda_para_funcionar": true
+    },
+    "b6": {
+     "expande_margenes": true,
+     "motivo": "ROIC alto, márgenes al alza y caja de sobra.",
+     "reinvierte_alto_retorno": true,
+     "sobra_caja": true
+    },
+    "b7": {
+     "ciclicidad": "no",
+     "materias_primas": false,
+     "motivo": "Ventas y EBIT no cayeron en 2009 ni en 2020."
+    },
+    "c4": {
+     "borrador": "Relevo de CEO: John Ternus sustituye a Tim Cook el 1-sep-2026."
+    }
+   },
+   "deuda_neta_ebitda": -0.2,
+   "devuelve_capital": true,
+   "dividendo_por_accion": 1.08,
+   "divisa_cotizacion": "USD",
+   "ebit_cagr_10y": 6.5,
+   "ebit_cagr_5y": 15,
+   "emite_para_pagar_dividendos": false,
+   "emitio_en_recesion": false,
+   "es_banco_inmobiliaria": false,
+   "fcf_por_accion": 7.32,
+   "fecha_verificacion": "2026-10-06",
+   "financiera_propia": false,
+   "fuentes": [
+    "10-K FY2025 y resultados Q3 FY2026 (SEC/Apple)",
+    "Yahoo Finance",
+    "Wisesheets"
+   ],
+   "historial_anios": 45,
+   "industria": "Hardware de consumo y servicios",
+   "insiders_pct": 0.1,
+   "margen_ebit": 32.6,
+   "margen_ebit_hace_5y": 24.1,
+   "margen_ebit_pico_10y": 32.6,
+   "market_cap_eur_m": 4030000,
+   "nombre": "Apple Inc.",
+   "notas_datos": [
+    "El BPA de 12 meses (8,73 $) incluye 0,11 $ de reembolsos de aranceles, no recurrentes.",
+    "PER medio de 10 años aproximado (rango anual 13,5x–37,3x según Wisesheets).",
+    "ROIC y recuento de acciones de hace 10 años: aproximados.",
+    "Las valoraciones cualitativas (B1–B7, C4) son juicio del analista, no datos de una fuente."
+   ],
+   "origen": "verificado",
+   "pais_sede": "EEUU",
+   "payout_fcf_pct": 107,
+   "per_medio_10y": 25,
+   "per_min_10y": 13.5,
+   "reinvierte_proyectos": true,
+   "roic": 55,
+   "sbc_fcf_pct": 13,
+   "sector_cartera": "tecnología",
+   "sede_grupo": "neutral",
+   "ticker": "AAPL",
+   "ventas_cagr_10y": 5.9,
+   "ventas_cagr_5y": 8.7
+  },
+  "AZO": {
+   "acciones_cagr_10y": -6,
+   "acciones_diluidas_m": 16.865,
+   "anio_dato": 2026,
+   "bolsa": "NYSE",
+   "bpa_anios_negativos_10y": 0,
+   "bpa_cagr_5y": 9.9,
+   "bpa_ttm": 152.55,
+   "confianza": "alta",
+   "control_familiar": false,
+   "crisis": {
+    "caida_ebit_pct": 0,
+    "caida_ventas_pct": 0,
+    "perdidas": false
+   },
+   "cualitativo": {
+    "b1": {
+     "motivo": "Negocio claro: recambios para bricolaje y talleres.",
+     "nivel": "verde"
+    },
+    "b2": {
+     "motivo": "Margen EBIT del 18 %; la bruta cedió algo en FY2026.",
+     "precio_sobre_inflacion": true
+    },
+    "b3": {
+     "fuentes": [
+      "escala/coste",
+      "marca",
+      "producto crítico y barato",
+      "oligopolio"
+     ],
+     "motivo": "Red de 8.000 tiendas y Mega Hubs frente a pocos rivales.",
+     "nivel": "verde"
+    },
+    "b4": {
+     "motivo": "Distribución de posventa, demanda estable.",
+     "score": 7
+    },
+    "b5": {
+     "motivo": "Apalancamiento elegido (objetivo de 2,5x), no necesario para operar.",
+     "poco_capital": false,
+     "sin_dependencia_externa": true,
+     "sin_deuda_para_funcionar": true
+    },
+    "b6": {
+     "expande_margenes": false,
+     "motivo": "El margen EBIT baja del 20,5 % al 18,3 %.",
+     "reinvierte_alto_retorno": true,
+     "sobra_caja": true
+    },
+    "b7": {
+     "ciclicidad": "no",
+     "materias_primas": false,
+     "motivo": "Contracíclica: ventas y EBIT subieron en 2009 y 2020."
+    },
+    "c4": {
+     "borrador": "Compra de acciones constante; ventas flojas en las primeras 8 semanas del cuarto trimestre de FY2026."
+    }
+   },
+   "deuda_neta_ebitda": 2.7,
+   "deuda_neta_m": 12070,
+   "devuelve_capital": true,
+   "dividendo_por_accion": 0,
+   "divisa_cotizacion": "USD",
+   "ebit_cagr_5y": 4.8,
+   "ebitda_m": 4500,
+   "emite_para_pagar_dividendos": false,
+   "emitio_en_recesion": false,
+   "es_banco_inmobiliaria": false,
+   "fecha_verificacion": "2026-10-06",
+   "financiera_propia": false,
+   "fuentes": [
+    "Resultados FY2026 (22-sep-2026) y 10-K FY2025 (SEC)",
+    "TipRanks",
+    "edgar.tools"
+   ],
+   "historial_anios": 35,
+   "industria": "Distribución de recambios de automoción",
+   "insiders_pct": 0.3,
+   "margen_ebit": 18.3,
+   "margen_ebit_hace_5y": 20.1,
+   "margen_ebit_pico_10y": 20.5,
+   "market_cap_eur_m": 42500,
+   "nombre": "AutoZone, Inc.",
+   "notas_datos": [
+    "El BPA FY2026 (152,55 $) incluye reembolsos de aranceles y un beneficio LIFO no recurrente: el normalizado es algo menor.",
+    "Ratios con ROIC 34 % (definición de TipRanks). El profesor cita ~60 % con otra definición.",
+    "PER medio de 10 años aproximado (~18x, M5: 18–20x).",
+    "Las valoraciones cualitativas (B1–B7, C4) son juicio del analista, no datos de una fuente."
+   ],
+   "origen": "verificado",
+   "pais_sede": "EEUU",
+   "payout_fcf_pct": 105,
+   "per_medio_10y": 18,
+   "per_min_10y": 13,
+   "reinvierte_proyectos": true,
+   "roic": 34,
+   "sbc_fcf_pct": 6.5,
+   "sector_cartera": "consumo discrecional",
+   "sede_grupo": "neutral",
+   "ticker": "AZO",
+   "ventas_cagr_10y": 6.7,
+   "ventas_cagr_5y": 6.8
+  },
+  "GCT": {
+   "acciones_cagr_10y": -2.3,
+   "anio_dato": 2026,
+   "bolsa": "NASDAQ",
+   "bpa_anios_negativos_10y": 0,
+   "bpa_cagr_5y": 25,
+   "bpa_ttm": 4.2,
+   "confianza": "media",
+   "control_familiar": false,
+   "cualitativo": {
+    "b1": {
+     "motivo": "Mercado B2B de mercancía voluminosa; depende de aranceles y de fletes.",
+     "nivel": "amarillo"
+    },
+    "b2": {
+     "motivo": "Los márgenes bajan, sin evidencia de fijar precios.",
+     "precio_sobre_inflacion": false
+    },
+    "b3": {
+     "fuentes": [
+      "efecto red",
+      "escala/coste"
+     ],
+     "motivo": "Plataforma con efecto red, pero con márgenes a la baja.",
+     "nivel": "amarillo"
+    },
+    "b4": {
+     "motivo": "Intermediación y logística de bienes duraderos.",
+     "score": 5
+    },
+    "b5": {
+     "motivo": "Expuesta a aranceles y fletes y con almacenes propios.",
+     "poco_capital": false,
+     "sin_dependencia_externa": false,
+     "sin_deuda_para_funcionar": true
+    },
+    "b6": {
+     "expande_margenes": false,
+     "motivo": "Márgenes a la baja; recompras y caja neta.",
+     "reinvierte_alto_retorno": true,
+     "sobra_caja": true
+    },
+    "b7": {
+     "ciclicidad": "parcial",
+     "materias_primas": false,
+     "motivo": "No bajó en el parón inmobiliario de 2022–2023, pero vende bienes duraderos."
+    },
+    "c4": {
+     "borrador": "Programa de recompra de 111 M$ (ago-2025). Sin historial de guías que evaluar."
+    }
+   },
+   "deuda_neta_ebitda": -1,
+   "devuelve_capital": true,
+   "dividendo_por_accion": 0,
+   "divisa_cotizacion": "USD",
+   "ebit_cagr_5y": 26.8,
+   "emite_para_pagar_dividendos": false,
+   "emitio_en_recesion": false,
+   "es_banco_inmobiliaria": false,
+   "fcf_por_accion": 4.01,
+   "fecha_verificacion": "2026-10-06",
+   "financiera_propia": false,
+   "fuentes": [
+    "Resultados FY2025 (GigaCloud)",
+    "Yahoo Finance",
+    "TipRanks",
+    "SEC (13G/A y Form 4 de Lei Wu)"
+   ],
+   "historial_anios": 4,
+   "industria": "Mercado B2B de mercancía voluminosa",
+   "insiders_pct": 19.8,
+   "margen_ebit": 11.2,
+   "margen_ebit_hace_5y": 16,
+   "margen_ebit_pico_10y": 16.1,
+   "market_cap_eur_m": 1650,
+   "nombre": "GigaCloud Technology Inc.",
+   "notas_datos": [
+    "Salió a bolsa el 18-ago-2022: solo ~4 años de historial. CAGR de BPA de 2023 a 2025.",
+    "ROIC, PER histórico, SBC y analistas sin dato; no hay crisis 2008/2020 como cotizada.",
+    "El 'BPA ajustado' de la empresa es EBITDA por acción: no comparable.",
+    "El margen EBIT cae del 16 % (2020) al 11 % (2025).",
+    "Las valoraciones cualitativas (B1–B7, C4) son juicio del analista, no datos de una fuente."
+   ],
+   "origen": "verificado",
+   "pais_sede": "EEUU (constituida en Islas Caimán; operaciones en China)",
+   "reinvierte_proyectos": true,
+   "sector_cartera": "consumo discrecional",
+   "sede_grupo": "neutral",
+   "ticker": "GCT",
+   "ventas_cagr_5y": 36.2,
+   "volumen_diario_eur_k": 32600
+  },
+  "KRI": {
+   "acciones_cagr_10y": 0,
+   "acciones_diluidas_m": 33.1,
+   "analistas_n": 3,
+   "anio_dato": 2026,
+   "bolsa": "Athens (KRI)",
+   "bpa_ajuste_pct": 12,
+   "bpa_anios_negativos_10y": 1,
+   "bpa_cagr_5y": 16.6,
+   "bpa_ttm": 1.37,
+   "confianza": "media",
+   "control_familiar": true,
+   "crisis": {
+    "caida_ebit_pct": 0,
+    "caida_ventas_pct": 0,
+    "perdidas": false
+   },
+   "cualitativo": {
+    "b1": {
+     "motivo": "Marca láctea con exportaciones del 62 % de las ventas.",
+     "nivel": "verde"
+    },
+    "b2": {
+     "motivo": "La marca bruta cayó del 29,7 % al 27,0 % en 2025 y la marca blanca presiona.",
+     "precio_sobre_inflacion": false
+    },
+    "b3": {
+     "fuentes": [
+      "marca"
+     ],
+     "motivo": "Cuota doméstica de yogur en baja (13,7 % desde 14,9 %).",
+     "nivel": "amarillo"
+    },
+    "b4": {
+     "motivo": "Lácteos y helados de marca.",
+     "score": 5
+    },
+    "b5": {
+     "motivo": "Depende de la leche y de un capex de 26–30 M€ en 2026.",
+     "poco_capital": false,
+     "sin_dependencia_externa": false,
+     "sin_deuda_para_funcionar": true
+    },
+    "b6": {
+     "expande_margenes": true,
+     "motivo": "H1 2026 con márgenes en recuperación; capex alto y caja neta escasa.",
+     "reinvierte_alto_retorno": true,
+     "sobra_caja": false
+    },
+    "b7": {
+     "ciclicidad": "no",
+     "materias_primas": false,
+     "motivo": "En 2020 el beneficio subió y las ventas no cayeron."
+    },
+    "c4": {
+     "borrador": "Cumplió sus guías de 2023 y 2024; para 2026 prevé ventas de ~400 M€ y EBIT de ~60 M€."
+    }
+   },
+   "deuda_neta_ebitda": -0.2,
+   "deuda_neta_m": -11,
+   "devuelve_capital": true,
+   "dividendo_por_accion": 0.45,
+   "divisa_cotizacion": "EUR",
+   "ebit_cagr_5y": 17.9,
+   "ebitda_m": 65.4,
+   "emite_para_pagar_dividendos": false,
+   "emitio_en_recesion": false,
+   "es_banco_inmobiliaria": false,
+   "fecha_verificacion": "2026-10-06",
+   "financiera_propia": false,
+   "fuentes": [
+    "Notas de prensa de resultados 2020–2025 y H1 2026 (Kri-Kri/ATHEX)",
+    "Informes de Eurobank Equities (abril y diciembre de 2025)",
+    "Quartr"
+   ],
+   "historial_anios": 23,
+   "industria": "Lácteos de marca (yogur griego y helados)",
+   "insiders_pct": 45,
+   "margen_ebit": 15.4,
+   "margen_ebit_hace_5y": 15,
+   "margen_ebit_pico_10y": 18.5,
+   "market_cap_eur_m": 1086,
+   "nombre": "Kri-Kri Milk Industry S.A.",
+   "notas_datos": [
+    "BPA de 12 meses normalizado (1,37 €): quita 5,7 M€ de exención fiscal puntual. Con ella: 1,54 €.",
+    "2022 fue un año malo (BPA −76 %, por inflación de costes), contado como año débil en A5.",
+    "Sin verificar: años cotizando, % de los insiders y control familiar, PER medio de 10 años (aproximado).",
+    "Liquidez y continuidad en bolsa sin dato.",
+    "Las valoraciones cualitativas (B1–B7, C4) son juicio del analista, no datos de una fuente."
+   ],
+   "origen": "verificado",
+   "pais_sede": "Grecia",
+   "per_medio_10y": 12,
+   "per_min_10y": 7.8,
+   "reinvierte_proyectos": true,
+   "roic": 25,
+   "sector_cartera": "consumo defensivo",
+   "sede_grupo": "neutral",
+   "ticker": "KRI",
+   "ventas_cagr_5y": 25
+  },
+  "LIN": {
+   "acciones_cagr_10y": -2.5,
+   "acciones_diluidas_m": 464.5,
+   "anio_dato": 2026,
+   "bolsa": "NASDAQ",
+   "bpa_anios_negativos_10y": 0,
+   "bpa_cagr_5y": 14.9,
+   "bpa_ttm": 17.24,
+   "confianza": "alta",
+   "control_familiar": false,
+   "crisis": {
+    "caida_ebit_pct": 0,
+    "caida_ventas_pct": 3,
+    "perdidas": false
+   },
+   "cualitativo": {
+    "b1": {
+     "motivo": "Gases industriales con contratos largos de pago fijo.",
+     "nivel": "verde"
+    },
+    "b2": {
+     "motivo": "Precio +2 % en Q2 2026 y márgenes ajustados del 21 % al 30 %.",
+     "precio_sobre_inflacion": true
+    },
+    "b3": {
+     "fuentes": [
+      "escala/coste",
+      "oligopolio",
+      "costes de cambio",
+      "producto crítico y barato"
+     ],
+     "motivo": "Oligopolio con infraestructura local y contratos largos.",
+     "nivel": "verde"
+    },
+    "b4": {
+     "motivo": "Gases industriales: demanda estable.",
+     "score": 8
+    },
+    "b5": {
+     "motivo": "Capex del 16 % de las ventas; deuda de 1,7x.",
+     "poco_capital": false,
+     "sin_dependencia_externa": true,
+     "sin_deuda_para_funcionar": true
+    },
+    "b6": {
+     "expande_margenes": true,
+     "motivo": "En 2025 devolvió 7,4 B$ con un FCF de ~5,1 B$.",
+     "reinvierte_alto_retorno": true,
+     "sobra_caja": false
+    },
+    "b7": {
+     "ciclicidad": "no",
+     "materias_primas": false,
+     "motivo": "En 2020 las ventas cayeron un 3 % y el EBIT ajustado subió un 10 %."
+    },
+    "c4": {
+     "borrador": "Cumple su guía de BPA: en 2025 +6 % frente a una guía de +4–7 %."
+    }
+   },
+   "deuda_neta_ebitda": 1.7,
+   "deuda_neta_m": 22500,
+   "devuelve_capital": true,
+   "dividendo_por_accion": 6,
+   "divisa_cotizacion": "USD",
+   "ebit_cagr_5y": 11.7,
+   "ebitda_m": 13600,
+   "emite_para_pagar_dividendos": false,
+   "emitio_en_recesion": false,
+   "es_banco_inmobiliaria": false,
+   "fcf_por_accion": 10.9,
+   "fecha_verificacion": "2026-10-06",
+   "financiera_propia": false,
+   "fuentes": [
+    "Resultados Q2 2026, FY2025 y FY2020 (SEC/Linde)",
+    "tickerleague (acciones diluidas)"
+   ],
+   "historial_anios": 34,
+   "industria": "Gases industriales",
+   "insiders_pct": 0.3,
+   "margen_ebit": 29.7,
+   "margen_ebit_hace_5y": 21.3,
+   "margen_ebit_pico_10y": 29.8,
+   "market_cap_eur_m": 198000,
+   "nombre": "Linde plc",
+   "notas_datos": [
+    "BPA ajustado de 12 meses (17,24 $); el BPA contable es 15,50 $ (PER 31,6x en vez de ~28x).",
+    "Deuda neta, dividendo, PER medio y mínimo: aproximados.",
+    "Los CAGR usan magnitudes ajustadas: las contables de 2020 están distorsionadas por la fusión con Linde AG.",
+    "Las valoraciones cualitativas (B1–B7, C4) son juicio del analista, no datos de una fuente."
+   ],
+   "origen": "verificado",
+   "pais_sede": "Reino Unido",
+   "payout_fcf_pct": 145,
+   "per_medio_10y": 28,
+   "per_min_10y": 22,
+   "reinvierte_proyectos": true,
+   "roic": 23.5,
+   "sbc_fcf_pct": 2.6,
+   "sector_cartera": "materiales",
+   "sede_grupo": "preferente",
+   "ticker": "LIN",
+   "ventas_cagr_5y": 4.5
+  }
+ }
+}
