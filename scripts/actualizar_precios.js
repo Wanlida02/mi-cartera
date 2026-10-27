@@ -96,6 +96,19 @@ async function divisas(lista) {
   fx.fecha = fechas.length ? fechas[fechas.length - 1] : null; return { fx, fallos };
 }
 
+/* Diagnóstico: guarda el principio de lo que devuelve cada fuente para una acción de prueba (solo cuando no se obtiene ningún precio) */
+async function sondear() {
+  const urls = { google: 'https://www.google.com/finance/quote/AAPL:NASDAQ?hl=en', stooq: 'https://stooq.com/q/l/?s=aapl.us&f=sd2t2c&h&e=csv', stooq2: 'https://stooq.com/q/d/l/?s=aapl.us&i=d',
+    yahoo: 'https://query1.finance.yahoo.com/v8/finance/chart/AAPL?range=5d&interval=1d', cnbc: 'https://quote.cnbc.com/quote-html-webservice/restQuote/symbolType/symbol?symbols=AAPL&requestMethod=itv&noform=1&partnerId=2&fund=1&exthrs=1&output=json&events=1',
+    nasdaq: 'https://api.nasdaq.com/api/quote/AAPL/info?assetclass=stocks', stockanalysis: 'https://stockanalysis.com/stocks/aapl/', marketwatch: 'https://www.marketwatch.com/investing/stock/aapl' };
+  const out = {};
+  for (const [k, u] of Object.entries(urls)) {
+    try { const r = await fetch(u, { headers: UA, signal: AbortSignal.timeout(20000), redirect: 'follow' }); const t = await r.text();
+      out[k] = { status: r.status, url: r.url, largo: t.length, inicio: t.slice(0, 500), atributos: (t.match(/data-[a-z-]*(?:price|currency)[a-z-]*="[^"]*"/g) || []).slice(0, 8), tiene_consent: /consent/i.test(t) };
+    } catch (e) { out[k] = { error: e.message }; }
+  }
+  return out;
+}
 async function principal() {
   const cfg = JSON.parse(fs.readFileSync(path.join(RAIZ, 'simbolos.json'), 'utf8'));
   let previo = {}; try { previo = JSON.parse(fs.readFileSync(OUT, 'utf8')); } catch (e) { /* primera vez */ }
@@ -126,7 +139,7 @@ async function principal() {
   const ordenado = Object.assign({}, salida, { precios: Object.fromEntries(Object.keys(precios).sort().map(k => [k, precios[k]])) });
   if (hechos === 0 && tareas.length) {
     console.error('No se obtuvo ningún precio; no se sobrescribe precios.json (diagnóstico en precios_diag.json)'); fallos.slice(0, 3).forEach(f => console.error(f.ticker, f.motivo));
-    fs.writeFileSync(path.join(RAIZ, 'precios_diag.json'), JSON.stringify({ generado: ahora, fallos, divisas_fallidas: fxFallos, fx }, null, 1) + '\n'); process.exit(1);
+    fs.writeFileSync(path.join(RAIZ, 'precios_diag.json'), JSON.stringify({ generado: ahora, sonda: await sondear(), fallos: fallos.slice(0, 5), divisas_fallidas: fxFallos, fx }, null, 1) + '\n'); process.exit(1);
   }
   fs.writeFileSync(OUT, JSON.stringify(ordenado, null, 1) + '\n');
   console.log('Precios: ' + hechos + '/' + tareas.length + ' · fallos: ' + (fallos.map(f => f.ticker).join(', ') || 'ninguno') + ' · divisas: ' + Object.keys(fx).join(','));
