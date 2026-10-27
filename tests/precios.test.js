@@ -14,6 +14,9 @@ assert.throws(() => P.leerGoogle('<html>nada</html>'));
 r = P.leerCnbc({ FormattedQuoteResult: { FormattedQuote: [{ symbol: 'AAPL', code: 0, last: '1,347.10', last_time: '2026-10-27T16:00:00.000-0400' }] } }, 'USD'); assert.equal(r.precio, 1347.1); assert.equal(r.fecha, '2026-10-27'); assert.equal(r.divisa, 'USD');
 assert.throws(() => P.leerCnbc({ FormattedQuoteResult: { FormattedQuote: [{ code: 1 }] } }, 'USD'));
 r = P.leerNasdaq({ data: { primaryData: { lastSalePrice: '$347.25', lastTradeTimestamp: 'Oct 27, 2026 4:00 PM ET' } } }); assert.equal(r.precio, 347.25); assert.equal(r.fecha, '2026-10-27');
+r = P.leerTencent('v_sz300750="51~CATL~300750~220.41~219.50~219.00~1~0~0~0~0~0~0~0~0~0~0~0~0~0~0~0~0~0~0~0~0~0~0~0~0~20261027161400~1.2";', 'CNY'); assert.equal(r.precio, 220.41); assert.equal(r.fecha, '2026-10-27'); assert.equal(r.divisa, 'CNY');
+r = P.leerTencent('v_hk03750="100~CATL~03750~348.60~340~0~0~0~0~0~0~0~0~0~0~0~0~0~0~0~0~0~0~0~0~0~0~0~0~0~0~2026/10/27 16:08:48~1";', 'HKD'); assert.equal(r.fecha, '2026-10-27');
+assert.throws(() => P.leerTencent('v_pv_none_match="1";', 'CNY'));
 r = P.leerStooq('Symbol,Date,Time,Close\r\nTSM.US,2026-10-23,22:00:09,418.51\r\n'); assert.equal(r.precio, 418.51); assert.equal(r.fecha, '2026-10-23');
 assert.throws(() => P.leerStooq('Symbol,Date,Time,Close\r\nXXX.US,N/D,N/D,N/D\r\n'));
 

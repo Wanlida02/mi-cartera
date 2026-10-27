@@ -74,6 +74,19 @@ async function google(sym) {
   let ult; for (const c of cand) { try { const r = await pedir('https://www.google.com/finance/quote/' + encodeURIComponent(c).replace('%3A', ':') + '?hl=en', 2); return leerGoogle(await r.text()); } catch (e) { ult = e; } }
   throw ult;
 }
+/* Tencent (texto «v_sz300750="51~nombre~300750~precio~…"»): bolsas chinas y Hong Kong, más fiable que CNBC para acciones A */
+function leerTencent(txt, divisa) {
+  const m = txt.match(/="([^"]*)"/); if (!m) throw new Error('Tencent sin datos'); const c = m[1].split('~');
+  const precio = num(Number(c[3])); if (!precio) throw new Error('Tencent sin precio');
+  const t = String(c[30] || ''); let fecha = null, x;
+  if ((x = t.match(/^(\d{4})(\d\d)(\d\d)/))) fecha = x[1] + '-' + x[2] + '-' + x[3]; else if ((x = t.match(/^(\d{4})\/(\d\d)\/(\d\d)/))) fecha = x[1] + '-' + x[2] + '-' + x[3];
+  return { precio, divisa, fecha: fecha || new Date().toISOString().slice(0, 10), hora: null };
+}
+async function tencent(sym) {
+  const m = sym.match(/^(\d+)\.(SZ|SS|HK)$/); if (!m) throw new Error('Tencent solo bolsas chinas y HK');
+  const q = m[2] === 'SZ' ? 'sz' + m[1] : m[2] === 'SS' ? 'sh' + m[1] : 'hk' + m[1].padStart(5, '0');
+  const r = await pedir('https://qt.gtimg.cn/q=' + q, 2); return leerTencent(Buffer.from(await r.arrayBuffer()).toString('latin1'), m[2] === 'SZ' || m[2] === 'SS' ? 'CNY' : 'HKD');
+}
 /* CNBC (JSON, sin clave; funciona desde GitHub). US: símbolo tal cual; resto: SIMBOLO-PAÍS */
 const CPAIS = { MC: ['ES', 'EUR'], PA: ['FR', 'EUR'], AT: ['GR', 'EUR'], TW: ['TW', 'TWD'], HK: ['HK', 'HKD'], L: ['GB', 'GBP'], DE: ['DE', 'EUR'], MI: ['IT', 'EUR'], AS: ['NL', 'EUR'], SW: ['CH', 'CHF'], T: ['JP', 'JPY'], SZ: ['CN', 'CNY'] };
 function leerCnbc(j, divDef) {
@@ -101,7 +114,7 @@ async function nasdaq(sym) {
 async function precioDe(candidatos) {
   const errores = [];
   for (const s of candidatos) {
-    for (const [nombre, f] of [['yahoo', yahoo], ['cnbc', cnbc], ['nasdaq', nasdaq]]) {
+    for (const [nombre, f] of [['yahoo', yahoo], ['tencent', tencent], ['cnbc', cnbc], ['nasdaq', nasdaq]]) {
       try { const p = await f(s); return Object.assign(p, { simbolo: s, fuente: nombre }); } catch (e) { errores.push(s + '/' + nombre + ': ' + e.message); }
     }
   }
@@ -175,4 +188,4 @@ async function principal() {
   if (fallos.length > tareas.length / 2) process.exit(1);                    // casi todo falla: que el Action avise
 }
 if (require.main === module) principal().catch(e => { console.error(e); process.exit(1); });
-module.exports = { leerYahoo, leerStooq, leerGoogle, leerCnbc, leerNasdaq, fechaLocal };
+module.exports = { leerYahoo, leerStooq, leerGoogle, leerTencent, leerCnbc, leerNasdaq, fechaLocal };
