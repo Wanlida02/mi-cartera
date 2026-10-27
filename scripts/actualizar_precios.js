@@ -74,10 +74,34 @@ async function google(sym) {
   let ult; for (const c of cand) { try { const r = await pedir('https://www.google.com/finance/quote/' + encodeURIComponent(c).replace('%3A', ':') + '?hl=en', 2); return leerGoogle(await r.text()); } catch (e) { ult = e; } }
   throw ult;
 }
+/* CNBC (JSON, sin clave; funciona desde GitHub). US: símbolo tal cual; resto: SIMBOLO-PAÍS */
+const CPAIS = { MC: ['ES', 'EUR'], PA: ['FR', 'EUR'], AT: ['GR', 'EUR'], TW: ['TW', 'TWD'], HK: ['HK', 'HKD'], L: ['GB', 'GBP'], DE: ['DE', 'EUR'], MI: ['IT', 'EUR'], AS: ['NL', 'EUR'], SW: ['CH', 'CHF'], T: ['JP', 'JPY'], SZ: ['CN', 'CNY'] };
+function leerCnbc(j, divDef) {
+  const q = j && j.FormattedQuoteResult && j.FormattedQuoteResult.FormattedQuote && j.FormattedQuoteResult.FormattedQuote[0];
+  if (!q || (q.code && q.code !== 0)) throw new Error('CNBC sin datos');
+  const precio = num(Number(String(q.last || '').replace(/,/g, ''))); const div = q.currencyCode || divDef; if (!precio || !div) throw new Error('CNBC sin precio o divisa');
+  const lt = q.last_time || ''; return { precio, divisa: div, fecha: /^\d{4}-\d\d-\d\d/.test(lt) ? lt.slice(0, 10) : new Date().toISOString().slice(0, 10), hora: lt ? new Date(lt).toISOString() : null };
+}
+async function cnbc(sym) {
+  const m = sym.match(/^(.+)\.([A-Z]+)$/); let c = sym, div = 'USD';
+  if (m) { const x = CPAIS[m[2]]; if (!x) throw new Error('CNBC: bolsa desconocida'); c = m[1] + '-' + x[0]; div = x[1]; }
+  const r = await pedir('https://quote.cnbc.com/quote-html-webservice/restQuote/symbolType/symbol?symbols=' + encodeURIComponent(c) + '&requestMethod=itv&noform=1&partnerId=2&fund=1&exthrs=1&output=json&events=1', 2);
+  return leerCnbc(await r.json(), div);
+}
+/* Nasdaq (JSON): solo EE. UU. */
+function leerNasdaq(j) {
+  const d = j && j.data && j.data.primaryData; const precio = d && num(Number(String(d.lastSalePrice || '').replace(/[$,]/g, ''))); if (!precio) throw new Error('Nasdaq sin precio');
+  const t = Date.parse(String(d.lastTradeTimestamp || '').replace(/ ET.*$/, ''));
+  return { precio, divisa: 'USD', fecha: isFinite(t) ? new Date(t).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10), hora: null };
+}
+async function nasdaq(sym) {
+  if (sym.includes('.')) throw new Error('Nasdaq solo EE. UU.');
+  const r = await pedir('https://api.nasdaq.com/api/quote/' + encodeURIComponent(sym) + '/info?assetclass=stocks', 2); return leerNasdaq(await r.json());
+}
 async function precioDe(candidatos) {
   const errores = [];
   for (const s of candidatos) {
-    for (const [nombre, f] of [['yahoo', yahoo], ['google', google], ['stooq', stooq]]) {
+    for (const [nombre, f] of [['yahoo', yahoo], ['cnbc', cnbc], ['nasdaq', nasdaq]]) {
       try { const p = await f(s); return Object.assign(p, { simbolo: s, fuente: nombre }); } catch (e) { errores.push(s + '/' + nombre + ': ' + e.message); }
     }
   }
@@ -101,10 +125,13 @@ async function sondear() {
   const urls = { google: 'https://www.google.com/finance/quote/AAPL:NASDAQ?hl=en', stooq: 'https://stooq.com/q/l/?s=aapl.us&f=sd2t2c&h&e=csv', stooq2: 'https://stooq.com/q/d/l/?s=aapl.us&i=d',
     yahoo: 'https://query1.finance.yahoo.com/v8/finance/chart/AAPL?range=5d&interval=1d', cnbc: 'https://quote.cnbc.com/quote-html-webservice/restQuote/symbolType/symbol?symbols=AAPL&requestMethod=itv&noform=1&partnerId=2&fund=1&exthrs=1&output=json&events=1',
     nasdaq: 'https://api.nasdaq.com/api/quote/AAPL/info?assetclass=stocks', stockanalysis: 'https://stockanalysis.com/stocks/aapl/', marketwatch: 'https://www.marketwatch.com/investing/stock/aapl' };
+  const cn = x => 'https://quote.cnbc.com/quote-html-webservice/restQuote/symbolType/symbol?symbols=' + x + '&requestMethod=itv&noform=1&partnerId=2&fund=1&exthrs=1&output=json&events=1';
+  for (const x of ['AIR-FR', 'AENA-ES', 'KRI-GR', '2330-TW', '3750-HK', '300750-CN', 'IDR-ES', 'SAF-FR']) urls['cnbc_' + x] = cn(x);
+  for (const x of ['epa/AIR', 'bme/AENA', 'ath/KRI', 'tpe/2330']) urls['sa_' + x] = 'https://stockanalysis.com/quote/' + x + '/';
   const out = {};
   for (const [k, u] of Object.entries(urls)) {
     try { const r = await fetch(u, { headers: UA, signal: AbortSignal.timeout(20000), redirect: 'follow' }); const t = await r.text();
-      out[k] = { status: r.status, url: r.url, largo: t.length, inicio: t.slice(0, 500), atributos: (t.match(/data-[a-z-]*(?:price|currency)[a-z-]*="[^"]*"/g) || []).slice(0, 8), tiene_consent: /consent/i.test(t) };
+      out[k] = { status: r.status, url: r.url, largo: t.length, inicio: t.slice(0, k.startsWith('cnbc') ? 700 : 300), contexto: /^sa_|^stockanalysis/.test(k) ? (t.match(/.{0,60}(?:data-price|"price"|text-4xl).{0,160}/g) || []).slice(0, 4) : undefined, atributos: (t.match(/data-[a-z-]*(?:price|currency)[a-z-]*="[^"]*"/g) || []).slice(0, 8), tiene_consent: /consent/i.test(t) };
     } catch (e) { out[k] = { error: e.message }; }
   }
   return out;
@@ -142,8 +169,9 @@ async function principal() {
     fs.writeFileSync(path.join(RAIZ, 'precios_diag.json'), JSON.stringify({ generado: ahora, sonda: await sondear(), fallos: fallos.slice(0, 5), divisas_fallidas: fxFallos, fx }, null, 1) + '\n'); process.exit(1);
   }
   fs.writeFileSync(OUT, JSON.stringify(ordenado, null, 1) + '\n');
+  if (fallos.length) fs.writeFileSync(path.join(RAIZ, 'precios_diag.json'), JSON.stringify({ generado: ahora, sonda: await sondear(), fallos: fallos.slice(0, 12), divisas_fallidas: fxFallos }, null, 1) + '\n');
   console.log('Precios: ' + hechos + '/' + tareas.length + ' · fallos: ' + (fallos.map(f => f.ticker).join(', ') || 'ninguno') + ' · divisas: ' + Object.keys(fx).join(','));
   if (fallos.length > tareas.length / 2) process.exit(1);                    // casi todo falla: que el Action avise
 }
 if (require.main === module) principal().catch(e => { console.error(e); process.exit(1); });
-module.exports = { leerYahoo, leerStooq, leerGoogle, fechaLocal };
+module.exports = { leerYahoo, leerStooq, leerGoogle, leerCnbc, leerNasdaq, fechaLocal };

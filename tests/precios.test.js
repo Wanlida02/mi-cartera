@@ -11,6 +11,9 @@ assert.throws(() => P.leerYahoo({ chart: { result: null } })); assert.throws(() 
 // Stooq
 r = P.leerGoogle('<div class="x" data-source="AIR" data-currency-code="EUR" data-last-price="1,234.56" data-last-normal-market-timestamp="1793000000"></div>'); assert.equal(r.precio, 1234.56); assert.equal(r.divisa, 'EUR');
 assert.throws(() => P.leerGoogle('<html>nada</html>'));
+r = P.leerCnbc({ FormattedQuoteResult: { FormattedQuote: [{ symbol: 'AAPL', code: 0, last: '1,347.10', last_time: '2026-10-27T16:00:00.000-0400' }] } }, 'USD'); assert.equal(r.precio, 1347.1); assert.equal(r.fecha, '2026-10-27'); assert.equal(r.divisa, 'USD');
+assert.throws(() => P.leerCnbc({ FormattedQuoteResult: { FormattedQuote: [{ code: 1 }] } }, 'USD'));
+r = P.leerNasdaq({ data: { primaryData: { lastSalePrice: '$347.25', lastTradeTimestamp: 'Oct 27, 2026 4:00 PM ET' } } }); assert.equal(r.precio, 347.25); assert.equal(r.fecha, '2026-10-27');
 r = P.leerStooq('Symbol,Date,Time,Close\r\nTSM.US,2026-10-23,22:00:09,418.51\r\n'); assert.equal(r.precio, 418.51); assert.equal(r.fecha, '2026-10-23');
 assert.throws(() => P.leerStooq('Symbol,Date,Time,Close\r\nXXX.US,N/D,N/D,N/D\r\n'));
 
