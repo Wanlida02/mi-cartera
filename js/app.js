@@ -54,6 +54,12 @@
       D.watchResto.map(v => filaVal(v, '<span class="pill">' + pct(v.distEntrada, 0) + '</span><div class="meta">vs entrada</div>')).join('') + '</details>';
     const aparte = D.sinFicha.concat(D.sinCalcular);
     h += '<p class="mut small">' + D.ocultas + ' posiciones en zona intermedia (ocultas).' + (aparte.length ? ' Sin valorar: ' + aparte.map(x => esc(x.nombre)).join(', ') + '.' : '') + '</p>';
+    const pi = Store.preciosInfo();
+    if (pi && pi.generado) {
+      const fall = ((pi.estado || {}).fallos || []).map(f => f.ticker.replace('@ficha', ' (ficha)'));
+      h += '<p class="mut small">Precios automáticos: ' + new Date(pi.generado).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) + ' · ' + ((pi.estado || {}).ok || 0) + '/' + ((pi.estado || {}).total || 0) + ' valores' +
+        (fall.length ? ' · sin actualizar: ' + esc(fall.join(', ')) : '') + '.</p>';
+    }
     return h;
   }
 
@@ -153,7 +159,7 @@
           const n = id => Number(val(id));
           const v = { b: n('a-b'), c: n('a-c'), e: n('a-le'), s: n('a-ls'), u: n('a-usd'), y: n('a-cny'), t: n('a-twd') };
           if (Object.values(v).some(x => !(x > 0)) || v.c >= v.b) return toast('Revisa los valores (la barata debe ser mayor que la cara)');
-          Object.assign(A, { umbral_barata: v.b, umbral_cara: v.c, lim_empresa: v.e, lim_sector: v.s }); Object.assign(A.fx, { USD: v.u, CNY: v.y, TWD: v.t, fecha: L.today() });
+          Object.assign(A, { umbral_barata: v.b, umbral_cara: v.c, lim_empresa: v.e, lim_sector: v.s }); Object.assign(A.fx, { USD: v.u, CNY: v.y, TWD: v.t, fecha: L.today(), manual: true });
           guardar({ ok: true, msg: 'Ajustes guardados' });
         };
         const bo = (id, f) => { const b = dd.querySelector(id); if (b) b.onclick = f; };

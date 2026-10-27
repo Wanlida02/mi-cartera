@@ -3,7 +3,9 @@
    La sincronización con Google Drive se añade como otro «backend» sin cambiar el resto de la app. */
 const Store = (function () {
   const KEY = 'mi-cartera:datos:v1', BK = 'mi-cartera:copia-previa', META = 'mi-cartera:meta';
-  let data = null, aviso = '';
+  const INFO = 'mi-cartera:precios-info';
+  let data = null, aviso = '', info = null;
+  try { info = JSON.parse(localStorage.getItem(INFO) || 'null'); } catch (e) { info = null; }
   const subs = [];
 
   function load() {
@@ -49,10 +51,13 @@ const Store = (function () {
         if (!nuevo || !(nuevo.precio > 0)) return;
         if (!ant || (nuevo.fecha_precio || '') > (ant.fecha_precio || '') || ((nuevo.fecha_precio || '') === (ant.fecha_precio || '') && ant.fuente !== 'manual')) { data.precios[tk] = nuevo; n++; }
       });
-      if (j.fx && (j.fx.fecha || '') > (data.ajustes.fx.fecha || '')) { data.ajustes.fx = Object.assign({}, data.ajustes.fx, j.fx); n++; }
+      const fl = data.ajustes.fx;   // divisas: gana la fecha más reciente; un ajuste manual de hoy se respeta hasta mañana
+      if (j.fx && j.fx.fecha && (j.fx.fecha > (fl.fecha || '') || (j.fx.fecha === fl.fecha && !fl.manual))) { data.ajustes.fx = Object.assign({}, fl, j.fx, { manual: false }); n++; }
+      try { localStorage.setItem(INFO, JSON.stringify({ generado: j.generado, estado: j.estado })); } catch (e) { /* sin info */ }
+      info = { generado: j.generado, estado: j.estado };
       if (n) save(true);
       return n;
     } catch (e) { return false; }
   }
-  return { load, save, adopt, importar, exportar, marcarCopia, ultimaCopia, cargarPreciosAuto, get: () => data, aviso: () => aviso, onChange: f => subs.push(f) };
+  return { load, save, adopt, importar, exportar, marcarCopia, ultimaCopia, cargarPreciosAuto, get: () => data, preciosInfo: () => info, aviso: () => aviso, onChange: f => subs.push(f) };
 })();

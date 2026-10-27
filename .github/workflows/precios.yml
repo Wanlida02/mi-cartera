@@ -1,0 +1,53 @@
+name: Actualizar precios
+# L-V a las 9:35 y 15:35 (Madrid). GitHub programa en UTC, así que hay dos horas por franja (verano/invierno);
+# el paso «Comprobar hora» descarta la que no toca. Los retrasos de GitHub (hasta ~30 min) se toleran.
+on:
+  schedule:
+    - cron: '35 7,8 * * 1-5'
+    - cron: '35 13,14 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      forzar:
+        description: 'Ejecutar aunque no sea la hora'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: precios
+  cancel-in-progress: false
+
+jobs:
+  precios:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Comprobar hora
+        id: hora
+        run: |
+          H=$(TZ=Europe/Madrid date +%H)
+          echo "Hora en Madrid: $H"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "$H" = "09" ] || [ "$H" = "10" ] || [ "$H" = "15" ] || [ "$H" = "16" ]; then
+            echo "ejecutar=si" >> "$GITHUB_OUTPUT"
+          else
+            echo "ejecutar=no" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Actualizar precios
+        if: steps.hora.outputs.ejecutar == 'si'
+        run: node scripts/actualizar_precios.js
+      - name: Guardar cambios
+        if: steps.hora.outputs.ejecutar == 'si'
+        run: |
+          git config user.name "precios-bot"
+          git config user.email "precios-bot@users.noreply.github.com"
+          git add precios.json
+          if git diff --cached --quiet; then echo "Sin cambios"; exit 0; fi
+          git commit -m "Precios $(TZ=Europe/Madrid date '+%Y-%m-%d %H:%M')"
+          git pull --rebase origin main
+          git push origin HEAD:main

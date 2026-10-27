@@ -187,13 +187,16 @@ const Logic = (function () {
 
   /* ───── Valoración de una empresa (motor Val) ───── */
   function precioFicha(d, tk) {
-    const f = d.fichas[tk], pr = d.precios[tk]; let precio = f.precio, fecha = f.fecha_precio || '';
+    const f = d.fichas[tk], pf = d.precios[tk + '@ficha'];
+    let pr = d.precios[tk], precio = f.precio, fecha = f.fecha_precio || '';
+    // Cotización en la divisa de la ficha (p. ej. TSM: ADR en USD, ficha en TWD → se usa 2330.TW)
+    if (pf && isN(pf.precio) && pf.divisa === f.divisa && (!pr || pr.divisa !== f.divisa || (pf.fecha_precio || '') >= (pr.fecha_precio || ''))) pr = pf;
     if (pr && isN(pr.precio) && (pr.fecha_precio || '') >= fecha) {
       if (pr.divisa === f.divisa) { precio = pr.precio; fecha = pr.fecha_precio || ''; }
       else if ((pr.divisa === 'EUR' && f.divisa === 'USD') || (pr.divisa === 'USD' && f.divisa === 'EUR')) {
         const e = aEur(d, pr.precio, pr.divisa), k = fxPorEur(d, f.divisa);
         if (e != null && k) { precio = e * k; fecha = pr.fecha_precio || ''; }
-      }   // CNY/TWD (ADR de TSM, H-share de CATL): no se convierten; manda el precio de la ficha
+      }   // Otras divisas (ADR de TSM, H-share de CATL) no se convierten: valen distinto por ratio/prima; se usa la cotización «@ficha» o el precio de la ficha
     }
     return { precio, fecha };
   }
