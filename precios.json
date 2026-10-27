@@ -1,0 +1,412 @@
+{
+ "generado": "2026-10-27T21:51:17.866Z",
+ "estado": {
+  "ok": 39,
+  "total": 39,
+  "fallos": [],
+  "divisas_fallidas": []
+ },
+ "fx": {
+  "EUR": 1,
+  "USD": 1.115,
+  "CNY": 7.4343,
+  "TWD": 36.430351,
+  "HKD": 8.7466,
+  "GBP": 0.83658,
+  "JPY": 175.97,
+  "CHF": 0.9239,
+  "fecha": "2026-10-27"
+ },
+ "precios": {
+  "ACMR": {
+   "ticker": "ACMR",
+   "precio": 51.97,
+   "divisa": "USD",
+   "fecha_precio": "2026-10-27",
+   "hora": "2026-10-27T20:00:00.000Z",
+   "simbolo": "ACMR",
+   "fuente": "cnbc",
+   "actualizado": "2026-10-27T21:51:17.866Z"
+  },
+  "AENA": {
+   "ticker": "AENA",
+   "precio": 27,
+   "divisa": "EUR",
+   "fecha_precio": "2026-10-27",
+   "hora": "2026-10-27T16:35:19.000Z",
+   "simbolo": "AENA.MC",
+   "fuente": "cnbc",
+   "actualizado": "2026-10-27T21:51:17.866Z"
+  },
+  "AER": {
+   "ticker": "AER",
+   "precio": 150.05,
+   "divisa": "USD",
+   "fecha_precio": "2026-10-27",
+   "hora": "2026-10-27T20:10:00.000Z",
+   "simbolo": "AER",
+   "fuente": "cnbc",
+   "actualizado": "2026-10-27T21:51:17.866Z"
+  },
+  "AIR": {
+   "ticker": "AIR",
+   "precio": 192.74,
+   "divisa": "EUR",
+   "fecha_precio": "2026-10-27",
+   "hora": "2026-10-27T16:39:20.000Z",
+   "simbolo": "AIR.PA",
+   "fuente": "cnbc",
+   "actualizado": "2026-10-27T21:51:17.866Z"
+  },
+  "AMZN": {
+   "ticker": "AMZN",
+   "precio": 253.1,
+   "divisa": "USD",
+   "fecha_precio": "2026-10-27",
+   "hora": "2026-10-27T20:00:00.000Z",
+   "simbolo": "AMZN",
+   "fuente": "cnbc",
+   "actualizado": "2026-10-27T21:51:17.866Z"
+  },
+  "AZO": {
+   "ticker": "AZO",
+   "precio": 3143.16,
+   "divisa": "USD",
+   "fecha_precio": "2026-10-27",
+   "hora": "2026-10-27T20:10:00.000Z",
+   "simbolo": "AZO",
+   "fuente": "cnbc",
+   "actualizado": "2026-10-27T21:51:17.866Z"
+  },
+  "BA": {
+   "ticker": "BA",
+   "precio": 168.18,
+   "divisa": "USD",
+   "fecha_precio": "2026-10-27",
+   "hora": "2026-10-27T20:10:00.000Z",
+   "simbolo": "BA",
+   "fuente": "cnbc",
+   "actualizado": "2026-10-27T21:51:17.866Z"
+  },
+  "CATL": {
+   "ticker": "CATL",
+   "precio": 348.6,
+   "divisa": "HKD",
+   "fecha_precio": "2026-10-27",
+   "hora": "2026-10-27T00:00:00.000Z",
+   "simbolo": "3750.HK",
+   "fuente": "cnbc",
+   "actualizado": "2026-10-27T21:51:17.866Z"
+  },
+  "CATL@ficha": {
+   "ticker": "CATL",
+   "precio": 233,
+   "divisa": "CNY",
+   "fecha_precio": "2026-10-27",
+   "hora": "2026-10-27T07:00:00.000Z",
+   "simbolo": "300750.SZ",
+   "fuente": "cnbc",
+   "actualizado": "2026-10-27T21:51:17.866Z"
+  },
+  "CBNA": {
+   "ticker": "CBNA",
+   "precio": 51.36,
+   "divisa": "USD",
+   "fecha_precio": "2026-10-27",
+   "hora": "2026-10-27T20:10:00.000Z",
+   "simbolo": "CBNA",
+   "fuente": "cnbc",
+   "actualizado": "2026-10-27T21:51:17.866Z"
+  },
+  "CRWD": {
+   "ticker": "CRWD",
+   "precio": 268.02,
+   "divisa": "USD",
+   "fecha_precio": "2026-10-27",
+   "hora": "2026-10-27T20:00:00.000Z",
+   "simbolo": "CRWD",
+   "fuente": "cnbc",
+   "actualizado": "2026-10-27T21:51:17.866Z"
+  },
+  "ESEA": {
+   "ticker": "ESEA",
+   "precio": 66.19,
+   "divisa": "USD",
+   "fecha_precio": "2026-10-27",
+   "hora": "2026-10-27T20:00:01.169Z",
+   "simbolo": "ESEA",
+   "fuente": "cnbc",
+   "actualizado": "2026-10-27T21:51:17.866Z"
+  },
+  "FDX": {
+   "ticker": "FDX",
+   "precio": 307.1,
+   "divisa": "USD",
+   "fecha_precio": "2026-10-27",
+   "hora": "2026-10-27T20:10:00.000Z",
+   "simbolo": "FDX",
+   "fuente": "cnbc",
+   "actualizado": "2026-10-27T21:51:17.866Z"
+  },
+  "FSLR": {
+   "ticker": "FSLR",
+   "precio": 175.85,
+   "divisa": "USD",
+   "fecha_precio": "2026-10-27",
+   "hora": "2026-10-27T20:00:00.000Z",
+   "simbolo": "FSLR",
+   "fuente": "cnbc",
+   "actualizado": "2026-10-27T21:51:17.866Z"
+  },
+  "GCT": {
+   "ticker": "GCT",
+   "precio": 59.6,
+   "divisa": "USD",
+   "fecha_precio": "2026-10-27",
+   "hora": "2026-10-27T20:00:00.000Z",
+   "simbolo": "GCT",
+   "fuente": "cnbc",
+   "actualizado": "2026-10-27T21:51:17.866Z"
+  },
+  "GOOGL": {
+   "ticker": "GOOGL",
+   "precio": 320.58,
+   "divisa": "USD",
+   "fecha_precio": "2026-10-27",
+   "hora": "2026-10-27T20:00:00.000Z",
+   "simbolo": "GOOGL",
+   "fuente": "cnbc",
+   "actualizado": "2026-10-27T21:51:17.866Z"
+  },
+  "GS": {
+   "ticker": "GS",
+   "precio": 911.77,
+   "divisa": "USD",
+   "fecha_precio": "2026-10-27",
+   "hora": "2026-10-27T20:10:00.000Z",
+   "simbolo": "GS",
+   "fuente": "cnbc",
+   "actualizado": "2026-10-27T21:51:17.866Z"
+  },
+  "HALO": {
+   "ticker": "HALO",
+   "precio": 128.5,
+   "divisa": "USD",
+   "fecha_precio": "2026-10-27",
+   "hora": "2026-10-27T20:00:00.000Z",
+   "simbolo": "HALO",
+   "fuente": "cnbc",
+   "actualizado": "2026-10-27T21:51:17.866Z"
+  },
+  "IDR": {
+   "ticker": "IDR",
+   "precio": 63.22,
+   "divisa": "EUR",
+   "fecha_precio": "2026-10-27",
+   "hora": "2026-10-27T16:41:28.000Z",
+   "simbolo": "IDR.MC",
+   "fuente": "cnbc",
+   "actualizado": "2026-10-27T21:51:17.866Z"
+  },
+  "KRI": {
+   "ticker": "KRI",
+   "precio": 34.5,
+   "divisa": "EUR",
+   "fecha_precio": "2026-10-27",
+   "hora": "2026-10-27T15:14:33.986Z",
+   "simbolo": "KRI.AT",
+   "fuente": "cnbc",
+   "actualizado": "2026-10-27T21:51:17.866Z"
+  },
+  "LAUR": {
+   "ticker": "LAUR",
+   "precio": 37.64,
+   "divisa": "USD",
+   "fecha_precio": "2026-10-27",
+   "hora": "2026-10-27T20:00:00.000Z",
+   "simbolo": "LAUR",
+   "fuente": "cnbc",
+   "actualizado": "2026-10-27T21:51:17.866Z"
+  },
+  "LIN": {
+   "ticker": "LIN",
+   "precio": 508.65,
+   "divisa": "USD",
+   "fecha_precio": "2026-10-27",
+   "hora": "2026-10-27T20:00:00.000Z",
+   "simbolo": "LIN",
+   "fuente": "cnbc",
+   "actualizado": "2026-10-27T21:51:17.866Z"
+  },
+  "MCD": {
+   "ticker": "MCD",
+   "precio": 249.47,
+   "divisa": "USD",
+   "fecha_precio": "2026-10-27",
+   "hora": "2026-10-27T20:10:00.000Z",
+   "simbolo": "MCD",
+   "fuente": "cnbc",
+   "actualizado": "2026-10-27T21:51:17.866Z"
+  },
+  "MCO": {
+   "ticker": "MCO",
+   "precio": 474,
+   "divisa": "USD",
+   "fecha_precio": "2026-10-27",
+   "hora": "2026-10-27T20:10:00.000Z",
+   "simbolo": "MCO",
+   "fuente": "cnbc",
+   "actualizado": "2026-10-27T21:51:17.866Z"
+  },
+  "META": {
+   "ticker": "META",
+   "precio": 620.19,
+   "divisa": "USD",
+   "fecha_precio": "2026-10-27",
+   "hora": "2026-10-27T20:00:00.000Z",
+   "simbolo": "META",
+   "fuente": "cnbc",
+   "actualizado": "2026-10-27T21:51:17.866Z"
+  },
+  "MSFT": {
+   "ticker": "MSFT",
+   "precio": 531.33,
+   "divisa": "USD",
+   "fecha_precio": "2026-10-27",
+   "hora": "2026-10-27T20:15:00.000Z",
+   "simbolo": "MSFT",
+   "fuente": "cnbc",
+   "actualizado": "2026-10-27T21:51:17.866Z"
+  },
+  "MU": {
+   "ticker": "MU",
+   "precio": 928.76,
+   "divisa": "USD",
+   "fecha_precio": "2026-10-27",
+   "hora": "2026-10-27T20:00:00.000Z",
+   "simbolo": "MU",
+   "fuente": "cnbc",
+   "actualizado": "2026-10-27T21:51:17.866Z"
+  },
+  "NET": {
+   "ticker": "NET",
+   "precio": 327.8,
+   "divisa": "USD",
+   "fecha_precio": "2026-10-27",
+   "hora": "2026-10-27T20:10:00.000Z",
+   "simbolo": "NET",
+   "fuente": "cnbc",
+   "actualizado": "2026-10-27T21:51:17.866Z"
+  },
+  "RGLD": {
+   "ticker": "RGLD",
+   "precio": 239.66,
+   "divisa": "USD",
+   "fecha_precio": "2026-10-27",
+   "hora": "2026-10-27T20:00:00.000Z",
+   "simbolo": "RGLD",
+   "fuente": "cnbc",
+   "actualizado": "2026-10-27T21:51:17.866Z"
+  },
+  "RTX": {
+   "ticker": "RTX",
+   "precio": 194.6,
+   "divisa": "USD",
+   "fecha_precio": "2026-10-27",
+   "hora": "2026-10-27T20:10:00.000Z",
+   "simbolo": "RTX",
+   "fuente": "cnbc",
+   "actualizado": "2026-10-27T21:51:17.866Z"
+  },
+  "SAF": {
+   "ticker": "SAF",
+   "precio": 274.6,
+   "divisa": "EUR",
+   "fecha_precio": "2026-10-27",
+   "hora": "2026-10-27T16:35:43.000Z",
+   "simbolo": "SAF.PA",
+   "fuente": "cnbc",
+   "actualizado": "2026-10-27T21:51:17.866Z"
+  },
+  "SI": {
+   "ticker": "SI",
+   "precio": 19.34,
+   "divisa": "USD",
+   "fecha_precio": "2026-10-27",
+   "hora": "2026-10-27T20:10:00.000Z",
+   "simbolo": "SI",
+   "fuente": "cnbc",
+   "actualizado": "2026-10-27T21:51:17.866Z"
+  },
+  "SNDK": {
+   "ticker": "SNDK",
+   "precio": 1304.84,
+   "divisa": "USD",
+   "fecha_precio": "2026-10-27",
+   "hora": "2026-10-27T20:00:00.000Z",
+   "simbolo": "SNDK",
+   "fuente": "cnbc",
+   "actualizado": "2026-10-27T21:51:17.866Z"
+  },
+  "TBBK": {
+   "ticker": "TBBK",
+   "precio": 51.03,
+   "divisa": "USD",
+   "fecha_precio": "2026-10-27",
+   "hora": "2026-10-27T20:00:00.000Z",
+   "simbolo": "TBBK",
+   "fuente": "cnbc",
+   "actualizado": "2026-10-27T21:51:17.866Z"
+  },
+  "TSM": {
+   "ticker": "TSM",
+   "precio": 436.87,
+   "divisa": "USD",
+   "fecha_precio": "2026-10-27",
+   "hora": "2026-10-27T20:10:00.000Z",
+   "simbolo": "TSM",
+   "fuente": "cnbc",
+   "actualizado": "2026-10-27T21:51:17.866Z"
+  },
+  "TSM@ficha": {
+   "ticker": "TSM",
+   "precio": 2400,
+   "divisa": "TWD",
+   "fecha_precio": "2026-10-27",
+   "hora": "2026-10-27T06:30:00.000Z",
+   "simbolo": "2330.TW",
+   "fuente": "cnbc",
+   "actualizado": "2026-10-27T21:51:17.866Z"
+  },
+  "UBER": {
+   "ticker": "UBER",
+   "precio": 65.78,
+   "divisa": "USD",
+   "fecha_precio": "2026-10-27",
+   "hora": "2026-10-27T20:10:00.000Z",
+   "simbolo": "UBER",
+   "fuente": "cnbc",
+   "actualizado": "2026-10-27T21:51:17.866Z"
+  },
+  "V": {
+   "ticker": "V",
+   "precio": 401.86,
+   "divisa": "USD",
+   "fecha_precio": "2026-10-27",
+   "hora": "2026-10-27T20:10:00.000Z",
+   "simbolo": "V",
+   "fuente": "cnbc",
+   "actualizado": "2026-10-27T21:51:17.866Z"
+  },
+  "VITL": {
+   "ticker": "VITL",
+   "precio": 9.05,
+   "divisa": "USD",
+   "fecha_precio": "2026-10-27",
+   "hora": "2026-10-27T20:00:00.000Z",
+   "simbolo": "VITL",
+   "fuente": "cnbc",
+   "actualizado": "2026-10-27T21:51:17.866Z"
+  }
+ }
+}
