@@ -1,0 +1,173 @@
+{
+ "generado": "2026-10-27T21:32:59.792Z",
+ "fallos": [
+  {
+   "ticker": "AENA",
+   "motivo": "AENA.MC/yahoo: HTTP 429 | AENA.MC/google: Google sin precio | AENA.MC/stooq: Stooq solo cubre EE. UU."
+  },
+  {
+   "ticker": "AIR",
+   "motivo": "AIR.PA/yahoo: HTTP 429 | AIR.PA/google: Google sin precio | AIR.PA/stooq: Stooq solo cubre EE. UU."
+  },
+  {
+   "ticker": "ACMR",
+   "motivo": "ACMR/yahoo: HTTP 429 | ACMR/google: Google sin precio | ACMR/stooq: HTTP 404"
+  },
+  {
+   "ticker": "AER",
+   "motivo": "AER/yahoo: HTTP 429 | AER/google: Google sin precio | AER/stooq: HTTP 404"
+  },
+  {
+   "ticker": "AZO",
+   "motivo": "AZO/yahoo: HTTP 429 | AZO/google: Google sin precio | AZO/stooq: HTTP 404"
+  },
+  {
+   "ticker": "AMZN",
+   "motivo": "AMZN/yahoo: HTTP 429 | AMZN/google: Google sin precio | AMZN/stooq: HTTP 404"
+  },
+  {
+   "ticker": "CATL",
+   "motivo": "C7A0.F/yahoo: HTTP 429 | C7A0.F/google: Google sin precio | C7A0.F/stooq: Stooq solo cubre EE. UU. | 3750.HK/yahoo: Yahoo limitado (429): se omite | 3750.HK/google: Google sin precio | 3750.HK/stooq: Stooq solo cubre EE. UU."
+  },
+  {
+   "ticker": "BA",
+   "motivo": "BA/yahoo: HTTP 429 | BA/google: Google sin precio | BA/stooq: HTTP 404"
+  },
+  {
+   "ticker": "CATL@ficha",
+   "motivo": "300750.SZ/yahoo: Yahoo limitado (429): se omite | 300750.SZ/google: Google sin precio | 300750.SZ/stooq: Stooq solo cubre EE. UU."
+  },
+  {
+   "ticker": "CBNA",
+   "motivo": "CBNA/yahoo: Yahoo limitado (429): se omite | CBNA/google: Google sin precio | CBNA/stooq: HTTP 404"
+  },
+  {
+   "ticker": "CRWD",
+   "motivo": "CRWD/yahoo: Yahoo limitado (429): se omite | CRWD/google: Google sin precio | CRWD/stooq: HTTP 404"
+  },
+  {
+   "ticker": "FDX",
+   "motivo": "FDX/yahoo: Yahoo limitado (429): se omite | FDX/google: Google sin precio | FDX/stooq: HTTP 404"
+  },
+  {
+   "ticker": "ESEA",
+   "motivo": "ESEA/yahoo: Yahoo limitado (429): se omite | ESEA/google: Google sin precio | ESEA/stooq: HTTP 404"
+  },
+  {
+   "ticker": "FSLR",
+   "motivo": "FSLR/yahoo: Yahoo limitado (429): se omite | FSLR/google: Google sin precio | FSLR/stooq: HTTP 404"
+  },
+  {
+   "ticker": "GCT",
+   "motivo": "GCT/yahoo: Yahoo limitado (429): se omite | GCT/google: Google sin precio | GCT/stooq: HTTP 404"
+  },
+  {
+   "ticker": "GS",
+   "motivo": "GS/yahoo: Yahoo limitado (429): se omite | GS/google: Google sin precio | GS/stooq: HTTP 404"
+  },
+  {
+   "ticker": "GOOGL",
+   "motivo": "GOOGL/yahoo: Yahoo limitado (429): se omite | GOOGL/google: Google sin precio | GOOGL/stooq: HTTP 404"
+  },
+  {
+   "ticker": "KRI",
+   "motivo": "KRI.AT/yahoo: Yahoo limitado (429): se omite | KRI.AT/google: Google sin precio | KRI.AT/stooq: Stooq solo cubre EE. UU."
+  },
+  {
+   "ticker": "IDR",
+   "motivo": "IDR.MC/yahoo: Yahoo limitado (429): se omite | IDR.MC/google: Google sin precio | IDR.MC/stooq: Stooq solo cubre EE. UU."
+  },
+  {
+   "ticker": "HALO",
+   "motivo": "HALO/yahoo: Yahoo limitado (429): se omite | HALO/google: Google sin precio | HALO/stooq: HTTP 404"
+  },
+  {
+   "ticker": "LAUR",
+   "motivo": "LAUR/yahoo: Yahoo limitado (429): se omite | LAUR/google: Google sin precio | LAUR/stooq: HTTP 404"
+  },
+  {
+   "ticker": "LIN",
+   "motivo": "LIN/yahoo: Yahoo limitado (429): se omite | LIN/google: Google sin precio | LIN/stooq: HTTP 404"
+  },
+  {
+   "ticker": "MCD",
+   "motivo": "MCD/yahoo: Yahoo limitado (429): se omite | MCD/google: Google sin precio | MCD/stooq: HTTP 404"
+  },
+  {
+   "ticker": "MCO",
+   "motivo": "MCO/yahoo: Yahoo limitado (429): se omite | MCO/google: Google sin precio | MCO/stooq: HTTP 404"
+  },
+  {
+   "ticker": "META",
+   "motivo": "META/yahoo: Yahoo limitado (429): se omite | META/google: Google sin precio | META/stooq: HTTP 404"
+  },
+  {
+   "ticker": "MU",
+   "motivo": "MU/yahoo: Yahoo limitado (429): se omite | MU/google: Google sin precio | MU/stooq: HTTP 404"
+  },
+  {
+   "ticker": "MSFT",
+   "motivo": "MSFT/yahoo: Yahoo limitado (429): se omite | MSFT/google: Google sin precio | MSFT/stooq: HTTP 404"
+  },
+  {
+   "ticker": "NET",
+   "motivo": "NET/yahoo: Yahoo limitado (429): se omite | NET/google: Google sin precio | NET/stooq: HTTP 404"
+  },
+  {
+   "ticker": "SAF",
+   "motivo": "SAF.PA/yahoo: Yahoo limitado (429): se omite | SAF.PA/google: Google sin precio | SAF.PA/stooq: Stooq solo cubre EE. UU."
+  },
+  {
+   "ticker": "RGLD",
+   "motivo": "RGLD/yahoo: Yahoo limitado (429): se omite | RGLD/google: Google sin precio | RGLD/stooq: HTTP 404"
+  },
+  {
+   "ticker": "RTX",
+   "motivo": "RTX/yahoo: Yahoo limitado (429): se omite | RTX/google: Google sin precio | RTX/stooq: HTTP 404"
+  },
+  {
+   "ticker": "SI",
+   "motivo": "SI/yahoo: Yahoo limitado (429): se omite | SI/google: Google sin precio | SI/stooq: HTTP 404"
+  },
+  {
+   "ticker": "SNDK",
+   "motivo": "SNDK/yahoo: Yahoo limitado (429): se omite | SNDK/google: Google sin precio | SNDK/stooq: HTTP 404"
+  },
+  {
+   "ticker": "TSM@ficha",
+   "motivo": "2330.TW/yahoo: Yahoo limitado (429): se omite | 2330.TW/google: Google sin precio | 2330.TW/stooq: Stooq solo cubre EE. UU."
+  },
+  {
+   "ticker": "TBBK",
+   "motivo": "TBBK/yahoo: Yahoo limitado (429): se omite | TBBK/google: Google sin precio | TBBK/stooq: HTTP 404"
+  },
+  {
+   "ticker": "TSM",
+   "motivo": "TSM/yahoo: Yahoo limitado (429): se omite | TSM/google: Google sin precio | TSM/stooq: HTTP 404"
+  },
+  {
+   "ticker": "UBER",
+   "motivo": "UBER/yahoo: Yahoo limitado (429): se omite | UBER/google: Google sin precio | UBER/stooq: HTTP 404"
+  },
+  {
+   "ticker": "V",
+   "motivo": "V/yahoo: Yahoo limitado (429): se omite | V/google: Google sin precio | V/stooq: HTTP 404"
+  },
+  {
+   "ticker": "VITL",
+   "motivo": "VITL/yahoo: Yahoo limitado (429): se omite | VITL/google: Google sin precio | VITL/stooq: HTTP 404"
+  }
+ ],
+ "divisas_fallidas": [],
+ "fx": {
+  "EUR": 1,
+  "USD": 1.115,
+  "CNY": 7.4343,
+  "TWD": 36.430351,
+  "HKD": 8.7466,
+  "GBP": 0.83658,
+  "JPY": 175.97,
+  "CHF": 0.9239,
+  "fecha": "2026-10-27"
+ }
+}
