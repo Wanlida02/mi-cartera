@@ -188,4 +188,4 @@ async function principal() {
   if (fallos.length > tareas.length / 2) process.exit(1);                    // casi todo falla: que el Action avise
 }
 if (require.main === module) principal().catch(e => { console.error(e); process.exit(1); });
-module.exports = { leerYahoo, leerStooq, leerGoogle, leerTencent, leerCnbc, leerNasdaq, fechaLocal };
+module.exports = { cnbc, nasdaq, yahoo, leerYahoo, leerStooq, leerGoogle, leerTencent, leerCnbc, leerNasdaq, fechaLocal };

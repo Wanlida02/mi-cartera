@@ -122,7 +122,7 @@
       '<div style="margin-top:10px"><div class="small" style="display:flex;justify-content:space-between"><span>Calidad (A, B, C' + (R.S.length ? ', S' : '') + ')</span><b>' + (R.calidad == null ? '—' : nf(R.calidad, 0) + ' %') + '</b></div>' + barH(cc, calif.filter(x => x.estado !== 'n').length) +
       '<div class="small" style="display:flex;justify-content:space-between;margin-top:8px"><span>Múltiplo (D1, D3)</span><b>' + (R.precioPct == null ? '—' : nf(R.precioPct, 0) + ' %') + '</b></div>' + barH(cd, cd.g + cd.y + cd.r) + '</div>' +
       '<p class="small mut" style="margin:8px 0 0">Precio: ' + px + '</p></div>' +
-      '<div class="tools"><button class="btn sm" data-c="editar">Editar datos</button><button class="btn sec sm" data-c="ficha">Datos desde la ficha</button><button class="btn sec sm" data-c="precio">Precio</button><button class="btn sec sm" data-c="ia">Pedir a una IA</button><button class="btn sec sm" data-c="verif">Datos verificados hoy</button></div>' +
+      '<div class="tools"><button class="btn sm" data-c="editar">Editar datos</button><button class="btn sec sm" data-c="ficha">Datos desde la ficha</button><button class="btn sec sm" data-c="web">Buscar en internet</button><button class="btn sec sm" data-c="precio">Precio</button><button class="btn sec sm" data-c="ia">Pedir a una IA</button><button class="btn sec sm" data-c="verif">Datos verificados hoy</button></div>' +
       alertas(R, c, sel) +
       secH('F', 'Filtro de tu proyecto', 'Si las ventas a 5 años son negativas, se descarta directamente.', [R.filtro]) +
       secH('A', 'Bloque A · Calidad numérica', 'Checklist de 8 puntos de M4.', R.A) +
@@ -193,14 +193,50 @@
   function nuevo(tk) {
     tk = clave(tk); if (!tk) return U.toast('Escribe un ticker');
     const d = D(), cr = crib();
-    if (!cr[tk]) { const f = d.fichas[tk]; cr[tk] = { ticker: tk, nombre: f ? f.nombre : tk, origen: f ? 'ficha' : 'manual' }; if (f) { const r = desdeFicha(tk); } Store.save(); }
+    if (!cr[tk]) { const f = d.fichas[tk]; cr[tk] = { ticker: tk, nombre: f ? f.nombre : tk, origen: f ? 'ficha' : 'manual' }; if (f) desdeFicha(tk, true); Store.save(); }
     sel = tk; U.render(); window.scrollTo(0, 0);
-    if (!d.fichas[tk]) U.toast('Sin ficha de valoración: rellena los datos a mano o con «Pedir a una IA»');
+    if (!d.fichas[tk]) web(tk);
+  }
+  /* Busca las cuentas en internet (SEC vía GitHub Actions) y construye ficha borrador + cribado */
+  let buscando = null;
+  function importarWeb(tk, o) {
+    const d = D();
+    if (!o || o.error) return U.toast((o && o.error) || 'Sin datos');
+    if (!d.fichas[tk]) d.fichas[tk] = DatosWeb.aFicha(o, hoy());
+    const r = desdeFicha(tk, true); if (!d.cribado[tk]) d.cribado[tk] = { ticker: tk, nombre: o.nombre || tk, origen: 'ficha' };
+    U.guardar({ ok: true, msg: r.ok ? 'Datos de ' + tk + ' cargados de internet (SEC). Revisa lo cualitativo.' : 'Ficha creada, pero faltan cuentas para el cribado' });
+  }
+  function ayudaWeb(tk, motivo) {
+    U.dlg('<h2>Buscar ' + esc(tk) + ' en internet</h2><p class="small">' + esc(motivo) + '</p>' +
+      '<p class="small">La app no puede consultar la SEC directamente desde el navegador; lo hace un proceso de GitHub. Para lanzarlo desde aquí pega un token de GitHub (permiso <b>Actions: Read and write</b> sobre <code>wanlida02/mi-cartera</code>); se guarda solo en este dispositivo.</p>' +
+      '<label for="gh-t">Token de GitHub</label><input id="gh-t" type="password" autocomplete="off" placeholder="github_pat_…">' +
+      '<p class="small mut">Sin token: abre <a href="' + DatosWeb.urlActions() + '" target="_blank" rel="noopener">Actions → Datos de empresa</a>, pulsa «Run workflow», escribe <b>' + esc(tk) + '</b> y, al terminar (1–2 min), vuelve y pulsa «Buscar en internet».</p>' +
+      '<div class="acts"><button class="btn sec" data-a="cerrar">Cerrar</button><button class="btn" id="gh-ok">Guardar y buscar</button></div>', dd => {
+      dd.querySelector('#gh-ok').onclick = () => { const t = U.val('gh-t'); if (!t) return U.toast('Pega el token'); DatosWeb.setToken(t); U.cerrar(); web(tk); };
+    });
+  }
+  async function web(tk) {
+    if (buscando) return U.toast('Ya se está buscando ' + buscando);
+    buscando = tk;
+    try {
+      U.toast('Buscando ' + tk + ' en internet…');
+      let o = null; try { o = await DatosWeb.leer(tk); } catch (e) { return U.toast('No se pudo consultar GitHub: ' + e.message); }
+      if (o && !o.error && (dias(o.generado) == null || dias(o.generado) <= 30)) return importarWeb(tk, o);
+      const t0 = Date.now(), l = await DatosWeb.lanzar(tk);
+      if (l.sinToken) return ayudaWeb(tk, o && o.error ? 'Último intento: ' + o.error : 'Aún no hay datos de ' + tk + ' descargados.');
+      if (!l.ok) return ayudaWeb(tk, l.msg);
+      U.toast('Descargando de la SEC… tarda 1–2 minutos');
+      const r = await DatosWeb.esperar(tk, t0, s => { if (s % 28 === 0) U.toast('Sigo esperando (' + s + ' s)…'); });
+      if (!r) return U.toast('Tarda más de lo normal: mira Actions y pulsa de nuevo «Buscar en internet»');
+      if (r.error) return U.toast(r.error);
+      importarWeb(tk, r);
+    } finally { buscando = null; }
   }
   U.clicks.push(e => {
     const t = e.target.closest('[data-c]'); if (!t) return false;
     const a = t.dataset.c;
     if (a === 'nuevo') nuevo(t.dataset.k || (document.getElementById('cr-new') || {}).value);
+    else if (a === 'web') web(sel);
     else if (a === 'inicial') cargarInicial();
     else if (a === 'abrir') { sel = t.dataset.k; U.render(); window.scrollTo(0, 0); }
     else if (a === 'volver') { sel = null; U.render(); }
