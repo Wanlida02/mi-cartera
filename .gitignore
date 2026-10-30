@@ -1,3 +1,6 @@
 datos*.json
 node_modules/
 *.log
+herramientas/cliente_secreto.txt
+cliente_secreto*
+__pycache__/

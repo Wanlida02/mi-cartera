@@ -19,7 +19,9 @@ PUERTO = 8765
 REDIR = f"http://localhost:{PUERTO}"
 DIR = Path.home() / ".mi-cartera"
 TOKEN = DIR / "drive_token.json"
-SECRETO = DIR / "cliente_secreto.txt"
+# El secreto puede estar junto a este script (herramientas/cliente_secreto.txt) o en ~/.mi-cartera/
+_JUNTO = Path(__file__).resolve().parent / "cliente_secreto.txt"
+SECRETO = _JUNTO if _JUNTO.exists() else DIR / "cliente_secreto.txt"
 
 
 def _post(url, datos):
