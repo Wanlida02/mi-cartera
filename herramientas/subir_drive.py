@@ -9,7 +9,7 @@ Primera vez (una sola vez):
   2) Copia el «Secreto del cliente» de ese mismo cliente y pégalo en  ~/.mi-cartera/cliente_secreto.txt  (solo el texto)
   3) Ejecuta:  python indice_informes.py --drive   (se abre el navegador para que des permiso; no hace falta repetirlo)
 """
-import base64, hashlib, http.server, json, os, secrets, sys, threading, urllib.parse, urllib.request, webbrowser
+import base64, hashlib, http.server, json, os, secrets, sys, threading, urllib.error, urllib.parse, urllib.request, webbrowser
 from pathlib import Path
 
 CLIENT_ID = "480691248279-u661oqhnte0qa5ffna3dkr6vf6c1q4gr.apps.googleusercontent.com"
@@ -26,14 +26,23 @@ SECRETO = _JUNTO if _JUNTO.exists() else DIR / "cliente_secreto.txt"
 
 def _post(url, datos):
     req = urllib.request.Request(url, data=urllib.parse.urlencode(datos).encode(), method="POST")
-    with urllib.request.urlopen(req, timeout=30) as r:
-        return json.load(r)
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return json.load(r)
+    except urllib.error.HTTPError as e:
+        cuerpo = e.read().decode("utf-8", "replace")
+        ayuda = ""
+        if "invalid_client" in cuerpo:
+            ayuda = "\n-> El secreto del cliente no es valido: crea uno nuevo (Anadir secreto), copia el valor completo y guardalo en cliente_secreto.txt."
+        elif "invalid_grant" in cuerpo:
+            ayuda = "\n-> El permiso caduco o ya se uso: vuelve a ejecutar el comando."
+        sys.exit("Google respondio " + str(e.code) + ": " + cuerpo.strip() + ayuda)
 
 
 def _secreto():
     if not SECRETO.exists():
         sys.exit(f"Falta el secreto del cliente. Pégalo en {SECRETO} (ver las instrucciones al inicio de este archivo).")
-    return SECRETO.read_text().strip()
+    return SECRETO.read_text(encoding="utf-8-sig").strip().strip('"').strip("'").strip()
 
 
 def _autorizar():
