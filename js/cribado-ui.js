@@ -57,7 +57,7 @@
     const d = D(), cr = d.cribado || {}, q = L.norm(filtro);
     const tks = Object.keys(cr).filter(k => !q || L.norm(k + ' ' + (cr[k].nombre || '')).includes(q)).sort();
     const sin = Object.keys(d.fichas).filter(k => !cr[k]).sort();
-    let h = '<div class="tools"><input id="cr-new" placeholder="Ticker (p. ej. AZO) para analizar" autocapitalize="characters" style="flex:2 1 160px"><button class="btn" data-c="nuevo">Cribar</button></div>' +
+    let h = '<div class="tools"><input id="cr-new" placeholder="Ticker (p. ej. AZO) para analizar" autocapitalize="characters" style="flex:2 1 160px"><button class="btn" data-c="nuevo">Cribar</button></div><p class="small mut" style="margin:-4px 0 10px">Si no tiene ficha, se buscan sus cuentas en internet (SEC): <b>solo empresas de EE. UU.</b> Para otras bolsas usa «Pedir a una IA» o los informes anuales.</p>' +
       (tks.length > 4 || q ? '<div class="tools"><input id="cr-q" type="search" placeholder="Buscar" value="' + esc(filtro) + '"></div>' : '');
     h += '<div class="card">' + (tks.length ? tks.map(k => {
       let R; try { R = evaluar(k); } catch (e) { R = null; }
@@ -228,7 +228,7 @@
       U.toast('Descargando de la SEC… tarda 1–2 minutos');
       const r = await DatosWeb.esperar(tk, t0, s => { if (s % 28 === 0) U.toast('Sigo esperando (' + s + ' s)…'); });
       if (!r) return U.toast('Tarda más de lo normal: mira Actions y pulsa de nuevo «Buscar en internet»');
-      if (r.error) return U.toast(r.error);
+      if (r.error) return U.toast(r.error + ' Para empresas no estadounidenses usa «Pedir a una IA» o los informes anuales.');
       importarWeb(tk, r);
     } finally { buscando = null; }
   }
