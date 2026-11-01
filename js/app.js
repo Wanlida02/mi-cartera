@@ -200,8 +200,12 @@
       return '<div class="row click" data-inf="' + i + '"><div class="main"><div class="name">' + esc(e.nombre) + '</div><div class="meta">' + esc(e.tk || '') + ' · ' + e.documentos.length + ' informes · último ' + esc(e.ultimo_anio || '—') + (e.datos && e.datos.anios ? ' · con cifras' : '') + '</div></div>' +
         '<div class="num"><span class="pill ' + pill + '">' + ESTADO_TXT[e.estado] + '</span>' + (e.desactualizado ? '<div class="meta down">falta el último</div>' : '') + '</div></div>';
     }).join('') : '<div class="empty">Sin coincidencias.</div>') + '</div>';
+    const libres = I.lista.filter(e => e.estado === 'otra');
     if (I.sin.length) h += '<div class="sec-t"><h2>Sin informes descargados</h2></div><div class="card">' + I.sin.map(o =>
-      '<div class="row"><div class="main"><div class="name">' + esc(o.nombre) + '</div><div class="meta">Ejecuta: <code>python informes_anuales.py ' + esc(o.tk || o.nombre) + '</code></div></div><span class="pill ' + (o.estado === 'cartera' ? 'ok' : 'warn') + '">' + ESTADO_TXT[o.estado] + '</span></div>').join('') + '</div>';
+      '<div class="row"><div class="main"><div class="name">' + esc(o.nombre) + '</div><div class="meta">Ejecuta: <code>python informes_anuales.py ' + esc(o.tk || o.nombre) + '</code></div>' +
+      (libres.length && o.tk ? '<select data-vinc="' + esc(o.tk) + '" style="margin-top:6px;max-width:100%"><option value="">Ya tengo la carpeta: vincular a…</option>' + libres.map(e => '<option value="' + esc(e.carpeta) + '">' + esc(e.nombre) + '</option>').join('') + '</select>' : '') +
+      '</div><span class="pill ' + (o.estado === 'cartera' ? 'ok' : 'warn') + '">' + ESTADO_TXT[o.estado] + '</span></div>').join('') + '</div>' +
+      '<p class="small mut">Si una empresa tiene carpeta pero aparece aquí, vincúlala con el desplegable (el nombre de la carpeta no coincide con el de la posición).</p>';
     return h;
   }
   function detalleInforme(i) {
@@ -288,6 +292,10 @@
     }
   });
   document.addEventListener('input', e => { if (e.target.id === 'q') { filtro = e.target.value; render(); } if (e.target.id === 'qi') { filtroInf = e.target.value; render(); } });
+  document.addEventListener('change', e => {
+    const t = e.target; if (!t || !t.dataset || !t.dataset.vinc || !t.value) return;
+    const A = Store.get().ajustes; A.alias_informes = A.alias_informes || {}; A.alias_informes[t.dataset.vinc] = t.value; Store.save(); render(); toast('Vinculada la carpeta a ' + t.dataset.vinc);
+  });
   document.addEventListener('change', e => { if (e.target.id === 'ord') { orden = e.target.value; render(); } });
   document.addEventListener('input', e => UI.changes.forEach(f => f(e)));
   document.addEventListener('change', e => UI.changes.forEach(f => f(e)));

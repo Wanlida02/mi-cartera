@@ -13,3 +13,14 @@ assert(L.precioManual(d, d.posiciones[0], 123)); assert.equal(L.precioPos(d, d.p
 assert.equal(Math.round(L.aEur(d, 111.93, 'USD')), 100);
 const dash = L.dashboard(d); assert.equal(dash.resumen.nPos, 1); assert(dash.sinFicha.length === 1);
 console.log('logic ok');
+
+/* Informes: nombres con apóstrofo, carpeta con el ticker y vínculo manual */
+{
+  const L2 = require('../js/logic.js'), d = L2.normalizar(null);
+  d.posiciones.push({ empresa: "McDonald's", ticker: 'MCD', broker: 'X', cantidad: 1, moneda: 'USD', precio_medio_compra: 1 }, { empresa: 'Raytheon Technologies (RTX)', ticker: 'RTX', broker: 'X', cantidad: 1, moneda: 'USD', precio_medio_compra: 1 }, { empresa: 'TSMC', ticker: 'TSM', broker: 'X', cantidad: 1, moneda: 'USD', precio_medio_compra: 1 });
+  d.informes = { empresas: [{ nombre: 'Mcdonalds', carpeta: 'Mcdonalds annual report', ticker: null, documentos: [], ultimo_anio: 2025 }, { nombre: 'Rtx', carpeta: 'Rtx annual report', ticker: null, documentos: [], ultimo_anio: 2025 }, { nombre: 'Taiwan', carpeta: 'Taiwan annual report', ticker: null, documentos: [], ultimo_anio: 2025 }] };
+  let r = L2.informes(d, '2026-11-01');
+  require('assert').deepEqual(r.sin.map(o => o.tk), ['TSM'], 'apóstrofo y carpeta con ticker emparejan');
+  d.ajustes.alias_informes = { TSM: 'Taiwan annual report' }; r = L2.informes(d, '2026-11-01');
+  require('assert').equal(r.sin.length, 0); console.log('informes alias ok');
+}

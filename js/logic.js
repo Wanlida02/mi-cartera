@@ -36,7 +36,7 @@ const Logic = (function () {
   /* ───── Nombres y coincidencia de empresas ───── */
   const norm = s => (s || '').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
   const STOP = { inc: 1, corp: 1, corporation: 1, co: 1, ltd: 1, sa: 1, plc: 1, class: 1, a: 1, b: 1, the: 1, platforms: 1, holdings: 1, group: 1, company: 1, technologies: 1, technology: 1 };
-  const coreName = s => norm(s).replace(/\([^)]*\)/g, ' ').replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter(w => w && !STOP[w]).join(' ');
+  const coreName = s => norm(s).replace(/['’`´]/g, '').replace(/\([^)]*\)/g, ' ').replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter(w => w && !STOP[w]).join(' ');
   function sameCompany(p, empresa, ticker) {
     const tk = (ticker || '').trim().toLowerCase(), ptk = (p.ticker || '').trim().toLowerCase();
     if (tk && ptk && tk === ptk) return true;
@@ -229,7 +229,9 @@ const Logic = (function () {
     if (!idx || !Array.isArray(idx.empresas)) return null;
     const enCartera = new Set(d.posiciones.map(p => tickerDe(d, p)).filter(Boolean));
     const lista = [], usados = new Set();
-    const buscar = (tk, nombre) => idx.empresas.findIndex((e, i) => !usados.has(i) && ((tk && baseTk(e.ticker) === baseTk(tk)) ||
+    const alias = (d.ajustes && d.ajustes.alias_informes) || {};
+    const buscar = (tk, nombre) => idx.empresas.findIndex((e, i) => !usados.has(i) && ((tk && alias[tk] && e.carpeta === alias[tk]) || (tk && baseTk(e.ticker) === baseTk(tk)) ||
+      (tk && norm(e.nombre).trim() === norm(tk).trim()) ||
       (coreName(e.nombre) && coreName(nombre) && (coreName(nombre) === coreName(e.nombre) || coreName(nombre).indexOf(coreName(e.nombre) + ' ') === 0))));
     const objetivos = [];
     Object.keys(d.fichas).forEach(tk => {
