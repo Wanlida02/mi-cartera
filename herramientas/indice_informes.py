@@ -86,9 +86,10 @@ def indexar_empresa(carpeta: Path) -> dict | None:
     nombre = carpeta.name[: -len(SUFIJO)].strip()
     docs = {}
     for p in sorted(carpeta.iterdir()):
-        m = re.fullmatch(rf"{re.escape(nombre)}_(10K|20F|40F|AR|ESEF)_(\d{{4}})(?:_([a-z]{{2}}))?", p.stem)
+        # <Nombre>_<TIPO>_<AÑO>[_idioma]  o, sin tipo (descargado a mano), <Nombre>_<AÑO>[_idioma]
+        m = re.fullmatch(rf"{re.escape(nombre)}_(?:(10K|20F|40F|AR|ESEF)_)?(\d{{4}})(?:_([a-z]{{2}}))?", p.stem)
         if m and p.suffix.lower() in EXT_DOC:
-            tipo, anio, idioma = m.group(1), int(m.group(2)), m.group(3)
+            tipo, anio, idioma = m.group(1) or "AR", int(m.group(2)), m.group(3)
             docs.setdefault(anio, {"anio": anio}).update(archivo=p.name, tipo=tipo, idioma=idioma, kb=round(p.stat().st_size / 1024))
     ticker = ident = None
     fuentes_f = next(iter(carpeta.glob("*_fuentes.md")), None)
