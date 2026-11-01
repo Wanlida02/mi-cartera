@@ -42,7 +42,10 @@ def _post(url, datos):
 def _secreto():
     if not SECRETO.exists():
         sys.exit(f"Falta el secreto del cliente. Pégalo en {SECRETO} (ver las instrucciones al inicio de este archivo).")
-    return SECRETO.read_text(encoding="utf-8-sig").strip().strip('"').strip("'").strip()
+    v = SECRETO.read_text(encoding="utf-8-sig").strip().strip('"').strip("'").strip()
+    if not v:
+        sys.exit(f"El archivo {SECRETO} esta vacio: pega dentro el secreto del cliente y guarda (Ctrl+S).")
+    return v
 
 
 def _autorizar():
