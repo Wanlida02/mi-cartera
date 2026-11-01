@@ -88,9 +88,19 @@ def indexar_empresa(carpeta: Path) -> dict | None:
     for p in sorted(carpeta.iterdir()):
         # <Nombre>_<TIPO>_<AÑO>[_idioma]  o, sin tipo (descargado a mano), <Nombre>_<AÑO>[_idioma]
         m = re.fullmatch(rf"{re.escape(nombre)}_(?:(10K|20F|40F|AR|ESEF)_)?(\d{{4}})(?:_([a-z]{{2}}))?", p.stem)
-        if m and p.suffix.lower() in EXT_DOC:
+        if p.suffix.lower() not in EXT_DOC:
+            continue
+        if m:
             tipo, anio, idioma = m.group(1) or "AR", int(m.group(2)), m.group(3)
-            docs.setdefault(anio, {"anio": anio}).update(archivo=p.name, tipo=tipo, idioma=idioma, kb=round(p.stat().st_size / 1024))
+        else:  # nombre libre (descargado a mano): se toma el año que aparezca en el nombre
+            ys = re.findall(r"(?<!\d)((?:19|20)\d{2})(?!\d)", p.stem)
+            if not ys:
+                continue
+            tipo, anio, idioma = "AR", int(max(ys)), None
+        kb = round(p.stat().st_size / 1024)
+        if anio in docs and docs[anio].get("kb", 0) >= kb and docs[anio].get("archivo"):
+            continue  # si hay dos documentos del mismo año, se queda el más grande
+        docs[anio] = {"anio": anio, "archivo": p.name, "tipo": tipo, "idioma": idioma, "kb": kb}
     ticker = ident = None
     fuentes_f = next(iter(carpeta.glob("*_fuentes.md")), None)
     if fuentes_f:
