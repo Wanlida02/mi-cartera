@@ -1,0 +1,130 @@
+{
+ "ticker": "AAPL",
+ "nombre": "Apple Inc.",
+ "cik": "0000320193",
+ "divisa": "USD",
+ "generado": "2026-11-01T13:00:50.610Z",
+ "fuente": "SEC EDGAR (XBRL, 10-K)",
+ "anios": [
+  2016,
+  2017,
+  2018
+ ],
+ "hist": {
+  "ventas": [
+   215639,
+   229234,
+   265595
+  ],
+  "ebit": [
+   60024,
+   61344,
+   70898
+  ],
+  "da": [
+   10505,
+   10157,
+   10903
+  ],
+  "intereses": [
+   1456,
+   2323,
+   3240
+  ],
+  "impuestos": [
+   15685,
+   15738,
+   13372
+  ],
+  "minoritarios": [
+   0,
+   0,
+   0
+  ],
+  "otros": [
+   0,
+   0,
+   0
+  ],
+  "acciones": [
+   5500.281,
+   5251.692,
+   20000.435
+  ],
+  "capex": [
+   12734,
+   12451,
+   13313
+  ],
+  "leases": [
+   null,
+   null,
+   null
+  ],
+  "caja": [
+   20484,
+   20289,
+   66301
+  ],
+  "deuda": [
+   78927,
+   103703,
+   102519
+  ],
+  "leases_deuda": [
+   null,
+   null,
+   null
+  ],
+  "goodwill": [
+   5414,
+   5717,
+   null
+  ],
+  "equity": [
+   128249,
+   134047,
+   107147
+  ],
+  "ni_reportado": [
+   45687,
+   48351,
+   59531
+  ],
+  "fco": [
+   66231,
+   64225,
+   77434
+  ],
+  "sbc": [
+   4210,
+   4840,
+   5340
+  ],
+  "dividendos": [
+   11965,
+   12563,
+   null
+  ],
+  "recompras": [
+   29722,
+   32900,
+   72738
+  ],
+  "bpa": [
+   8.31,
+   9.21,
+   2.98
+  ]
+ },
+ "precio": {
+  "precio": 344.63,
+  "divisa": "USD",
+  "fecha": "2026-10-30"
+ },
+ "notas": [
+  "Datos automáticos de la SEC (XBRL de los 10-K). Revísalos contra el informe anual antes de decidir: pueden faltar líneas o haber reexpresiones.",
+  "Caja = efectivo + inversiones a corto plazo; deuda = deuda financiera (sin arrendamientos). Intereses = gasto bruto (no netos de ingresos). Minoritarios, otros y arrendamientos van a 0 o sin dato: complétalos si importan."
+ ],
+ "faltan": []
+}
