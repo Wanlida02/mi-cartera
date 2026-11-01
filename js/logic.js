@@ -250,7 +250,7 @@ const Logic = (function () {
     const orden = { cartera: 0, watchlist: 1, otra: 2 };
     lista.sort((a, b) => orden[a.estado] - orden[b.estado] || a.nombre.localeCompare(b.nombre));
     sin.sort((a, b) => (orden[a.estado] - orden[b.estado]) || a.nombre.localeCompare(b.nombre));
-    return { generado: idx.generado, lista, sin };
+    return { generado: idx.generado, lista, sin, avisos: Array.isArray(idx.avisos) ? idx.avisos : [] };
   }
 
   /* ───── Pesos y límites ───── */

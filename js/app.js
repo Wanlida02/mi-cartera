@@ -195,6 +195,7 @@
     const filas = I.lista.map((e, i) => ({ e, i })).filter(x => !q || L.norm(x.e.nombre + ' ' + (x.e.tk || '')).includes(q));
     let h = '<div class="tools"><input id="qi" type="search" placeholder="Buscar empresa o ticker" value="' + esc(filtroInf) + '"></div>' +
       '<p class="mut small">Índice del ' + esc((I.generado || '').slice(0, 10)) + ' · ' + I.lista.length + ' empresas con informes. Para actualizarlo, vuelve a ejecutar el script en tu PC y cárgalo en ⚙.</p>';
+    if (I.avisos.length) h += '<div class="alert warn"><b>Avisos del índice (' + I.avisos.length + ')</b><br>' + I.avisos.map(x => esc(x)).join('<br>') + '</div>';
     h += '<div class="card">' + (filas.length ? filas.map(({ e, i }) => {
       const pill = e.estado === 'cartera' ? 'ok' : e.estado === 'watchlist' ? 'warn' : '';
       return '<div class="row click" data-inf="' + i + '"><div class="main"><div class="name">' + esc(e.nombre) + '</div><div class="meta">' + esc(e.tk || '') + ' · ' + e.documentos.length + ' informes · último ' + esc(e.ultimo_anio || '—') + (e.datos && e.datos.anios ? ' · con cifras' : '') + '</div></div>' +

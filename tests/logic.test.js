@@ -24,3 +24,8 @@ console.log('logic ok');
   d.ajustes.alias_informes = { TSM: 'Taiwan annual report' }; r = L2.informes(d, '2026-11-01');
   require('assert').equal(r.sin.length, 0); console.log('informes alias ok');
 }
+{
+  const L3 = require('../js/logic.js'), d3 = L3.normalizar(null);
+  d3.informes = { empresas: [], avisos: ['X: «a.pdf» sin año'] };
+  require('assert').deepEqual(L3.informes(d3, '2026-11-01').avisos, ['X: «a.pdf» sin año']); console.log('informes avisos ok');
+}

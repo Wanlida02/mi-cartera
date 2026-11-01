@@ -82,7 +82,8 @@ def leer_fuentes(ruta: Path) -> tuple[dict, str | None, str | None]:
     return por_anio, ticker, ident
 
 
-def indexar_empresa(carpeta: Path) -> dict | None:
+def indexar_empresa(carpeta: Path, avisos: list | None = None) -> dict | None:
+    avisos = avisos if avisos is not None else []
     nombre = carpeta.name[: -len(SUFIJO)].strip()
     docs = {}
     for p in sorted(carpeta.iterdir()):
@@ -95,6 +96,7 @@ def indexar_empresa(carpeta: Path) -> dict | None:
         else:  # nombre libre (descargado a mano): se toma el año que aparezca en el nombre
             ys = re.findall(r"(?<!\d)((?:19|20)\d{2})(?!\d)", p.stem)
             if not ys:
+                avisos.append(f"{carpeta.name}: «{p.name}» no tiene ningún año en el nombre y se ha ignorado (renómbralo, p. ej. {nombre}_2024.pdf)")
                 continue
             tipo, anio, idioma = "AR", int(max(ys)), None
         kb = round(p.stat().st_size / 1024)
@@ -115,6 +117,7 @@ def indexar_empresa(carpeta: Path) -> dict | None:
         except Exception as e:  # CSV raro: se indexa igualmente el resto
             datos = {"error": str(e)}
     if not docs and not datos:
+        avisos.append(f"{carpeta.name}: no se ha reconocido ningún informe (¿PDF sin año en el nombre?) y no tiene _datos.csv; no aparece en la app")
         return None
     anios = sorted(docs)
     return {"nombre": nombre, "carpeta": carpeta.name, "ticker": ticker, "ident": ident,
@@ -129,16 +132,25 @@ def main():
     ap.add_argument("--salida", type=Path, help="Archivo de salida (por defecto, dentro de la carpeta)")
     ap.add_argument("--drive", action="store_true", help="Sube también el índice a tu Google Drive (ver subir_drive.py)")
     a = ap.parse_args()
-    empresas = []
+    empresas, avisos = [], []
     for c in sorted(a.carpeta.iterdir(), key=lambda x: x.name.lower()):
-        if c.is_dir() and c.name.endswith(SUFIJO):
-            e = indexar_empresa(c)
+        if not c.is_dir() or c.name.startswith(("_", ".")):
+            continue
+        if c.name.endswith(SUFIJO):
+            e = indexar_empresa(c, avisos)
             if e:
                 empresas.append(e)
+        elif "annual report" in c.name.lower() or "informe" in c.name.lower():
+            avisos.append(f"{c.name}: la carpeta debe llamarse «<Empresa>{SUFIJO}» (en minúsculas y con ese espacio) para que se indexe")
     salida = a.salida or (a.carpeta / "indice_informes.json")
     salida.write_text(json.dumps({"version": 1, "generado": dt.datetime.now().isoformat(timespec="seconds"),
-                                  "empresas": empresas}, ensure_ascii=False, indent=1), encoding="utf-8")
+                                  "empresas": empresas, "avisos": avisos}, ensure_ascii=False, indent=1), encoding="utf-8")
     print(f"{len(empresas)} empresas indexadas → {salida}")
+    if avisos:
+        print(f"\n⚠ {len(avisos)} aviso(s):")
+        for av in avisos:
+            print("   - " + av)
+        print()
     if a.drive:
         sys.path.insert(0, str(Path(__file__).resolve().parent))
         import subir_drive
