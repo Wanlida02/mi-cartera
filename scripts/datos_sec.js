@@ -4,7 +4,7 @@
    Se ejecuta desde GitHub Actions (workflow «Datos de empresa»). La app lee datos/TICKER.json y crea con él el cribado y la ficha. */
 const fs = require('fs'), path = require('path');
 const RAIZ = path.join(__dirname, '..');
-const UA = { 'User-Agent': 'MiCartera/1.0 proyecto personal (github.com/wanlida02/mi-cartera)', Accept: 'application/json' };
+const UA = { 'User-Agent': 'MiCartera franserrano02@gmail.com', Accept: 'application/json' };
 const isN = v => typeof v === 'number' && isFinite(v);
 const esperar = ms => new Promise(r => setTimeout(r, ms));
 
