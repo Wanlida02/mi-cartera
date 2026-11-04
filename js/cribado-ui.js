@@ -52,6 +52,37 @@
     catch (e) { U.toast('No se pudo cargar: ' + e.message); }
   }
 
+  /* ───── Lista de precios de las candidatas ───── */
+  function catVer(k) { let R; try { R = evaluar(k); } catch (e) { return 'otras'; } const v = (R && R.veredicto) || ''; return /^Pasa/.test(v) ? 'pasa' : /^Vigilar/.test(v) ? 'vigilar' : /^Descartar/.test(v) ? 'descartar' : 'otras'; }
+  let SIMB = null, simbCarga = false;
+  function cargarSimb() { if (SIMB || simbCarga) return; simbCarga = true; DatosWeb.leerArchivo('simbolos.json').then(j => { SIMB = (j && j.simbolos) || {}; simbCarga = false; U.render(); }).catch(() => { simbCarga = false; }); }
+  /* Descartadas fuera de cartera y fuera de watchlist → pausa; pasa/vigilar fuera de cartera → activas */
+  function deseadosSimb() {
+    const d = D(), out = {};
+    Object.keys(d.cribado || {}).forEach(k => {
+      if (d.posiciones.some(p => L.tickerDe(d, p) === k)) return;
+      const c = catVer(k), wl = d.fichas[k] && d.fichas[k].estado === 'watchlist';
+      out[k] = { pausa: c === 'descartar' && !wl };
+    });
+    return out;
+  }
+  function simbolosCard() {
+    cargarSimb(); if (!SIMB) return '';
+    const p = DatosWeb.planSimbolos(SIMB, deseadosSimb()); if (!p.cambios) return '<p class="small mut">Precios de las candidatas al día: las que pasan o vigilas se actualizan solas; las descartadas no.</p>';
+    const l = (t, a) => a.length ? '<div class="small">' + t + ': <b>' + a.map(esc).join(', ') + '</b></div>' : '';
+    return '<div class="card"><b>Lista de precios por actualizar</b><p class="small mut">Para que las candidatas tengan precio automático hay que añadirlas a la lista pública de símbolos (solo tickers). Para empresas fuera de EE. UU. revisa luego el símbolo en <code>simbolos.json</code>.</p>' +
+      l('Añadir', p.anadir) + l('Reactivar', p.reactivar) + l('Pausar (descartadas)', p.pausar) + '<div class="tools" style="margin-top:8px"><button class="btn sm" data-c="simbolos">Aplicar y actualizar precios</button></div></div>';
+  }
+  async function aplicarSimb() {
+    const p = DatosWeb.planSimbolos(SIMB, deseadosSimb()); if (!p.cambios) return U.toast('Nada que cambiar');
+    const cfg = await DatosWeb.leerArchivo('simbolos.json'); cfg.simbolos = DatosWeb.planSimbolos(cfg.simbolos, deseadosSimb()).nuevo;
+    U.toast('Guardando lista de precios…');
+    const r = await DatosWeb.escribirArchivo('simbolos.json', JSON.stringify(cfg, null, 2) + '\n', 'Símbolos: candidatas del cribado (' + p.anadir.length + ' nuevas, ' + p.pausar.length + ' pausadas)');
+    if (r.sinToken) return U.toast('Falta el token de GitHub (Cartera → Actualizar precios). Debe tener permisos Contents y Actions: Read and write.');
+    if (!r.ok) return U.toast(r.msg);
+    SIMB = null; DatosWeb.lanzarWorkflow('precios.yml', { forzar: 'true' }); U.toast('Lista guardada; los precios nuevos llegan en 1–2 min (Cartera → Actualizar precios → Traer lo último)'); U.render();
+  }
+
   /* ───── Lista ───── */
   function vistaLista() {
     const d = D(), cr = d.cribado || {}, q = L.norm(filtro);
@@ -59,12 +90,27 @@
     const sin = Object.keys(d.fichas).filter(k => !cr[k]).sort();
     let h = '<div class="tools"><input id="cr-new" placeholder="Ticker (p. ej. AZO) para analizar" autocapitalize="characters" style="flex:2 1 160px"><button class="btn" data-c="nuevo">Cribar</button></div><p class="small mut" style="margin:-4px 0 10px">Si no tiene ficha, se buscan sus cuentas en internet (SEC): <b>solo empresas de EE. UU.</b> Para otras bolsas usa «Pedir a una IA» o los informes anuales.</p>' +
       (tks.length > 4 || q ? '<div class="tools"><input id="cr-q" type="search" placeholder="Buscar" value="' + esc(filtro) + '"></div>' : '');
-    h += '<div class="card">' + (tks.length ? tks.map(k => {
+    const enC = k => d.posiciones.some(p => L.tickerDe(d, p) === k);
+    const fila = k => {
       let R; try { R = evaluar(k); } catch (e) { R = null; }
-      const c = cr[k], ed = c.origen === 'verificado' ? dias(c.fecha_verificacion) : null;
-      return '<div class="row click" data-c="abrir" data-k="' + esc(k) + '"><div class="main"><div class="name">' + esc(c.nombre || k) + '</div><div class="meta">' + esc(k) + ' · ' + ({ verificado: 'verificado', ficha: 'cuentas de la ficha', manual: 'manual', ia: 'asistente de IA' }[c.origen] || c.origen || '') + (ed != null ? ' hace ' + ed + ' d' : '') + '</div></div>' +
-        '<div class="num">' + (R ? '<span class="pill ' + TONO[R.tono] + '">' + esc(R.veredicto.replace(' · ', ' · ')) + '</span><div class="meta">calidad ' + (R.calidad == null ? '—' : nf(R.calidad, 0) + '%') + (R.provisional ? ' · provisional' : '') + '</div>' : '<span class="pill">sin evaluar</span>') + '</div></div>';
-    }).join('') : '<div class="empty">Aún no has cribado ninguna empresa. Escribe un ticker arriba.<br><br><button class="btn sec sm" data-c="inicial">Cargar mis 5 cribados verificados</button></div>') + '</div>';
+      const c = cr[k], ed = c.origen === 'verificado' ? dias(c.fecha_verificacion) : null, px = R && R.px;
+      return '<div class="row click" data-c="abrir" data-k="' + esc(k) + '"><div class="main"><div class="name">' + esc(c.nombre || k) + '</div><div class="meta">' + esc(k) + ' · ' + ({ verificado: 'verificado', ficha: 'cuentas de la ficha', manual: 'manual', ia: 'asistente de IA' }[c.origen] || c.origen || '') + (ed != null ? ' hace ' + ed + ' d' : '') + (px && px.fecha ? ' · precio ' + esc(px.fecha) : '') + '</div></div>' +
+        '<div class="num">' + (R ? '<span class="pill ' + TONO[R.tono] + '">' + esc(R.veredicto.replace(' · ', ' · ')) + '</span><div class="meta">calidad ' + (R.calidad == null ? '—' : nf(R.calidad, 0) + '%') + (R.provisional ? ' · provisional' : '') + '</div>' : '<span class="pill">sin evaluar</span>') + '</div></div>';
+    };
+    const fuera = tks.filter(k => !enC(k)), dentro = tks.filter(enC);
+    if (!tks.length) h += '<div class="card"><div class="empty">Aún no has cribado ninguna empresa. Escribe un ticker arriba.<br><br><button class="btn sec sm" data-c="inicial">Cargar mis 5 cribados verificados</button></div></div>';
+    else {
+      const G = { pasa: [], vigilar: [], descartar: [], otras: [] };
+      fuera.forEach(k => { G[catVer(k)].push(k); });
+      h += '<h3 style="margin:8px 2px 6px">Fuera de cartera <span class="mut small">' + fuera.length + '</span></h3>';
+      [['pasa', 'Pasan el cribado', 'ok'], ['vigilar', 'Vigilar', 'warn'], ['descartar', 'Descartadas', 'bad'], ['otras', 'Sin evaluar del todo', '']].forEach(([g, t, tono]) => {
+        if (!G[g].length) return;
+        h += '<details class="card"' + (g === 'pasa' || g === 'vigilar' ? ' open' : '') + '><summary><span class="pill ' + tono + '">' + t + '</span> <span class="mut small">' + G[g].length + (g === 'descartar' ? ' · sin actualizar precio' : '') + '</span></summary>' + G[g].map(fila).join('') + '</details>';
+      });
+      if (!fuera.length) h += '<div class="card empty">Todo lo cribado está en cartera.</div>';
+      h += simbolosCard();
+      if (dentro.length) h += '<h3 style="margin:14px 2px 6px">En cartera <span class="mut small">' + dentro.length + '</span></h3><div class="card">' + dentro.map(fila).join('') + '</div>';
+    }
     if (sin.length) {
       const enC = k => d.posiciones.some(p => L.tickerDe(d, p) === k), a = sin.filter(enC), b = sin.filter(k => !enC(k)), chips = ks => ks.map(k => '<button class="btn sec sm" data-c="nuevo" data-k="' + esc(k) + '">' + esc(k) + '</button>').join('');
       if (b.length) h += '<details class="card" open><summary>Candidatas por cribar (' + b.length + ')</summary><p class="small mut">Fichas de valoración fuera de tu cartera: aquí el cribado sí importa.</p><div class="chips" style="margin-top:8px">' + chips(b) + '</div><div class="tools" style="margin-top:8px"><button class="btn sm" data-c="cribartodas">Cribar todas con los datos de su ficha</button></div></details>';
@@ -254,6 +300,7 @@
     else if (a === 'editar') editor();
     else if (a === 'precio') precioDlg();
     else if (a === 'ia') iaDlg();
+    else if (a === 'simbolos') aplicarSimb();
     else if (a === 'cribartodas') { const d = D(); let n = 0; Object.keys(d.fichas).filter(k => !d.cribado[k] && !d.posiciones.some(p => L.tickerDe(d, p) === k)).forEach(k => { d.cribado[k] = { ticker: k, nombre: d.fichas[k].nombre, origen: 'ficha' }; if (desdeFicha(k, true).ok) n++; else delete d.cribado[k]; }); Store.save(); U.render(); U.toast(n + ' candidatas cribadas'); }
     else if (a === 'ficha') { const r = desdeFicha(sel); if (r.ok) { Store.save(); U.render(); } U.toast(r.msg); }
     else if (a === 'verif') { const c = D().cribado[sel]; if (confirm('¿Confirmas que has contrastado estos datos con el informe anual o una fuente fiable? Pasarán a «verificados» con fecha de hoy.')) { c.origen = 'verificado'; c.fecha_verificacion = hoy(); U.guardar({ ok: true, msg: 'Marcados como verificados hoy' }); } }

@@ -155,7 +155,8 @@ async function principal() {
   const precios = Object.assign({}, previo.precios || {}), fallos = [], ahora = new Date().toISOString();
   const tareas = [];
   Object.keys(cfg.simbolos).forEach(tk => {
-    const c = cfg.simbolos[tk]; tareas.push({ clave: tk, tk, cand: c.y });
+    const c = cfg.simbolos[tk]; if (c.pausa) return;   // descartadas del cribado: se conserva el último precio
+    tareas.push({ clave: tk, tk, cand: c.y });
     if (c.ficha) tareas.push({ clave: tk + '@ficha', tk, cand: [c.ficha] });
   });
   const cola = tareas.slice(); let hechos = 0;

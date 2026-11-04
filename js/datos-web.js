@@ -70,6 +70,28 @@ const DatosWeb = (function () {
     if (roe != null) f.notas.push('ROE del último año según el CSV: ' + roe + ' %.');
     return f;
   }
-  return { aFichaInformes, pausa: 7000, leerArchivo, lanzarWorkflow, token, setToken, leer, lanzar, esperar, aFicha, urlActions, arch };
+  /* Lista de precios: qué cambia en simbolos.json para que las candidatas (pasa/vigilar) se actualicen y las descartadas se pausen.
+     deseados = {TK: {pausa:bool}}. Nunca pausa ni borra lo que no se pide; los símbolos nuevos usan el propio ticker (EE. UU.). */
+  function planSimbolos(simb, deseados) {
+    const nuevo = JSON.parse(JSON.stringify(simb || {})), anadir = [], pausar = [], reactivar = [];
+    Object.keys(deseados || {}).forEach(tk => {
+      const c = nuevo[tk], p = !!deseados[tk].pausa;
+      if (!c) { if (!p) { nuevo[tk] = { y: [tk] }; anadir.push(tk); } return; }   // una descartada que nunca tuvo precio no se añade
+      if (p && !c.pausa) { c.pausa = true; pausar.push(tk); }
+      else if (!p && c.pausa) { delete c.pausa; reactivar.push(tk); }
+    });
+    return { nuevo, anadir, pausar, reactivar, cambios: anadir.length + pausar.length + reactivar.length };
+  }
+  /* Escribe un archivo del repositorio (hace falta token con Contents: Read and write) */
+  async function escribirArchivo(ruta, texto, msg) {
+    const t = token(); if (!t) return { ok: false, sinToken: true };
+    const h = { Authorization: 'Bearer ' + t, Accept: 'application/vnd.github+json' }, url = 'https://api.github.com/repos/' + REPO + '/contents/' + ruta;
+    const g = await fetch(url + '?ref=' + RAMA + '&t=' + Date.now(), { headers: h, cache: 'no-store' });
+    if (!g.ok) return { ok: false, msg: g.status === 401 || g.status === 403 || g.status === 404 ? 'El token no tiene permiso Contents (Read and write) sobre ' + REPO : 'GitHub respondió ' + g.status };
+    const sha = (await g.json()).sha, b64 = btoa(unescape(encodeURIComponent(texto)));
+    const r = await fetch(url, { method: 'PUT', headers: Object.assign({ 'Content-Type': 'application/json' }, h), body: JSON.stringify({ message: msg, content: b64, sha, branch: RAMA }) });
+    return r.ok ? { ok: true } : { ok: false, msg: r.status === 403 || r.status === 404 ? 'El token no tiene permiso Contents (Read and write) sobre ' + REPO : r.status === 409 || r.status === 422 ? 'El archivo cambió mientras tanto; vuelve a intentarlo' : 'GitHub respondió ' + r.status };
+  }
+  return { planSimbolos, escribirArchivo, aFichaInformes, pausa: 7000, leerArchivo, lanzarWorkflow, token, setToken, leer, lanzar, esperar, aFicha, urlActions, arch };
 })();
 if (typeof module !== 'undefined') module.exports = DatosWeb;
