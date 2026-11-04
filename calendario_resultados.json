@@ -1,0 +1,118 @@
+{
+ "generado": "2026-11-04",
+ "nota": "Fechas públicas de próximos resultados. confirmada=true: anunciada por la empresa. false: estimada (mismo trimestre del año anterior o proyección de terceros); verifícala en la web de la empresa.",
+ "fechas": {
+  "UBER": {
+   "fecha": "2026-11-04",
+   "confirmada": true
+  },
+  "MCD": {
+   "fecha": "2026-11-04",
+   "confirmada": true
+  },
+  "RGLD": {
+   "fecha": "2026-11-04",
+   "confirmada": true
+  },
+  "NET": {
+   "fecha": "2026-11-05",
+   "confirmada": true
+  },
+  "HALO": {
+   "fecha": "2026-11-05",
+   "confirmada": true
+  },
+  "GCT": {
+   "fecha": "2026-11-05",
+   "confirmada": true
+  },
+  "SI": {
+   "fecha": "2026-11-05",
+   "confirmada": true
+  },
+  "ACMR": {
+   "fecha": "2026-11-05",
+   "confirmada": true
+  },
+  "ESEA": {
+   "fecha": "2026-11-17",
+   "confirmada": false
+  },
+  "CRWD": {
+   "fecha": "2026-12-01",
+   "confirmada": false
+  },
+  "AZO": {
+   "fecha": "2026-12-08",
+   "confirmada": false
+  },
+  "MU": {
+   "fecha": "2026-12-16",
+   "confirmada": false
+  },
+  "TSM": {
+   "fecha": "2027-01-14",
+   "confirmada": false
+  },
+  "GS": {
+   "fecha": "2027-01-14",
+   "confirmada": false
+  },
+  "RTX": {
+   "fecha": "2027-01-26",
+   "confirmada": false
+  },
+  "BA": {
+   "fecha": "2027-01-26",
+   "confirmada": false
+  },
+  "MSFT": {
+   "fecha": "2027-01-27",
+   "confirmada": false
+  },
+  "META": {
+   "fecha": "2027-01-27",
+   "confirmada": false
+  },
+  "V": {
+   "fecha": "2027-01-28",
+   "confirmada": false
+  },
+  "GOOGL": {
+   "fecha": "2027-02-03",
+   "confirmada": false
+  },
+  "AMZN": {
+   "fecha": "2027-02-04",
+   "confirmada": false
+  },
+  "AER": {
+   "fecha": "2027-02-05",
+   "confirmada": false
+  },
+  "SAF": {
+   "fecha": "2027-02-09",
+   "confirmada": false
+  },
+  "AIR": {
+   "fecha": "2027-02-18",
+   "confirmada": false
+  },
+  "MCO": {
+   "fecha": "2027-02-17",
+   "confirmada": false
+  },
+  "FSLR": {
+   "fecha": "2027-02-23",
+   "confirmada": false
+  },
+  "IDR": {
+   "fecha": "2027-02-25",
+   "confirmada": false
+  },
+  "AENA": {
+   "fecha": "2027-02-24",
+   "confirmada": false
+  }
+ }
+}

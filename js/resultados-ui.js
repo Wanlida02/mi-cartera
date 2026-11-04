@@ -1,5 +1,5 @@
 /* Pestaña Resultados trimestrales: calendario de presentaciones de cartera y watchlist, y registro de cada revisión.
-   Registro en datos.json → resultados[{id,tk,periodo,fecha,estado:'pendiente'|'revisado',decision,nota,revisado}]. Las fechas se introducen a mano. */
+   Registro en datos.json → resultados[{id,tk,periodo,fecha,estado:'pendiente'|'revisado',decision,nota,revisado}]. Las fechas se introducen a mano o se importan de calendario_resultados.json (público). */
 (function () {
   const L = Logic, U = window.UI, { esc, nf } = U, D = () => Store.get(), hoy = () => L.today();
   const DEC = { mantener: 'Mantener', vigilar: 'Vigilar de cerca', comprar: 'Comprar más', vender: 'Vender / reducir' };
@@ -9,15 +9,23 @@
   const dif = f => Math.round((Date.parse(f) - Date.parse(hoy())) / 864e5);
   const seguidas = () => Object.keys(D().fichas).filter(k => enCartera(k) || D().fichas[k].estado !== 'candidata').sort((a, b) => (enCartera(b) - enCartera(a)) || a.localeCompare(b));
 
+  let CAL = null, calCargando = false;
+  async function cargarCal() { if (CAL || calCargando) return; calCargando = true; try { const r = await fetch('calendario_resultados.json', { cache: 'no-store' }); if (r.ok) { CAL = await r.json(); U.render && U.render(); } } catch (e) { /* sin calendario */ } calCargando = false; }
+  const sugeridas = (sin, conFecha) => CAL && CAL.fechas ? sin.filter(k => CAL.fechas[k] && !conFecha.has(k) && CAL.fechas[k].fecha >= hoy()).map(k => [k, CAL.fechas[k]]) : [];
+  const anotar = (tk, c) => D().resultados.push({ id: 'r' + Date.now().toString(36) + tk, tk, periodo: trimestre(c.fecha), fecha: c.fecha, estado: 'pendiente', estimada: !c.confirmada });
+
   U.vistas.resultados = () => {
+    cargarCal();
     const d = D(), R = d.resultados || [], pend = R.filter(r => r.estado !== 'revisado').sort((a, b) => (a.fecha || '9').localeCompare(b.fecha || '9')), hechas = R.filter(r => r.estado === 'revisado').sort((a, b) => (b.revisado || '').localeCompare(a.revisado || ''));
     const conFecha = new Set(pend.map(r => r.tk)), sin = seguidas().filter(k => !conFecha.has(k));
     const val = tk => { const v = L.valoracion(d, tk, hoy()); return v && v.ref != null ? '<span class="pill ' + (v.ref >= d.ajustes.umbral_barata / 100 ? 'ok' : v.ref <= d.ajustes.umbral_cara / 100 ? 'bad' : '') + '">' + nf(v.ref * 100, 1) + ' %</span>' : ''; };
     let h = '<div class="tools"><button class="btn" data-r="nuevo">+ Añadir fecha</button></div>';
     h += '<h3 style="margin:8px 2px 6px">Próximos resultados <span class="mut small">' + pend.length + '</span></h3><div class="card">' + (pend.length ? pend.map(r => {
       const n = r.fecha ? dif(r.fecha) : null, tag = n == null ? 'sin fecha' : n < 0 ? 'hace ' + (-n) + ' d: ¿ya publicó?' : n === 0 ? 'hoy' : 'en ' + n + ' d';
-      return '<div class="row click" data-r="rev" data-id="' + esc(r.id) + '"><div class="main"><div class="name">' + esc(nombre(r.tk)) + '</div><div class="meta">' + esc(r.tk) + ' · ' + esc(r.periodo || '') + ' · ' + (enCartera(r.tk) ? 'cartera' : 'watchlist') + '</div></div><div class="num"><span class="pill ' + (n != null && n < 0 ? 'warn' : n != null && n <= 7 ? 'ok' : '') + '">' + esc(r.fecha || '—') + '</span><div class="meta">' + tag + '</div></div></div>';
+      return '<div class="row click" data-r="rev" data-id="' + esc(r.id) + '"><div class="main"><div class="name">' + esc(nombre(r.tk)) + '</div><div class="meta">' + esc(r.tk) + ' · ' + esc(r.periodo || '') + ' · ' + (enCartera(r.tk) ? 'cartera' : 'watchlist') + '</div></div><div class="num"><span class="pill ' + (n != null && n < 0 ? 'warn' : n != null && n <= 7 ? 'ok' : '') + '">' + esc(r.fecha || '—') + '</span><div class="meta">' + tag + (r.estimada ? ' · estimada' : '') + '</div></div></div>';
     }).join('') : '<div class="empty">Ninguna fecha anotada. Añade la de las empresas que quieras seguir.</div>') + '</div>';
+    const sug = sugeridas(sin, conFecha);
+    if (sug.length) h += '<div class="card"><div class="row"><div class="main"><div class="name">Calendario público</div><div class="meta">' + sug.length + ' fechas para tus empresas · «estimada» = según el año anterior</div></div><button class="btn sm" data-r="calall">Añadir todas</button></div>' + sug.map(([k, c]) => '<div class="row"><div class="main"><div class="name">' + esc(nombre(k)) + '</div><div class="meta">' + esc(k) + ' · ' + esc(c.fecha) + (c.confirmada ? ' · confirmada' : ' · estimada') + '</div></div><button class="btn sec sm" data-r="cal" data-k="' + esc(k) + '">Añadir</button></div>').join('') + '</div>';
     if (sin.length) h += '<details class="card"><summary>Sin fecha anotada (' + sin.length + ')</summary><div class="chips" style="margin-top:8px">' + sin.map(k => '<button class="btn sec sm" data-r="nuevo" data-k="' + esc(k) + '">' + esc(k) + '</button>').join('') + '</div></details>';
     if (hechas.length) h += '<h3 style="margin:14px 2px 6px">Revisados <span class="mut small">' + hechas.length + '</span></h3><div class="card">' + hechas.slice(0, 40).map(r => '<div class="row click" data-r="rev" data-id="' + esc(r.id) + '"><div class="main"><div class="name">' + esc(nombre(r.tk)) + ' · ' + esc(r.periodo || '') + '</div><div class="meta">' + esc(r.nota || '').slice(0, 90) + '</div></div><div class="num"><span class="pill">' + esc(DEC[r.decision] || '—') + '</span><div class="meta">' + esc(r.revisado || '') + '</div></div></div>').join('') + '</div>';
     return h;
@@ -46,5 +54,7 @@
       dd.querySelector('#r-del').onclick = () => { if (confirm('¿Eliminar este registro?')) { d.resultados.splice(d.resultados.indexOf(r), 1); U.guardar({ ok: true, msg: 'Eliminado' }); } };
     });
   }
-  U.clicks.push(e => { const t = e.target.closest('[data-r]'); if (!t) return false; if (t.dataset.r === 'nuevo') nuevo(t.dataset.k); else if (t.dataset.r === 'rev') revisar(t.dataset.id); else return false; return true; });
+  U.clicks.push(e => { const t = e.target.closest('[data-r]'); if (!t) return false; if (t.dataset.r === 'nuevo') nuevo(t.dataset.k);
+    else if (t.dataset.r === 'cal' && CAL) { const c = CAL.fechas[t.dataset.k]; if (c) { anotar(t.dataset.k, c); U.guardar({ ok: true, msg: 'Fecha anotada' }); } }
+    else if (t.dataset.r === 'calall' && CAL) { const cf = new Set(D().resultados.filter(r => r.estado !== 'revisado').map(r => r.tk)); sugeridas(seguidas(), cf).forEach(([k, c]) => anotar(k, c)); U.guardar({ ok: true, msg: 'Fechas anotadas' }); } else if (t.dataset.r === 'rev') revisar(t.dataset.id); else return false; return true; });
 })();
