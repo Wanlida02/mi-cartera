@@ -221,7 +221,7 @@
   }
   function iaDlg() {
     const c = D().cribado[sel];
-    U.dlg('<h2>Pedir a una IA</h2><p class="small mut">Opcional. Copia el prompt, pégalo en el asistente que quieras (ChatGPT, Gemini, Claude…) y pega aquí el JSON que te devuelva. Sus datos son estimaciones: se marcan «sin verificar».</p>' +
+    U.dlg('<h2>Pedir a una IA</h2><p class="small mut">Opcional. Copia el prompt, pégalo en un asistente <b>con búsqueda en internet</b> (ChatGPT, Gemini, Claude…): buscará las cifras en webs de datos financieros (Yahoo Finance, MarketScreener…) y no en tus informes. Pega aquí el JSON que te devuelva; se marca «sin verificar» y las fuentes quedan en las notas de datos.</p>' +
       '<div class="acts" style="justify-content:flex-start"><button class="btn sec" id="cr-cp">Copiar prompt</button></div>' +
       '<label>JSON de respuesta</label><textarea id="cr-json" rows="6" placeholder=\'{"ticker":"…"}\'></textarea><label style="display:flex;gap:8px;align-items:center"><input id="cr-ow" type="checkbox" style="width:auto;min-height:0"> Sobrescribir los datos que ya tengo</label>' +
       '<div class="acts"><button class="btn sec" data-a="cerrar">Cancelar</button><button class="btn" id="cr-imp">Importar</button></div>',
