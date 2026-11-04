@@ -16,7 +16,7 @@ const DatosWeb = (function () {
   }
   /* Lee un archivo del repositorio (JSON) sin pasar por la caché de Pages */
   async function leerArchivo(ruta) {
-    const r = await fetch('https://api.github.com/repos/' + REPO + '/contents/' + ruta + '?ref=' + RAMA + '&t=' + Date.now(), { headers: { Accept: 'application/vnd.github.raw+json' }, cache: 'no-store' });
+    const r = await fetch('https://api.github.com/repos/' + REPO + '/contents/' + ruta + '?ref=' + RAMA + '&t=' + Date.now(), { headers: Object.assign({ Accept: 'application/vnd.github.raw+json' }, token() ? { Authorization: 'Bearer ' + token() } : {}), cache: 'no-store' });
     if (r.status === 404) return null;
     if (!r.ok) throw new Error('GitHub respondió ' + r.status);
     return await r.json();
