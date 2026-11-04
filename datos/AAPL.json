@@ -3,40 +3,89 @@
  "nombre": "Apple Inc.",
  "cik": "0000320193",
  "divisa": "USD",
- "generado": "2026-11-01T13:00:50.610Z",
+ "generado": "2026-11-04T17:29:06.833Z",
  "fuente": "SEC EDGAR (XBRL, 10-K)",
  "anios": [
-  2016,
   2017,
-  2018
+  2018,
+  2019,
+  2020,
+  2021,
+  2022,
+  2023,
+  2024,
+  2025,
+  2026
  ],
  "hist": {
   "ventas": [
-   215639,
    229234,
-   265595
+   265595,
+   260174,
+   274515,
+   365817,
+   394328,
+   383285,
+   391035,
+   416161,
+   478834
   ],
   "ebit": [
-   60024,
    61344,
-   70898
+   70898,
+   63930,
+   66288,
+   108949,
+   119437,
+   114301,
+   123216,
+   133050,
+   158063
   ],
   "da": [
-   10505,
    10157,
-   10903
+   10903,
+   12547,
+   11056,
+   11284,
+   11104,
+   11519,
+   11445,
+   11698,
+   13423
   ],
   "intereses": [
-   1456,
    2323,
-   3240
+   3240,
+   3576,
+   2873,
+   2645,
+   2931,
+   3933,
+   null,
+   null,
+   null
   ],
   "impuestos": [
-   15685,
    15738,
-   13372
+   13372,
+   10481,
+   9680,
+   14527,
+   19300,
+   16741,
+   29749,
+   20719,
+   27062
   ],
   "minoritarios": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
    0,
    0,
    0
@@ -44,87 +93,190 @@
   "otros": [
    0,
    0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
    0
   ],
   "acciones": [
-   5500.281,
-   5251.692,
-   20000.435
+   null,
+   20000.435,
+   18595.651,
+   17528.214,
+   16864.919,
+   16325.819,
+   15812.547,
+   15408.095,
+   15004.697,
+   14720.306
   ],
   "capex": [
-   12734,
    12451,
-   13313
+   13313,
+   10495,
+   7309,
+   11085,
+   10708,
+   10959,
+   9447,
+   12715,
+   9041
   ],
   "leases": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
    null,
    null,
    null
   ],
   "caja": [
-   20484,
    20289,
-   66301
+   66301,
+   100557,
+   90943,
+   62639,
+   48304,
+   61555,
+   65171,
+   54697,
+   56722
   ],
   "deuda": [
-   78927,
    103703,
-   102519
+   102519,
+   102067,
+   107440,
+   118719,
+   110087,
+   105103,
+   96662,
+   90678,
+   78114
   ],
   "leases_deuda": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
    null,
    null,
    null
   ],
   "goodwill": [
-   5414,
    5717,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
    null
   ],
   "equity": [
-   128249,
    134047,
-   107147
+   107147,
+   90488,
+   65339,
+   63090,
+   50672,
+   62146,
+   56950,
+   73733,
+   112093
   ],
   "ni_reportado": [
-   45687,
    48351,
-   59531
+   59531,
+   55256,
+   57411,
+   94680,
+   99803,
+   96995,
+   93736,
+   112010,
+   132175
   ],
   "fco": [
-   66231,
    64225,
-   77434
+   77434,
+   69391,
+   80674,
+   104038,
+   122151,
+   110543,
+   118254,
+   111482,
+   145097
   ],
   "sbc": [
-   4210,
    4840,
-   5340
+   5340,
+   6068,
+   6829,
+   7906,
+   9038,
+   10833,
+   11688,
+   12863,
+   13789
   ],
   "dividendos": [
-   11965,
    12563,
-   null
+   13712,
+   14119,
+   14081,
+   14467,
+   14841,
+   15025,
+   15234,
+   15421,
+   15721
   ],
   "recompras": [
-   29722,
    32900,
-   72738
+   72738,
+   66897,
+   72358,
+   85971,
+   89402,
+   77550,
+   94949,
+   90711,
+   86390
   ],
   "bpa": [
-   8.31,
-   9.21,
-   2.98
+   null,
+   2.98,
+   2.97,
+   3.28,
+   5.61,
+   6.11,
+   6.13,
+   6.08,
+   7.46,
+   8.98
   ]
  },
- "precio": {
-  "precio": 344.63,
-  "divisa": "USD",
-  "fecha": "2026-10-30"
- },
+ "precio": null,
  "notas": [
   "Datos automáticos de la SEC (XBRL de los 10-K). Revísalos contra el informe anual antes de decidir: pueden faltar líneas o haber reexpresiones.",
-  "Caja = efectivo + inversiones a corto plazo; deuda = deuda financiera (sin arrendamientos). Intereses = gasto bruto (no netos de ingresos). Minoritarios, otros y arrendamientos van a 0 o sin dato: complétalos si importan."
+  "Caja = efectivo + inversiones a corto plazo; deuda = deuda financiera (sin arrendamientos). Intereses = gasto bruto (no netos de ingresos). Minoritarios, otros y arrendamientos van a 0 o sin dato: complétalos si importan.",
+  "Acciones y BPA anteriores a 2018 descartados: saltan de 5252 a 20000 millones (probable split sin reexpresar), así que no son comparables.",
+  "Sin precio automático (fetch failed)."
  ],
  "faltan": []
 }

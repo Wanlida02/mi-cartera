@@ -36,6 +36,7 @@ const anioDe = fin => { const y = Number(fin.slice(0, 4)), m = Number(fin.slice(
 
 /* Serie anual {año: valor} de una línea: hechos de 10-K, periodo de 350–380 días (flujo) o instante (saldo); gana el más reciente presentado */
 function serie(gaap, def) {
+  const res = {};   // las empresas cambian de etiqueta con los años (p. ej. Apple): se rellenan los huecos con las etiquetas siguientes
   for (const tag of def.tags) {
     const t = gaap[tag]; if (!t || !t.units) continue;
     const u = t.units[def.unidad || 'USD']; if (!u) continue;
@@ -46,9 +47,9 @@ function serie(gaap, def) {
       const a = anioDe(h.end), p = por[a];
       if (!p || h.end > p.end || (h.end === p.end && (h.filed || '') > (p.filed || ''))) por[a] = h;
     }
-    const anios = Object.keys(por); if (anios.length) return Object.fromEntries(anios.map(a => [a, por[a].val / (def.escala || 1e6)]).map(([a, v]) => [a, Math.round(v * 1000) / 1000]));
+    Object.keys(por).forEach(a => { if (res[a] == null) res[a] = Math.round(por[a].val / (def.escala || 1e6) * 1000) / 1000; });
   }
-  return null;
+  return Object.keys(res).length ? res : null;
 }
 /* Construye {anios, hist} a partir del JSON «companyfacts» de la SEC */
 function construir(cf) {
@@ -66,9 +67,20 @@ function construir(cf) {
     acciones: col('acciones'), capex: col('capex'), leases: anios.map(() => null), caja: suma('caja', 'inv_cp'), deuda: suma('deuda_lp', 'deuda_cp'), leases_deuda: anios.map(() => null),
     goodwill: col('goodwill'), equity: col('equity'), ni_reportado: col('ni_reportado'), fco: col('fco'), sbc: col('sbc'), dividendos: col('dividendos'), recompras: col('recompras'), bpa: col('bpa')
   };
+  /* Splits: las cifras antiguas por acción pueden no estar reexpresadas. Si las acciones saltan (>1,8x o <0,55x) entre dos años, se descartan acciones y BPA anteriores al salto */
+  const avisosSplit = [];
+  for (let i = anios.length - 1; i > 0; i--) {
+    const x = hist.acciones[i], y = hist.acciones[i - 1];
+    if (isN(x) && isN(y) && y > 0 && (x / y > 1.8 || x / y < 0.55)) {
+      for (let j = 0; j < i; j++) { hist.acciones[j] = null; hist.bpa[j] = null; }
+      avisosSplit.push('Acciones y BPA anteriores a ' + anios[i] + ' descartados: saltan de ' + Math.round(y) + ' a ' + Math.round(x) + ' millones (probable split sin reexpresar), así que no son comparables.');
+      break;
+    }
+  }
   const faltan = Object.keys(hist).filter(k => !['minoritarios', 'otros', 'leases', 'leases_deuda'].includes(k) && hist[k].every(x => x == null));
   const notas = ['Datos automáticos de la SEC (XBRL de los 10-K). Revísalos contra el informe anual antes de decidir: pueden faltar líneas o haber reexpresiones.',
     'Caja = efectivo + inversiones a corto plazo; deuda = deuda financiera (sin arrendamientos). Intereses = gasto bruto (no netos de ingresos). Minoritarios, otros y arrendamientos van a 0 o sin dato: complétalos si importan.'];
+  avisosSplit.forEach(x => notas.push(x));
   if (faltan.length) notas.push('Líneas sin datos en la SEC: ' + faltan.join(', ') + '.');
   return { anios, hist, notas, faltan, nombre: cf.entityName || null };
 }

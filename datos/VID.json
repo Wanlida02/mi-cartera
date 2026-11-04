@@ -1,5 +1,5 @@
 {
  "ticker": "VID",
- "error": "HTTP 403 en https://www.sec.gov/files/company_tickers.json",
- "generado": "2026-10-31T19:40:31.033Z"
+ "error": "«VID» no está en la lista de la SEC: solo cubre empresas de EE. UU. Para otras, usa los informes anuales.",
+ "generado": "2026-11-04T17:29:31.142Z"
 }
