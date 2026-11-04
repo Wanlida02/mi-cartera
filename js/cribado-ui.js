@@ -65,7 +65,11 @@
       return '<div class="row click" data-c="abrir" data-k="' + esc(k) + '"><div class="main"><div class="name">' + esc(c.nombre || k) + '</div><div class="meta">' + esc(k) + ' · ' + ({ verificado: 'verificado', ficha: 'cuentas de la ficha', manual: 'manual', ia: 'asistente de IA' }[c.origen] || c.origen || '') + (ed != null ? ' hace ' + ed + ' d' : '') + '</div></div>' +
         '<div class="num">' + (R ? '<span class="pill ' + TONO[R.tono] + '">' + esc(R.veredicto.replace(' · ', ' · ')) + '</span><div class="meta">calidad ' + (R.calidad == null ? '—' : nf(R.calidad, 0) + '%') + (R.provisional ? ' · provisional' : '') + '</div>' : '<span class="pill">sin evaluar</span>') + '</div></div>';
     }).join('') : '<div class="empty">Aún no has cribado ninguna empresa. Escribe un ticker arriba.<br><br><button class="btn sec sm" data-c="inicial">Cargar mis 5 cribados verificados</button></div>') + '</div>';
-    if (sin.length) h += '<details class="card"><summary>Fichas de valoración sin cribar (' + sin.length + ')</summary><div class="chips" style="margin-top:8px">' + sin.map(k => '<button class="btn sec sm" data-c="nuevo" data-k="' + esc(k) + '">' + esc(k) + '</button>').join('') + '</div></details>';
+    if (sin.length) {
+      const enC = k => d.posiciones.some(p => L.tickerDe(d, p) === k), a = sin.filter(enC), b = sin.filter(k => !enC(k)), chips = ks => ks.map(k => '<button class="btn sec sm" data-c="nuevo" data-k="' + esc(k) + '">' + esc(k) + '</button>').join('');
+      if (b.length) h += '<details class="card" open><summary>Candidatas por cribar (' + b.length + ')</summary><p class="small mut">Fichas de valoración fuera de tu cartera: aquí el cribado sí importa.</p><div class="chips" style="margin-top:8px">' + chips(b) + '</div><div class="tools" style="margin-top:8px"><button class="btn sm" data-c="cribartodas">Cribar todas con los datos de su ficha</button></div></details>';
+      if (a.length) h += '<details class="card"><summary>En cartera · ya analizadas (' + a.length + ')</summary><p class="small mut">Ya las conoces a fondo, así que el cribado es opcional (útil para repasar la calidad).</p><div class="chips" style="margin-top:8px">' + chips(a) + '</div></details>';
+    }
     return h;
   }
 
@@ -250,6 +254,7 @@
     else if (a === 'editar') editor();
     else if (a === 'precio') precioDlg();
     else if (a === 'ia') iaDlg();
+    else if (a === 'cribartodas') { const d = D(); let n = 0; Object.keys(d.fichas).filter(k => !d.cribado[k] && !d.posiciones.some(p => L.tickerDe(d, p) === k)).forEach(k => { d.cribado[k] = { ticker: k, nombre: d.fichas[k].nombre, origen: 'ficha' }; if (desdeFicha(k, true).ok) n++; else delete d.cribado[k]; }); Store.save(); U.render(); U.toast(n + ' candidatas cribadas'); }
     else if (a === 'ficha') { const r = desdeFicha(sel); if (r.ok) { Store.save(); U.render(); } U.toast(r.msg); }
     else if (a === 'verif') { const c = D().cribado[sel]; if (confirm('¿Confirmas que has contrastado estos datos con el informe anual o una fuente fiable? Pasarán a «verificados» con fecha de hoy.')) { c.origen = 'verificado'; c.fecha_verificacion = hoy(); U.guardar({ ok: true, msg: 'Marcados como verificados hoy' }); } }
     else if (a === 'borrar') { if (confirm('¿Eliminar el cribado de ' + sel + '? (La ficha de valoración no se toca)')) { delete D().cribado[sel]; sel = null; U.guardar({ ok: true, msg: 'Cribado eliminado' }); } }
