@@ -15,5 +15,12 @@ const srv = http.createServer((q, r) => { const p = path.join(root, q.url.split(
   await pg.evaluate(() => { const e = Store.get().informes.empresas[0]; delete e.datos.metricas['BPA diluido']; Store.save(); });
   await pg.click('[data-tab=informes]'); await pg.click('[data-inf="0"]'); await pg.click('#inf-ficha'); await pg.waitForTimeout(200);
   assert((await pg.textContent('#aviso-dlg')).includes('BPA diluido'));
+  // completar con IA: el CSV no trae BPA; se pega una respuesta con ruido alrededor
+  await pg.evaluate(() => { const d = Store.get(); delete d.fichas.AENA; delete d.cribado.AENA; });
+  await pg.evaluate(() => UI.cerrar()); await pg.click('[data-tab=informes]'); await pg.click('[data-inf="0"]'); await pg.click('#inf-ia'); await pg.waitForSelector('#ia-r');
+  assert((await pg.inputValue('#ia-p')).includes('BPA diluido'));
+  await pg.fill('#ia-r', 'Claro:\n```json\n{"BPA diluido":[-0.02,0.02,0.07,0.10,0.11,0.14]}\n```\nFuente: informes.'); await pg.click('#ia-ok'); await pg.waitForTimeout(300);
+  const r2 = await pg.evaluate(() => { const d = Store.get(); return { f: !!d.fichas.AENA, n: (d.fichas.AENA || {}).notas, m: d.cribado.AENA && d.cribado.AENA.margen_ebit }; });
+  assert(r2.f && r2.m === 44.4 && r2.n.some(x => /IA/.test(x)), JSON.stringify(r2));
   assert.deepEqual(errs, []); console.log('ficha_informes_ui ok'); await b.close(); srv.close();
 })().catch(e => { console.error('FALLO', e.message); process.exit(1); });

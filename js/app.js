@@ -268,8 +268,9 @@
       (dt ? '<h3 style="margin-top:12px">Cifras clave (' + esc(dt.divisa || '') + ' millones)</h3><div style="overflow:auto"><table style="border-collapse:collapse;font-size:13px;width:100%"><tr><th></th>' + dt.anios.map(a => '<th style="text-align:right;padding:3px 6px">' + a + '</th>').join('') + '</tr>' +
         Object.keys(dt.metricas).map(m => '<tr><td style="padding:3px 6px 3px 0;white-space:nowrap">' + esc(m) + '</td>' + dt.metricas[m].map(v => '<td style="text-align:right;padding:3px 6px">' + f(v, m) + '</td>').join('') + '</tr>').join('') + '</table></div>' +
         '<p class="small mut">Detalle completo en ' + esc(e.csv || 'el CSV') + '.</p>' : '') +
-      '<div class="acts"><button class="btn sec" data-a="cerrar">Cerrar</button>' + (dt && e.tk ? '<button class="btn" id="inf-ficha">Crear ficha y cribado con estas cifras</button>' : '') + '</div>', dd => {
+      '<div class="acts"><button class="btn sec" data-a="cerrar">Cerrar</button>' + (e.tk ? '<button class="btn sec" id="inf-ia">Completar con IA</button>' : '') + (dt && e.tk ? '<button class="btn" id="inf-ficha">Crear ficha y cribado con estas cifras</button>' : '') + '</div>', dd => {
         const b = dd.querySelector('#inf-ficha'); if (b) b.onclick = () => { if (UI.fichaDeInformes(e)) cerrar(); };
+        const c = dd.querySelector('#inf-ia'); if (c) c.onclick = () => { cerrar(); UI.completarIA(e); };
       });
   }
   function cargarIndiceInformes(file) {

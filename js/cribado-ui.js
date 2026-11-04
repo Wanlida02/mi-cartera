@@ -257,6 +257,33 @@
     U.guardar({ ok: true, msg: r.ok ? 'Datos de ' + tk + ' cargados de internet (SEC). Revisa lo cualitativo.' : 'Ficha creada, pero faltan cuentas para el cribado' });
   }
   U.avisoDlg = m => { const dd = document.querySelector('dialog[open]') || document; let a = dd.querySelector('#aviso-dlg'); if (!a) { a = document.createElement('div'); a.id = 'aviso-dlg'; a.className = 'alert warn'; const ac = dd.querySelector('.acts'); ac ? ac.parentNode.insertBefore(a, ac) : dd.appendChild(a); } a.textContent = m; };
+  /* Completar con IA las cifras que faltan en el resumen del CSV: prompt para copiar y respuesta JSON para pegar */
+  const METR_IA = ['Ventas', 'Beneficio operativo (EBIT)', 'Beneficio neto', 'BPA diluido', 'Deuda neta / EBITDA', 'FCF / acción'];
+  U.completarIA = function (e) {
+    const dt = e.datos || {}, ult = Number(e.ultimo_anio) || (new Date().getFullYear() - 1), anios = (dt.anios && dt.anios.length >= 2 ? dt.anios : [ult - 5, ult - 4, ult - 3, ult - 2, ult - 1, ult]).map(Number), div = dt.divisa || 'EUR';
+    const falta = METR_IA.filter(k => !((dt.metricas || {})[k] || []).some(v => typeof v === 'number'));
+    const plantilla = '{' + falta.map(k => '"' + k + '":[' + anios.map(() => 'null').join(',') + ']').join(',') + '}';
+    const prompt = 'Necesito cifras anuales de ' + (e.nombre || e.tk) + (e.tk ? ' (' + e.tk + ')' : '') + ' para los ejercicios ' + anios.join(', ') + ', tomadas de sus cuentas anuales consolidadas. Devuelve SOLO un JSON con esta forma, en millones de ' + div + ' (BPA y FCF por acción en ' + div + ' por acción; Deuda neta / EBITDA como ratio), un valor por año en ese orden y null si no lo sabes con seguridad. No inventes cifras ni las estimes: si dudas, null. Después del JSON indica en una línea de qué documento sale cada dato.\n' + plantilla;
+    U.dlg('<h2>Completar con IA · ' + esc(e.nombre) + '</h2><p class="small">Faltan: <b>' + (falta.length ? falta.map(esc).join(', ') : 'nada obligatorio') + '</b>. 1) Copia este mensaje y pégalo en tu IA (mejor si le adjuntas el informe anual). 2) Pega aquí su respuesta.</p>' +
+      '<textarea id="ia-p" rows="6" readonly>' + esc(prompt) + '</textarea><div class="tools"><button class="btn sec sm" id="ia-copy">Copiar mensaje</button></div>' +
+      '<label for="ia-r">Respuesta de la IA (con el JSON)</label><textarea id="ia-r" rows="6" placeholder="Pega aquí la respuesta"></textarea>' +
+      '<p class="small mut">Solo se rellenan las cifras que faltan; las del CSV no se tocan. Quedan marcadas como «de IA, sin verificar»: contrástalas con el informe.</p>' +
+      '<div class="acts"><button class="btn sec" data-a="cerrar">Cancelar</button><button class="btn" id="ia-ok">Usar y crear la ficha</button></div>', dd => {
+      dd.querySelector('#ia-copy').onclick = () => { const t = dd.querySelector('#ia-p'); t.select(); try { navigator.clipboard.writeText(t.value); } catch (err) { document.execCommand && document.execCommand('copy'); } U.toast('Mensaje copiado'); };
+      dd.querySelector('#ia-ok').onclick = () => {
+        const txt = dd.querySelector('#ia-r').value, i = txt.indexOf('{'), j = txt.lastIndexOf('}'); let o;
+        try { o = JSON.parse(txt.slice(i, j + 1)); } catch (err) { return U.avisoDlg('No encuentro un JSON válido en la respuesta. Pide a la IA «solo el JSON» y vuelve a pegarlo.'); }
+        const nuevo = Object.assign({}, dt, { divisa: div, anios, metricas: Object.assign({}, dt.metricas) }), ia = [];
+        METR_IA.forEach(k => { const a = o[k]; if (!Array.isArray(a) || ((dt.metricas || {})[k] || []).some(v => typeof v === 'number')) return; const v = anios.map((_, n) => (typeof a[n] === 'number' && isFinite(a[n]) ? a[n] : null)); if (v.some(x => x != null)) { nuevo.metricas[k] = v; ia.push(k); } });
+        if (!ia.length) return U.avisoDlg('La respuesta no trae ninguna cifra nueva utilizable.');
+        nuevo.ia = (dt.ia || []).concat(ia); const orig = ((D().informes || {}).empresas || []).find(x => x.carpeta === e.carpeta); e.datos = nuevo; if (orig) orig.datos = nuevo;
+        const f = DatosWeb.aFichaInformes(e, hoy()); if (!f) return U.avisoDlg('Aún faltan: ' + DatosWeb.faltanInformes(e).join(', ') + '. Se han guardado las cifras recibidas; pide el resto a la IA o complétalas a mano.') || Store.save();
+        f.notas.push('Cifras completadas por IA (sin verificar): ' + ia.join(', ') + '.'); f.fuentes.push('IA (sin verificar)'); ia.forEach(k => { const m = { 'Ventas': 'ventas', 'Beneficio operativo (EBIT)': 'ebit', 'Beneficio neto': 'ni_reportado', 'BPA diluido': 'bpa' }[k]; if (m) f.conf[m] = 'E'; });
+        const d = D(), tk = e.tk; if (!tk) return U.avisoDlg('Esta empresa no tiene ticker: vincúlala primero.');
+        d.fichas[tk] = f; const r = desdeFicha(tk, true); if (!d.cribado[tk]) d.cribado[tk] = { ticker: tk, nombre: f.nombre, origen: 'ia' };
+        U.guardar({ ok: true, msg: 'Ficha y cribado de ' + tk + ' creados con cifras de IA sin verificar' }); };
+    });
+  };
   U.fichaDeInformes = function (e) {
     const d = D(), tk = e && e.tk, dev = m => { U.avisoDlg(m); return false; };
     if (!tk) return dev('Esta empresa no tiene ticker: vincúlala primero (en Informes, «Sin informes descargados» o el desplegable de vincular).');
