@@ -11,5 +11,9 @@ const srv = http.createServer((q, r) => { const p = path.join(root, q.url.split(
   await pg.click('[data-inf="0"]'); await pg.waitForSelector('#inf-ficha'); await pg.click('#inf-ficha'); await pg.waitForTimeout(300);
   const r = await pg.evaluate(() => { const d = Store.get(); return { f: !!d.fichas.AENA, c: d.cribado.AENA && d.cribado.AENA.deuda_neta_ebitda, m: d.cribado.AENA && d.cribado.AENA.margen_ebit }; });
   assert(r.f && r.c === 1.7 && r.m === 44.4, JSON.stringify(r));
+  // sin BPA: el motivo se explica dentro del diálogo
+  await pg.evaluate(() => { const e = Store.get().informes.empresas[0]; delete e.datos.metricas['BPA diluido']; Store.save(); });
+  await pg.click('[data-tab=informes]'); await pg.click('[data-inf="0"]'); await pg.click('#inf-ficha'); await pg.waitForTimeout(200);
+  assert((await pg.textContent('#aviso-dlg')).includes('BPA diluido'));
   assert.deepEqual(errs, []); console.log('ficha_informes_ui ok'); await b.close(); srv.close();
 })().catch(e => { console.error('FALLO', e.message); process.exit(1); });

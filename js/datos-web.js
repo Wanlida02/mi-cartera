@@ -54,6 +54,11 @@ const DatosWeb = (function () {
     return f;
   }
   /* Ficha borrador a partir de las cifras del CSV de informes (empresas no americanas). Millones; acciones = beneficio neto / BPA diluido. */
+  /* Qué cifras necesarias faltan en el resumen del CSV (para explicarlo en pantalla) */
+  function faltanInformes(e) {
+    const dt = e && e.datos, m = dt && dt.metricas; if (!m || !Array.isArray(dt.anios) || dt.anios.length < 2) return ['el resumen de cifras (¿hay un archivo *_datos.csv en la carpeta y has vuelto a ejecutar indice_informes.py?)'];
+    return ['Ventas', 'Beneficio operativo (EBIT)', 'Beneficio neto', 'BPA diluido'].filter(k => !(m[k] || []).some(v => typeof v === 'number' && isFinite(v)));
+  }
   function aFichaInformes(e, hoy) {
     const dt = e && e.datos, m = dt && dt.metricas; if (!m || !Array.isArray(dt.anios) || dt.anios.length < 2) return null;
     const an = dt.anios.map(Number), n = an.length, num = v => (typeof v === 'number' && isFinite(v) ? v : null), ser = k => (m[k] || []).slice(0, n).map(num);
@@ -92,6 +97,6 @@ const DatosWeb = (function () {
     const r = await fetch(url, { method: 'PUT', headers: Object.assign({ 'Content-Type': 'application/json' }, h), body: JSON.stringify({ message: msg, content: b64, sha, branch: RAMA }) });
     return r.ok ? { ok: true } : { ok: false, msg: r.status === 403 || r.status === 404 ? 'El token no tiene permiso Contents (Read and write) sobre ' + REPO : r.status === 409 || r.status === 422 ? 'El archivo cambió mientras tanto; vuelve a intentarlo' : 'GitHub respondió ' + r.status };
   }
-  return { planSimbolos, escribirArchivo, aFichaInformes, pausa: 7000, leerArchivo, lanzarWorkflow, token, setToken, leer, lanzar, esperar, aFicha, urlActions, arch };
+  return { faltanInformes, planSimbolos, escribirArchivo, aFichaInformes, pausa: 7000, leerArchivo, lanzarWorkflow, token, setToken, leer, lanzar, esperar, aFicha, urlActions, arch };
 })();
 if (typeof module !== 'undefined') module.exports = DatosWeb;

@@ -256,10 +256,12 @@
     const r = desdeFicha(tk, true); if (!d.cribado[tk]) d.cribado[tk] = { ticker: tk, nombre: o.nombre || tk, origen: 'ficha' };
     U.guardar({ ok: true, msg: r.ok ? 'Datos de ' + tk + ' cargados de internet (SEC). Revisa lo cualitativo.' : 'Ficha creada, pero faltan cuentas para el cribado' });
   }
+  U.avisoDlg = m => { const dd = document.querySelector('dialog[open]') || document; let a = dd.querySelector('#aviso-dlg'); if (!a) { a = document.createElement('div'); a.id = 'aviso-dlg'; a.className = 'alert warn'; const ac = dd.querySelector('.acts'); ac ? ac.parentNode.insertBefore(a, ac) : dd.appendChild(a); } a.textContent = m; };
   U.fichaDeInformes = function (e) {
-    const d = D(), tk = e && e.tk; if (!tk) { U.toast('Esta empresa no tiene ticker: vincúlala primero'); return false; }
+    const d = D(), tk = e && e.tk, dev = m => { U.avisoDlg(m); return false; };
+    if (!tk) return dev('Esta empresa no tiene ticker: vincúlala primero (en Informes, «Sin informes descargados» o el desplegable de vincular).');
     if (d.fichas[tk] && !confirm('Ya existe ficha de ' + tk + '. ¿Sustituirla por este borrador?')) return false;
-    const f = DatosWeb.aFichaInformes(e, hoy()); if (!f) { U.toast('El CSV no trae ventas, EBIT, beneficio neto y BPA'); return false; }
+    const f = DatosWeb.aFichaInformes(e, hoy()); if (!f) return dev('No se puede crear: faltan en el CSV ' + DatosWeb.faltanInformes(e).join(', ') + '. Necesito Ventas, EBIT, Beneficio neto y BPA diluido con algún dato.');
     d.fichas[tk] = f; const r = desdeFicha(tk, true); if (!d.cribado[tk]) d.cribado[tk] = { ticker: tk, nombre: f.nombre, origen: 'ficha' };
     U.guardar({ ok: true, msg: r.ok ? 'Ficha borrador y cribado de ' + tk + ' creados desde tus informes' : 'Ficha creada; faltan cuentas para el cribado' }); return true;
   };
