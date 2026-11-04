@@ -14,6 +14,20 @@ const DatosWeb = (function () {
     if (!r.ok) throw new Error('GitHub respondió ' + r.status);
     return await r.json();
   }
+  /* Lee un archivo del repositorio (JSON) sin pasar por la caché de Pages */
+  async function leerArchivo(ruta) {
+    const r = await fetch('https://api.github.com/repos/' + REPO + '/contents/' + ruta + '?ref=' + RAMA + '&t=' + Date.now(), { headers: { Accept: 'application/vnd.github.raw+json' }, cache: 'no-store' });
+    if (r.status === 404) return null;
+    if (!r.ok) throw new Error('GitHub respondió ' + r.status);
+    return await r.json();
+  }
+  /* Lanza un workflow (workflow_dispatch) con el token del dispositivo */
+  async function lanzarWorkflow(archivo, inputs) {
+    const t = token(); if (!t) return { ok: false, sinToken: true };
+    const r = await fetch('https://api.github.com/repos/' + REPO + '/actions/workflows/' + archivo + '/dispatches', { method: 'POST', headers: { Authorization: 'Bearer ' + t, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' }, body: JSON.stringify({ ref: RAMA, inputs: inputs || {} }) });
+    if (r.status === 204) return { ok: true };
+    return { ok: false, msg: r.status === 401 || r.status === 403 || r.status === 404 ? 'El token no es válido o no tiene permiso de Actions (Read and write) sobre ' + REPO : 'GitHub respondió ' + r.status };
+  }
   async function lanzar(tk) {
     const t = token(); if (!t) return { ok: false, sinToken: true };
     const r = await fetch('https://api.github.com/repos/' + REPO + '/actions/workflows/datos.yml/dispatches', { method: 'POST', headers: { Authorization: 'Bearer ' + t, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' }, body: JSON.stringify({ ref: RAMA, inputs: { ticker: tk } }) });
@@ -39,6 +53,6 @@ const DatosWeb = (function () {
     if (o.precio && o.precio.precio > 0) { f.precio = o.precio.precio; f.fecha_precio = o.precio.fecha || hoy; f.fuente_precio = 'internet'; }
     return f;
   }
-  return { pausa: 7000, token, setToken, leer, lanzar, esperar, aFicha, urlActions, arch };
+  return { pausa: 7000, leerArchivo, lanzarWorkflow, token, setToken, leer, lanzar, esperar, aFicha, urlActions, arch };
 })();
 if (typeof module !== 'undefined') module.exports = DatosWeb;

@@ -65,6 +65,52 @@
   }
 
   /* ───── Cartera ───── */
+  const fcorta = f => (f && /^\d{4}-\d\d-\d\d/.test(f) ? f.slice(8, 10) + '/' + f.slice(5, 7) : '');
+  function fechaPrecio(pp) {
+    if (!pp || !pp.fecha) return ' · <span class="pill warn">sin fecha</span>';
+    const dd = L.diasDesde(pp.fecha), viejo = dd != null && dd > Store.get().ajustes.dias_precio_viejo;
+    return ' · <span class="' + (viejo ? 'pill warn' : 'mut') + '" title="Fuente: ' + esc(pp.fuente || '') + '">' + (dd === 0 ? 'hoy' : fcorta(pp.fecha) || esc(pp.fecha)) + '</span>';
+  }
+  function lineaPrecios() {
+    const pi = Store.preciosInfo() || {}, est = pi.estado || {};
+    return '<div class="tools" style="align-items:center;gap:8px"><span class="mut small" style="flex:1">Precios automáticos: ' + (pi.generado ? new Date(pi.generado).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) + ' · ' + (est.ok || 0) + '/' + (est.total || 0) + ' valores' : 'sin datos aún') +
+      '</span><button class="btn sec sm" data-a="precios">Actualizar precios</button></div>';
+  }
+  function preciosDlg() {
+    const pi = Store.preciosInfo() || {}, est = pi.estado || {}, fall = (est.fallos || []).map(f => f.ticker.replace('@ficha', ' (ficha)'));
+    dlg('<h2>Actualizar precios</h2><p class="small">Últimos precios automáticos: <b>' + (pi.generado ? new Date(pi.generado).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) : 'sin datos') + '</b> · ' + (est.ok || 0) + '/' + (est.total || 0) + ' valores' + (fall.length ? ' · sin actualizar: ' + esc(fall.join(', ')) : '') + '.</p>' +
+      '<p class="small mut">«Traer lo último» lee lo publicado hasta ahora (inmediato). «Forzar descarga» lanza una descarga nueva en GitHub, sin esperar al horario automático, y tarda 1–2 minutos; necesita el token de GitHub de este dispositivo.</p>' +
+      '<div class="acts" style="justify-content:flex-start"><button class="btn sec" id="pr-ult">Traer lo último</button><button class="btn" id="pr-forzar">Forzar descarga nueva</button></div>' +
+      '<div id="pr-tok" hidden><label for="pr-t">Token de GitHub (Actions: Read and write)</label><input id="pr-t" type="password" autocomplete="off" placeholder="github_pat_…"><div class="acts" style="justify-content:flex-start"><button class="btn sm" id="pr-tok-ok">Guardar y forzar</button></div></div>' +
+      '<p class="small" id="pr-msg"></p><div class="acts"><button class="btn sec" data-a="cerrar">Cerrar</button></div>', dd => {
+      const msg = t => { dd.querySelector('#pr-msg').textContent = t; };
+      let ocupado = false;
+      const aplicar = async j => { const n = await Store.cargarPreciosAuto(j); render(); return n; };
+      dd.querySelector('#pr-ult').onclick = async () => {
+        if (ocupado) return; ocupado = true; msg('Leyendo…');
+        try { const j = await DatosWeb.leerArchivo('precios.json'); if (!j) msg('No hay precios publicados.'); else { const n = await aplicar(j); msg('Hecho: ' + new Date(j.generado).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) + ' · ' + n + ' cambio(s).'); } } catch (e) { msg('No se pudo leer: ' + e.message); }
+        ocupado = false;
+      };
+      const forzar = async () => {
+        if (ocupado) return; ocupado = true; const t0 = Date.now(); msg('Lanzando la descarga…');
+        try {
+          const l = await DatosWeb.lanzarWorkflow('precios.yml', { forzar: 'true' });
+          if (l.sinToken) { dd.querySelector('#pr-tok').hidden = false; msg('Pega el token para poder lanzarla desde la app.'); ocupado = false; return; }
+          if (!l.ok) { msg(l.msg); ocupado = false; return; }
+          for (let i = 0; i < 40; i++) {
+            msg('Descargando precios… ' + Math.round((Date.now() - t0) / 1000) + ' s');
+            await new Promise(r => setTimeout(r, DatosWeb.pausa));
+            let j = null; try { j = await DatosWeb.leerArchivo('precios.json'); } catch (e) { }
+            if (j && Date.parse(j.generado) >= t0 - 5000) { const n = await aplicar(j), e2 = j.estado || {}; msg('Listo: ' + (e2.ok || 0) + '/' + (e2.total || 0) + ' valores · ' + n + ' cambio(s).'); ocupado = false; return; }
+          }
+          msg('Tarda más de lo normal: mira Actions en GitHub y pulsa «Traer lo último» después.');
+        } catch (e) { msg('Error: ' + e.message); }
+        ocupado = false;
+      };
+      dd.querySelector('#pr-forzar').onclick = forzar;
+      dd.querySelector('#pr-tok-ok').onclick = () => { const t = dd.querySelector('#pr-t').value.trim(); if (!t) return toast('Pega el token'); DatosWeb.setToken(t); dd.querySelector('#pr-tok').hidden = true; forzar(); };
+    });
+  }
   function vistaCartera() {
     const d = Store.get(), W = L.pesos(d), q = L.norm(filtro);
     let filas = W.filas.map((r, i) => Object.assign({ i }, r)).filter(r => !q || L.norm(r.p.empresa + ' ' + (r.p.ticker || '') + ' ' + (r.p.broker || '')).includes(q));
@@ -72,10 +118,11 @@
     filas.sort((a, b) => { const x = key(a), y = key(b); return x < y ? -1 : x > y ? 1 : 0; });
     let h = '<div class="tools"><input id="q" type="search" placeholder="Buscar empresa, ticker o broker" value="' + esc(filtro) + '">' +
       '<select id="ord"><option value="peso"' + (orden === 'peso' ? ' selected' : '') + '>Mayor peso</option><option value="nombre"' + (orden === 'nombre' ? ' selected' : '') + '>Nombre</option><option value="var"' + (orden === 'var' ? ' selected' : '') + '>Mejor rentab.</option></select></div>';
+    h += lineaPrecios();
     h += '<div class="card">' + (filas.length ? filas.map(r => {
       const p = r.p, pp = L.precioPos(d, p), v = L.variacion(d, p), w = W.total && r.eur != null ? r.eur / W.total : null;
       return '<div class="row click" data-pos="' + r.i + '"><div class="main"><div class="name">' + esc(p.empresa) + '</div><div class="meta">' + esc(p.broker || '') + ' · ' + nf(p.cantidad, 4).replace(/,?0+$/, '') + ' acc. · ' + money(pp && pp.precio, p.moneda) +
-        (pp && pp.convertido ? ' (conv.)' : '') + '</div></div><div class="num"><b>' + eur(r.eur) + '</b><div class="meta"><span class="' + cls(v) + '">' + pct(v) + '</span> · ' + (w == null ? '—' : nf(w * 100, 1) + '%') + '</div></div></div>';
+        (pp && pp.convertido ? ' (conv.)' : '') + fechaPrecio(pp) + '</div></div><div class="num"><b>' + eur(r.eur) + '</b><div class="meta"><span class="' + cls(v) + '">' + pct(v) + '</span> · ' + (w == null ? '—' : nf(w * 100, 1) + '%') + '</div></div></div>';
     }).join('') : '<div class="empty">Sin posiciones' + (q ? ' que coincidan' : '') + '.</div>') + '</div>';
     h += '<button class="btn fab" data-a="compra">+ Compra</button>';
     const mv = d.movimientos.slice().reverse().slice(0, 30);
@@ -284,6 +331,7 @@
     switch (t.dataset.a) {
       case 'cerrar': cerrar(); break;
       case 'ajustes': ajustes(); break;
+      case 'precios': preciosDlg(); break;
       case 'compra': formCompra(); break;
       case 'mas': { const p = Store.get().posiciones[i]; formCompra({ empresa: p.empresa, ticker: p.ticker, broker: p.broker, moneda: p.moneda, sector: p.sector }); break; }
       case 'vender': formVenta(i); break;

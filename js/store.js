@@ -42,10 +42,10 @@ const Store = (function () {
   function ultimaCopia() { try { return (JSON.parse(localStorage.getItem(META) || '{}')).copia || null; } catch (e) { return null; } }
 
   /* precios.json: se fusiona solo si es más reciente que lo que ya hay (nunca pisa un precio manual más nuevo) */
-  async function cargarPreciosAuto() {
+  async function cargarPreciosAuto(jIn) {
     try {
-      const r = await fetch('precios.json', { cache: 'no-store' }); if (!r.ok) return false;
-      const j = await r.json(); let n = 0;
+      let j = jIn; if (!j) { const r = await fetch('precios.json', { cache: 'no-store' }); if (!r.ok) return false; j = await r.json(); }
+      let n = 0;
       Object.keys(j.precios || {}).forEach(tk => {
         const nuevo = j.precios[tk], ant = data.precios[tk];
         if (!nuevo || !(nuevo.precio > 0)) return;
