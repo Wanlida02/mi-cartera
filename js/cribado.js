@@ -471,6 +471,7 @@ Cribado.desdeFicha = function (f, opc) {
     o.crisis = { caida_ventas_pct: Math.max(0, r1((1 - V[i20] / V[i19]) * 100)), caida_ebit_pct: Math.max(0, r1((1 - E[i20] / E[i19]) * 100)), perdidas: E[i20] < 0 || (isN(NI[i20]) && NI[i20] < 0) };
     o.notas_datos.push('Crisis: se usa 2020 frente a 2019 (la ficha no recoge 2008-09).');
   }
+  if (f.extra_cribado) Object.keys(f.extra_cribado).forEach(k => { if (o[k] == null && isN(f.extra_cribado[k])) { set(k, f.extra_cribado[k]); o.notas_datos.push('«' + k + '» tomado tal cual del resumen de informes anuales.'); } });
   if (span < 9) o.notas_datos.push('Los CAGR de «10 años» se calculan con ' + (span) + ' años de cuentas (' + an[0] + '–' + an[ult] + '): la ficha de valoración no llega a diez.');
   if (f.mult_hist && isN(f.mult_hist.per)) set('per_medio_10y', f.mult_hist.per);
   if (f.tipo === 'financiera') o.es_banco_inmobiliaria = true;

@@ -206,6 +206,13 @@
     const r = desdeFicha(tk, true); if (!d.cribado[tk]) d.cribado[tk] = { ticker: tk, nombre: o.nombre || tk, origen: 'ficha' };
     U.guardar({ ok: true, msg: r.ok ? 'Datos de ' + tk + ' cargados de internet (SEC). Revisa lo cualitativo.' : 'Ficha creada, pero faltan cuentas para el cribado' });
   }
+  U.fichaDeInformes = function (e) {
+    const d = D(), tk = e && e.tk; if (!tk) { U.toast('Esta empresa no tiene ticker: vincúlala primero'); return false; }
+    if (d.fichas[tk] && !confirm('Ya existe ficha de ' + tk + '. ¿Sustituirla por este borrador?')) return false;
+    const f = DatosWeb.aFichaInformes(e, hoy()); if (!f) { U.toast('El CSV no trae ventas, EBIT, beneficio neto y BPA'); return false; }
+    d.fichas[tk] = f; const r = desdeFicha(tk, true); if (!d.cribado[tk]) d.cribado[tk] = { ticker: tk, nombre: f.nombre, origen: 'ficha' };
+    U.guardar({ ok: true, msg: r.ok ? 'Ficha borrador y cribado de ' + tk + ' creados desde tus informes' : 'Ficha creada; faltan cuentas para el cribado' }); return true;
+  };
   function ayudaWeb(tk, motivo) {
     U.dlg('<h2>Buscar ' + esc(tk) + ' en internet</h2><p class="small">' + esc(motivo) + '</p>' +
       '<p class="small">La app no puede consultar la SEC directamente desde el navegador; lo hace un proceso de GitHub. Para lanzarlo desde aquí pega un token de GitHub (permiso <b>Actions: Read and write</b> sobre <code>wanlida02/mi-cartera</code>); se guarda solo en este dispositivo.</p>' +

@@ -53,6 +53,23 @@ const DatosWeb = (function () {
     if (o.precio && o.precio.precio > 0) { f.precio = o.precio.precio; f.fecha_precio = o.precio.fecha || hoy; f.fuente_precio = 'internet'; }
     return f;
   }
-  return { pausa: 7000, leerArchivo, lanzarWorkflow, token, setToken, leer, lanzar, esperar, aFicha, urlActions, arch };
+  /* Ficha borrador a partir de las cifras del CSV de informes (empresas no americanas). Millones; acciones = beneficio neto / BPA diluido. */
+  function aFichaInformes(e, hoy) {
+    const dt = e && e.datos, m = dt && dt.metricas; if (!m || !Array.isArray(dt.anios) || dt.anios.length < 2) return null;
+    const an = dt.anios.map(Number), n = an.length, num = v => (typeof v === 'number' && isFinite(v) ? v : null), ser = k => (m[k] || []).slice(0, n).map(num);
+    const V = ser('Ventas'), E = ser('Beneficio operativo (EBIT)'), NI = ser('Beneficio neto'), B = ser('BPA diluido');
+    if (!V.some(x => x != null) || !E.some(x => x != null) || !NI.some(x => x != null) || !B.some(x => x != null)) return null;
+    while (V.length < n) V.push(null);
+    const A = NI.map((x, i) => (x != null && B[i] != null && B[i] > 0 ? Math.round(x / B[i] * 10) / 10 : null));
+    const last = k => { const s = ser(k); for (let i = s.length - 1; i >= 0; i--) if (s[i] != null) return s[i]; return null; };
+    const f = { ticker: e.tk, nombre: e.nombre || e.tk, divisa: dt.divisa || 'EUR', anio_base: an[n - 1], anios: an, leases_ok: true, hist: { ventas: V, ebit: E, ni_reportado: NI, acciones: A, bpa: B }, conf: { ventas: 'P', ebit: 'P', ni_reportado: 'P', acciones: 'E', bpa: 'P' },
+      fuentes: ['Cifras clave de los informes anuales (' + (e.csv || 'CSV') + ')'], notas: ['Ficha borrador creada desde el resumen de tus informes (' + n + ' años). Acciones estimadas como beneficio neto / BPA diluido. Faltan deuda, caja, patrimonio, amortizaciones, capex y dividendos: complétalos desde el informe.'], fecha_datos: (e.generado || '').slice(0, 10) || hoy, _borrador: true, extra_cribado: {} };
+    const dne = last('Deuda neta / EBITDA'), fps = last('FCF / acción'), roe = last('ROE %');
+    if (dne != null) f.extra_cribado.deuda_neta_ebitda = dne;
+    if (fps != null) f.extra_cribado.fcf_por_accion = fps;
+    if (roe != null) f.notas.push('ROE del último año según el CSV: ' + roe + ' %.');
+    return f;
+  }
+  return { aFichaInformes, pausa: 7000, leerArchivo, lanzarWorkflow, token, setToken, leer, lanzar, esperar, aFicha, urlActions, arch };
 })();
 if (typeof module !== 'undefined') module.exports = DatosWeb;
