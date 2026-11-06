@@ -1,0 +1,223 @@
+{
+ "ticker": "OSCR",
+ "nombre": "Oscar Health, Inc.",
+ "cik": "0001568651",
+ "divisa": "USD",
+ "generado": "2026-11-06T16:14:47.598Z",
+ "fuente": "SEC EDGAR (XBRL, 10-K)",
+ "anios": [
+  2019,
+  2020,
+  2021,
+  2022,
+  2023,
+  2024,
+  2025
+ ],
+ "hist": {
+  "ventas": [
+   488.188,
+   462.801,
+   1838.715,
+   3963.638,
+   5862.869,
+   9177.564,
+   11701.427
+  ],
+  "ebit": [
+   -259.389,
+   -402.266,
+   -544.481,
+   -589.867,
+   -235.615,
+   57.265,
+   -396.357
+  ],
+  "da": [
+   6.899,
+   11.285,
+   14.605,
+   15.283,
+   30.694,
+   32.145,
+   28.892
+  ],
+  "intereses": [
+   0,
+   3.514,
+   4.72,
+   22.623,
+   24.603,
+   23.734,
+   17.601
+  ],
+  "impuestos": [
+   1.793,
+   1.045,
+   0.846,
+   -0.523,
+   3.294,
+   7.305,
+   5.606
+  ],
+  "minoritarios": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "otros": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "acciones": [
+   null,
+   null,
+   178.967,
+   212.475,
+   221.655,
+   265.853,
+   262.388
+  ],
+  "capex": [
+   25.996,
+   14.021,
+   25.885,
+   29.012,
+   25.577,
+   27.897,
+   36.372
+  ],
+  "leases": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "caja": [
+   336.644,
+   1192.713,
+   1691.081,
+   2955.882,
+   2560.148,
+   2151.647,
+   3990.612
+  ],
+  "deuda": [
+   null,
+   142.487,
+   0,
+   297.999,
+   298.777,
+   299.555,
+   430.095
+  ],
+  "leases_deuda": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "goodwill": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "equity": [
+   0,
+   -1295.893,
+   1387.229,
+   890.384,
+   803.967,
+   1013.586,
+   977.648
+  ],
+  "ni_reportado": [
+   -261.182,
+   -406.825,
+   -572.606,
+   -606.275,
+   -270.728,
+   25.432,
+   -443.151
+  ],
+  "fco": [
+   -165.37,
+   222.732,
+   -181.745,
+   380.349,
+   -272.159,
+   978.193,
+   1094.854
+  ],
+  "sbc": [
+   33.558,
+   35.869,
+   86.296,
+   112.329,
+   159.683,
+   109.824,
+   87.654
+  ],
+  "dividendos": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "recompras": [
+   2.992,
+   0,
+   0,
+   null,
+   null,
+   null,
+   null
+  ],
+  "bpa": [
+   null,
+   null,
+   -3.2,
+   -2.85,
+   -1.22,
+   0.1,
+   -1.69
+  ]
+ },
+ "precio": {
+  "precio": 30.66,
+  "divisa": "USD",
+  "fecha": "2026-11-06"
+ },
+ "notas": [
+  "Datos automáticos de la SEC (XBRL de los 10-K). Revísalos contra el informe anual antes de decidir: pueden faltar líneas o haber reexpresiones.",
+  "Caja = efectivo + inversiones a corto plazo; deuda = deuda financiera (sin arrendamientos). Intereses = gasto bruto (no netos de ingresos). Minoritarios, otros y arrendamientos van a 0 o sin dato: complétalos si importan.",
+  "Acciones y BPA anteriores a 2021 descartados: saltan de 29 a 179 millones (probable split sin reexpresar), así que no son comparables.",
+  "Líneas sin datos en la SEC: goodwill, dividendos."
+ ],
+ "faltan": [
+  "goodwill",
+  "dividendos"
+ ]
+}
