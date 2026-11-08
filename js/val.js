@@ -73,14 +73,20 @@ const Val = (function () {
   const G_LARGO = 0.04;
   const gAnio = (sc, k) => (sc.fade !== false && sc.g > G_LARGO ? G_LARGO + (sc.g - G_LARGO) * (1 - 0.125 * (k - 1)) : sc.g);
 
-  /* Valor sin crecimiento †: lo que vale la acción si el FCF del año base (con el margen del escenario conservador) no creciera nunca,
-     a tu rentabilidad mínima r, más la caja neta. No es un precio objetivo: dice qué parte del precio es crecimiento futuro. */
-  function sinCrecimiento(f, sc, r) {
-    if (!(r > 0)) return null;
-    const res = proyectar(f, Object.assign({}, sc, { g: 0, fade: false, acc: 0, v0: undefined, m0: undefined }));
-    const q = res.rows[0]; if (!q || !isN(q.fcf)) return null;
-    const nd = res.nd0, val = (q.fcf / r + (nd < 0 ? -nd : 0)) / q.acc;
-    return { valor: val, fcf: q.fcf, r, pagaCrecimiento: isN(f.precio) && f.precio > 0 && val > 0 ? 1 - val / f.precio : null };
+  /* Valor hoy a su múltiplo histórico † (lectura a corto plazo, ¿chollo ahora?): el último ejercicio recurrente valorado a los múltiplos
+     medios de la propia empresa (PER, P/FCF, EV/EBITDA, EV/EBIT; los mismos mult_hist del motor). Mediana de las métricas positivas.
+     Supone que el último año se mantiene y que el múltiplo vuelve a su media; no proyecta crecimiento. Sin mult_hist no se calcula. */
+  function valorMultiplo(f) {
+    const mh = f.mult_hist; if (!mh) return null;
+    const a = actuales(f), acc = last(f.hist.acciones); if (!(acc > 0)) return null;
+    const caja = a.nd < 0 ? -a.nd : 0, v = {};
+    if (a.ni > 0 && mh.per > 0) v.per = (a.ni * mh.per + caja) / acc;
+    if (a.fcf > 0 && mh.pfcf > 0) v.pfcf = (a.fcf * mh.pfcf + caja) / acc;
+    if (a.ebitda > 0 && mh.ev_ebitda > 0) v.ev_ebitda = (a.ebitda * mh.ev_ebitda - a.nd) / acc;
+    if (a.ebit > 0 && mh.ev_ebit > 0) v.ev_ebit = (a.ebit * mh.ev_ebit - a.nd) / acc;
+    const val = median(Object.values(v).filter(x => isN(x) && x > 0)); if (!isN(val)) return null;
+    const desc = isN(f.precio) && f.precio > 0 ? 1 - f.precio / val : null;   // >0: cotiza por debajo de su valor a múltiplo histórico
+    return { valor: val, porMetodo: v, descuento: desc, nivel: desc == null ? null : desc >= 0.2 ? 'chollo' : desc >= 0 ? 'debajo' : desc > -0.2 ? 'encima' : 'cara' };
   }
 
   /* ---- Proyección de un escenario a 5 años (réplica de las 4 pestañas del Excel) ---- */
@@ -381,10 +387,10 @@ const Val = (function () {
 
   /* ---- Despacho: cada ficha usa su método según f.tipo (sin tipo = industrial, método M14) ---- */
   const isFin = f => !!f && (f.tipo === 'banco' || f.tipo === 'arrendador' || f.tipo === 'seguro');
-  const M14 = { defaults, proyectar, dcfInverso, actuales, realismo, fiabilidad, margenImplicito, trampa, sinCrecimiento };
+  const M14 = { defaults, proyectar, dcfInverso, actuales, realismo, fiabilidad, margenImplicito, trampa, valorMultiplo };
   const pick = nombre => function (f) { return (isFin(f) ? Fin : M14)[nombre].apply(null, arguments); };
 
-  return { CFG, crisisYears, gAnio, sinCrecimiento: (f, sc, r) => (isFin(f) || esMO(f) ? null : sinCrecimiento(f, sc, r)), defaults: pick('defaults'), proyectar: pick('proyectar'), precioEntrada, dcfInverso: pick('dcfInverso'), actuales: pick('actuales'), realismo: pick('realismo'), margenImplicito: pick('margenImplicito'), trampa: f => (isFin(f) ? [] : trampa(f)), esMO, fiabilidad: pick('fiabilidad'), cagr, avg, isN, isFin, Fin,
+  return { CFG, crisisYears, gAnio, valorMultiplo: f => (isFin(f) || esMO(f) ? null : valorMultiplo(f)), defaults: pick('defaults'), proyectar: pick('proyectar'), precioEntrada, dcfInverso: pick('dcfInverso'), actuales: pick('actuales'), realismo: pick('realismo'), margenImplicito: pick('margenImplicito'), trampa: f => (isFin(f) ? [] : trampa(f)), esMO, fiabilidad: pick('fiabilidad'), cagr, avg, isN, isFin, Fin,
     soportado: f => !(f && f.tipo === 'reit') };
 })();
 if (typeof module !== 'undefined') module.exports = Val;
