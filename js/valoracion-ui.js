@@ -51,6 +51,7 @@
     try { ESC.forEach(s => { sc[s] = escDe(f, s); R = R || {}; R[s] = V.proyectar(f, sc[s]); }); fi = V.fiabilidad(f, hoy()); act = V.actuales(f); }
     catch (e) { return h + '<div class="alert bad" style="margin-top:10px">No se pudo calcular: ' + esc(e.message) + '</div><div class="tools"><button class="btn sec sm" data-v="datos">Revisar datos</button></div>' + acciones(f); }
     const cons = R.conservador, ref5 = cons.cagr[5].ref, pe = V.precioEntrada(f, cons, o / 100), pt = V.precioEntrada(f, cons, m / 100);
+    const sinC = V.sinCrecimiento ? V.sinCrecimiento(f, sc.conservador, m / 100) : null;
     let t = 'r', title = 'Cara frente a su valor', sub;
     if (ref5 >= o / 100) { t = 'g'; title = 'Compra: supera tu objetivo'; sub = 'Rentabilidad anual esperada a 5 años: ' + pc(ref5) + ' (objetivo ' + nf(o, 0) + ' %).'; }
     else if (ref5 >= m / 100) { t = 'y'; title = 'Watchlist: buena empresa, precio justo'; sub = 'Rentabilidad esperada ' + pc(ref5) + ': sobre tu mínimo (' + nf(m, 0) + ' %) pero bajo el objetivo. Compra por debajo de ' + nf(pe, 2) + '.'; }
@@ -62,7 +63,10 @@
     h += '<div class="card" style="margin-top:10px;border-left:6px solid var(--' + { g: 'ok', y: 'warn', r: 'bad' }[t] + ')"><div class="meta">' + esc(sel) + ' — ' + esc(f.nombre || '') + ' · ' + estadoDe(sel) + '</div><h2 style="font-size:21px;margin:4px 0">' + title + '</h2><p style="margin:0 0 8px">' + sub + '</p>' +
       '<p class="small mut" style="margin:0 0 8px">En el pesimista: ' + pc(R.pesimista.cagr[5].ref) + ' anual · en el optimista: ' + pc(R.optimista.cagr[5].ref) + '</p>' +
       '<div class="kpis"><div class="kpi"><span>Precio actual</span><b>' + nf(f.precio, 2) + '</b><span>' + esc(f.divisa) + (dp != null ? ' · hace ' + dp + ' d' : '') + '</span></div><div class="kpi"><span>Objetivo a 5 años</span><b>' + nf(cons.po[5].ref, 2) + '</b></div>' +
-      '<div class="kpi"><span>Entrada para ' + nf(o, 0) + ' %</span><b>' + (pe ? nf(pe, 2) : '—') + '</b></div><div class="kpi"><span>Máximo para ' + nf(m, 0) + ' %</span><b>' + (pt ? nf(pt, 2) : '—') + '</b></div></div></div>' +
+      '<div class="kpi"><span>Entrada para ' + nf(o, 0) + ' %</span><b>' + (pe ? nf(pe, 2) : '—') + '</b></div><div class="kpi"><span>Máximo para ' + nf(m, 0) + ' %</span><b>' + (pt ? nf(pt, 2) : '—') + '</b></div>' +
+      (sinC && isN(sinC.valor) ? '<div class="kpi"><span>Sin crecimiento</span><b>' + nf(sinC.valor, 2) + '</b><span>FCF base al ' + nf(m, 0) + ' %</span></div>' : '') + '</div>' +
+      '<p class="small" style="margin:8px 0 0"><b>Precio objetivo hoy</b>: ' + (pe && pt ? 'hasta ' + nf(pe, 2) + ' para ganar tu ' + nf(o, 0) + ' % anual; hasta ' + nf(pt, 2) + ' para tu mínimo del ' + nf(m, 0) + ' %' : '—') + '. Es el objetivo a 5 años traído a hoy.' +
+      (sinC && isN(sinC.valor) ? ' Si no creciera nunca valdría ' + nf(sinC.valor, 2) + (isN(sinC.pagaCrecimiento) ? (sinC.pagaCrecimiento > 0 ? ': el ' + nf(sinC.pagaCrecimiento * 100, 0) + ' % del precio actual es crecimiento futuro.' : ': el precio está por debajo de ese valor, no pagas nada por el crecimiento.') : '.') : '') + '</p></div>' +
       '<div class="tools"><button class="btn sm" data-v="precio">Precio</button><button class="btn sec sm" data-v="datos">Editar datos</button><button class="btn sec sm" data-v="reset">Restablecer supuestos</button></div>';
     // escenarios
     const P = fin ? [['rote', 'ROTE (%)', 100, .5], ['pdiv', 'Dividendos (% beneficio)', 100, 2.5], ['prec', 'Recompras (% beneficio)', 100, 2.5], ['per', 'PER', 1, .5], ['ptbv', 'P/TBV', 1, .1], ['ke', 'Coste del capital (%)', 100, .5], ['gt', 'Crecimiento largo plazo (%)', 100, .5]] :
@@ -82,6 +86,7 @@
     if (!fin) {
       const dcf = V.dcfInverso(f, 0.10, 0.03), gh = V.cagr(f.hist.ventas, 5);
       if (dcf) extra += '<li class="y"><b>DCF inverso</b>: con 10 % exigido y 3 % a perpetuidad, el precio descuenta un crecimiento del FCF de ' + (dcf.g == null ? 'más de un 60 %' : pc(dcf.g)) + ' anual 10 años. Ventas históricas a 5 años: ' + pc(gh) + '. Solo contraste.</li>';
+      if (sinC && isN(sinC.valor)) extra += '<li class="y"><b>Valor sin crecimiento</b>: FCF del año base con el margen conservador (' + nf(sinC.fcf, 0) + ' M) como renta perpetua al ' + nf(m, 0) + ' % más la caja neta = ' + nf(sinC.valor, 2) + ' por acción. No es un precio objetivo: mide cuánto del precio depende de que la empresa crezca. Solo contraste.</li>';
       const mio = V.margenImplicito(f, sc.conservador, o / 100);
       extra += '<li class="y"><b>Margen implícito</b>: para ganar un ' + nf(o, 0) + ' % anual el margen EBIT tendría que ser ' + (mio == null ? 'imposible (>95 %)' : pc(mio)) + '. Solo contraste.</li>';
     }

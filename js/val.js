@@ -35,7 +35,9 @@ const Val = (function () {
     const h = f.hist, n = h.ventas.length;
     const margen = h.ventas.map((v, i) => (isN(h.ebit[i]) && v > 0 ? ebitR(h, i) / v : null));
     const tasa = h.ventas.map((v, i) => { const pt = z(h.ebit[i]) - z(h.intereses[i]); return pt > 0 && isN(h.impuestos[i]) ? h.impuestos[i] / pt : null; });
-    const g5 = cagr(h.ventas, 5), a3 = cagr(h.acciones, 3);
+    const g5 = cagr(h.ventas, 5), a3r = cagr(h.acciones, 3);
+    const recompro = n >= 2 && isN(h.acciones[n - 1]) && isN(h.acciones[n - 2]) && h.acciones[n - 1] < h.acciones[n - 2];
+    const a3 = a3r == null ? null : recompro ? Math.min(a3r, 0) : a3r;   // v8: si el último ejercicio ya recompró, no se proyecta dilución
     const cr = CFG.crisis && !esMO(f) ? crisisYears(h) : h.ventas.map(() => false);
     const mOk = margen.filter((v, i) => !cr[i] && isN(v));            // márgenes de años normales
     const m3 = cr.slice(-3).some(Boolean) && mOk.length ? avg(mOk.slice(-3)) : avg(margen.slice(-3));
@@ -51,7 +53,7 @@ const Val = (function () {
     const tBase = avg(tasa.slice(-3).filter(t => t != null && t > 0.05 && t < 0.4)); // media últimos 3 años, sin atípicos
     const mh = (mo ? mc : f.mult_hist) || {};
     const mk = (kg, km, kM, esc) => ({
-      g: gBase * kg, m: mo ? (isN(mo[esc]) ? mo[esc] : mBase * km) : mBase * km,
+      g: gBase * kg, fade: true, m: mo ? (isN(mo[esc]) ? mo[esc] : mBase * km) : mBase * km,
       ...(mo ? { m0: isN(last(margen)) ? last(margen) : 0 } : {}),
       ...(v0 ? { v0 } : {}),
       t: tBase == null ? 0.22 : clamp(tBase, 0.12, 0.30),
@@ -66,6 +68,21 @@ const Val = (function () {
     };
   }
 
+  /* v8 †: crecimiento que se desvanece. El exceso sobre el 4 % se reduce linealmente hasta la mitad en el año 5
+     (25 % → 14,5 %; 12 % → 8 %; ≤ 4 % no cambia). Se desactiva por escenario con fade: false. */
+  const G_LARGO = 0.04;
+  const gAnio = (sc, k) => (sc.fade !== false && sc.g > G_LARGO ? G_LARGO + (sc.g - G_LARGO) * (1 - 0.125 * (k - 1)) : sc.g);
+
+  /* Valor sin crecimiento †: lo que vale la acción si el FCF del año base (con el margen del escenario conservador) no creciera nunca,
+     a tu rentabilidad mínima r, más la caja neta. No es un precio objetivo: dice qué parte del precio es crecimiento futuro. */
+  function sinCrecimiento(f, sc, r) {
+    if (!(r > 0)) return null;
+    const res = proyectar(f, Object.assign({}, sc, { g: 0, fade: false, acc: 0, v0: undefined, m0: undefined }));
+    const q = res.rows[0]; if (!q || !isN(q.fcf)) return null;
+    const nd = res.nd0, val = (q.fcf / r + (nd < 0 ? -nd : 0)) / q.acc;
+    return { valor: val, fcf: q.fcf, r, pagaCrecimiento: isN(f.precio) && f.precio > 0 && val > 0 ? 1 - val / f.precio : null };
+  }
+
   /* ---- Proyección de un escenario a 5 años (réplica de las 4 pestañas del Excel) ---- */
   function proyectar(f, sc, opts) {
     opts = opts || {};
@@ -77,20 +94,21 @@ const Val = (function () {
     let p = { ventas: last(h.ventas), da: z(last(h.da)), interes: z(last(h.intereses)), min: z(last(h.minoritarios)),
       capex: z(last(h.capex)), leases: z(last(h.leases)), acc: last(h.acciones) };
     const otros = z(last(h.otros)); // resultado de participadas y pensiones (no escala con las ventas): se mantiene constante
+    let fv0 = 1;   // factor acumulado de crecimiento (para la recuperación tras crisis)
     for (let k = 1; k <= 5; k++) {
-      const q = {};
-      q.ventas = isN(sc.v0) && sc.v0 > last(h.ventas) ? (k >= 2 ? sc.v0 * Math.pow(1 + sc.g, k) : (last(h.ventas) + sc.v0 * (1 + sc.g)) / 2) : p.ventas * (1 + sc.g);   // tras un año de crisis, recupera las ventas de antes en 2 años
-      q.da = p.da * (1 + sc.g);                       // Excel: D&A crece con las ventas
+      const q = {}, gk = gAnio(sc, k); fv0 *= 1 + gk; q.g = gk;
+      q.ventas = isN(sc.v0) && sc.v0 > last(h.ventas) ? (k >= 2 ? sc.v0 * fv0 : (last(h.ventas) + sc.v0 * (1 + gk)) / 2) : p.ventas * (1 + gk);   // tras un año de crisis, recupera las ventas de antes en 2 años
+      q.da = p.da * (1 + gk);                       // Excel: D&A crece con las ventas
       q.margen = isN(sc.m0) ? sc.m0 + (sc.m - sc.m0) * k / 5 : sc.m;   // margen objetivo: rampa lineal desde el margen actual hasta el del año 5
       q.ebit = q.ventas * q.margen;
       q.ebitda = q.ebit + q.da;
-      q.interes = p.interes * (1 + sc.g);
+      q.interes = p.interes * (1 + gk);
       const pretax = q.ebit - q.interes;
       q.impuestos = Math.max(0, pretax) * sc.t;
-      q.min = p.min * (1 + sc.g);
+      q.min = p.min * (1 + gk);
       q.ni = pretax - q.impuestos - q.min + otros;
-      q.capex = p.capex * (1 + sc.g);                 // Excel: capex crece con las ventas
-      q.leases = p.leases * (1 + sc.g);
+      q.capex = p.capex * (1 + gk);                 // Excel: capex crece con las ventas
+      q.leases = p.leases * (1 + gk);
       q.fcf = q.ebitda - q.capex - q.interes - q.impuestos - q.min - q.leases;
       q.acc = opts.accPath ? opts.accPath[k - 1] : p.acc * (1 + sc.acc);
       q.nd = ndPath ? ndPath[k - 1] : nd0;            // Excel: deuda neta introducida a mano; por defecto constante
@@ -201,6 +219,7 @@ const Val = (function () {
       if (mh[k] && sc[k] > mh[k] * 1.02) add('r', `Múltiplo ${n} ${sc[k].toFixed(1)}x por encima de su media histórica (${mh[k].toFixed(1)}x). El curso pide usar el histórico.`);
       if (act && isN(act[k]) && sc[k] > act[k] * 1.2 && !(mh[k] && sc[k] <= mh[k])) add('y', `${n} objetivo ${sc[k].toFixed(1)}x frente a ${act[k].toFixed(1)}x hoy: la rentabilidad depende de que el múltiplo suba.`);
     });
+    if (nombre === 'conservador' && sc.fade !== false && sc.g > G_LARGO) add('y', `Crecimiento que se desvanece †: ${(sc.g * 100).toFixed(1)} % el año 1 y ${(gAnio(sc, 5) * 100).toFixed(1)} % el año 5 (media ${(((Math.pow([1, 2, 3, 4, 5].reduce((p, k) => p * (1 + gAnio(sc, k)), 1), 0.2)) - 1) * 100).toFixed(1)} %).`);
     if (sc.t < 0.12 || sc.t > 0.32) add('y', `Tipo impositivo ${(sc.t * 100).toFixed(0)} % fuera de lo normal (12–32 %).`);
     if (sc.acc < -0.04) add('y', `Recompra de acciones del ${(-sc.acc * 100).toFixed(1)} % anual: muy agresiva.`);
     return out;
@@ -362,10 +381,10 @@ const Val = (function () {
 
   /* ---- Despacho: cada ficha usa su método según f.tipo (sin tipo = industrial, método M14) ---- */
   const isFin = f => !!f && (f.tipo === 'banco' || f.tipo === 'arrendador' || f.tipo === 'seguro');
-  const M14 = { defaults, proyectar, dcfInverso, actuales, realismo, fiabilidad, margenImplicito, trampa };
+  const M14 = { defaults, proyectar, dcfInverso, actuales, realismo, fiabilidad, margenImplicito, trampa, sinCrecimiento };
   const pick = nombre => function (f) { return (isFin(f) ? Fin : M14)[nombre].apply(null, arguments); };
 
-  return { CFG, crisisYears, defaults: pick('defaults'), proyectar: pick('proyectar'), precioEntrada, dcfInverso: pick('dcfInverso'), actuales: pick('actuales'), realismo: pick('realismo'), margenImplicito: pick('margenImplicito'), trampa: f => (isFin(f) ? [] : trampa(f)), esMO, fiabilidad: pick('fiabilidad'), cagr, avg, isN, isFin, Fin,
+  return { CFG, crisisYears, gAnio, sinCrecimiento: (f, sc, r) => (isFin(f) || esMO(f) ? null : sinCrecimiento(f, sc, r)), defaults: pick('defaults'), proyectar: pick('proyectar'), precioEntrada, dcfInverso: pick('dcfInverso'), actuales: pick('actuales'), realismo: pick('realismo'), margenImplicito: pick('margenImplicito'), trampa: f => (isFin(f) ? [] : trampa(f)), esMO, fiabilidad: pick('fiabilidad'), cagr, avg, isN, isFin, Fin,
     soportado: f => !(f && f.tipo === 'reit') };
 })();
 if (typeof module !== 'undefined') module.exports = Val;
