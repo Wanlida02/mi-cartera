@@ -191,9 +191,10 @@
   }
 
   /* ───── Ajustes ───── */
+  const APP_VERSION = '21 · motor v8';
   function ajustes() {
     const d = Store.get(), A = d.ajustes, cp = Store.ultimaCopia();
-    dlg('<h2>Ajustes</h2><h3>Umbrales del Inicio (rentabilidad anual esperada a 5 años)</h3><div class="f2">' + campo('a-b', 'Barata ≥ %', A.umbral_barata, 'number') + campo('a-c', 'Cara ≤ %', A.umbral_cara, 'number') + '</div>' +
+    dlg('<h2>Ajustes</h2><p class="small mut">Versión de la app: ' + APP_VERSION + '</p><h3>Umbrales del Inicio (rentabilidad anual esperada a 5 años)</h3><div class="f2">' + campo('a-b', 'Barata ≥ %', A.umbral_barata, 'number') + campo('a-c', 'Cara ≤ %', A.umbral_cara, 'number') + '</div>' +
       '<h3 style="margin-top:14px">Límites de cartera</h3><div class="f2">' + campo('a-le', 'Máx. por empresa %', A.lim_empresa, 'number') + campo('a-ls', 'Máx. por sector %', A.lim_sector, 'number') + '</div>' +
       '<h3 style="margin-top:14px">Divisas (unidades por 1 €) <span class="mut small">' + esc(A.fx.fecha || '') + '</span></h3><div class="f2">' + campo('a-usd', 'USD', A.fx.USD, 'number') + campo('a-cny', 'CNY', A.fx.CNY, 'number') + campo('a-twd', 'TWD', A.fx.TWD, 'number') + '</div>' +
       '<div class="acts" style="justify-content:flex-start"><button class="btn" id="a-ok">Guardar ajustes</button></div>' +
