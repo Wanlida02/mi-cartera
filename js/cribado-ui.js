@@ -88,7 +88,7 @@
     const d = D(), cr = d.cribado || {}, q = L.norm(filtro);
     const tks = Object.keys(cr).filter(k => !q || L.norm(k + ' ' + (cr[k].nombre || '')).includes(q)).sort();
     const sin = Object.keys(d.fichas).filter(k => !cr[k]).sort();
-    let h = '<div class="tools"><input id="cr-new" placeholder="Ticker (p. ej. AZO) para analizar" autocapitalize="characters" style="flex:2 1 160px"><button class="btn" data-c="nuevo">Cribar</button></div><p class="small mut" style="margin:-4px 0 10px">Si no tiene ficha, se buscan sus cuentas en internet (SEC): <b>solo empresas de EE. UU.</b> Para otras bolsas usa «Pedir a una IA» o los informes anuales.</p>' +
+    let h = (U.lineaPrecios ? U.lineaPrecios() : '') + '<div class="tools"><input id="cr-new" placeholder="Ticker (p. ej. AZO) para analizar" autocapitalize="characters" style="flex:2 1 160px"><button class="btn" data-c="nuevo">Cribar</button></div><p class="small mut" style="margin:-4px 0 10px">Si no tiene ficha, se buscan sus cuentas en internet (SEC): <b>solo empresas de EE. UU.</b> Para otras bolsas usa «Pedir a una IA» o los informes anuales.</p>' +
       (tks.length > 4 || q ? '<div class="tools"><input id="cr-q" type="search" placeholder="Buscar" value="' + esc(filtro) + '"></div>' : '');
     const enC = k => d.posiciones.some(p => L.tickerDe(d, p) === k);
     const fila = k => {

@@ -73,7 +73,7 @@
     cargarSEC();
     const filas = ks.map(k => ({ k, est: estadoDe(k), v: L.valoracion(d, k, hoy()) })).filter(x => x.v);
     const grupos = [['cartera', 'En cartera'], ['watchlist', 'Watchlist'], ['candidata', 'Candidatas']];
-    let h = '<div class="tools"><button class="btn" data-v="nueva">+ Nueva ficha</button><input id="v-q" type="search" placeholder="Buscar" value="' + esc(filtro) + '"></div>';
+    let h = (U.lineaPrecios ? U.lineaPrecios() : '') + '<div class="tools"><button class="btn" data-v="nueva">+ Nueva ficha</button><input id="v-q" type="search" placeholder="Buscar" value="' + esc(filtro) + '"></div>';
     grupos.forEach(([g, t]) => {
       const rows = filas.filter(x => x.est === g).sort((x, y) => (y.v.ref == null ? -9 : y.v.ref) - (x.v.ref == null ? -9 : x.v.ref));
       if (!rows.length) return;

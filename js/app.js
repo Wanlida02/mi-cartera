@@ -42,6 +42,7 @@
       '<div class="kpi"><span>Empresas</span><b>' + R.nPos + '</b></div>' +
       '<div class="kpi"><span>Rentab. esperada (pond.)</span><b>' + (R.refPond == null ? '—' : nf(R.refPond * 100, 1) + '%') + '</b></div>' +
       '<div class="kpi"><span>Cartera valorada</span><b>' + (R.cubierto == null ? '—' : nf(R.cubierto * 100, 0) + '%') + '</b></div></div>';
+    h += lineaPrecios();
     D.alertas.forEach(a => h += '<div class="alert bad">⚠ ' + esc(a.nombre) + ' pesa ' + nf(a.pct, 1) + '% (límite ' + (a.tipo === 'empresa' ? 'por empresa' : 'por sector') + ' ' + a.lim + '%)</div>');
     if (R.preciosViejos) h += '<div class="alert warn">' + R.preciosViejos + ' posición(es) con precio de hace más de ' + d.ajustes.dias_precio_viejo + ' días.</div>';
     if (UI.cargarSEC) UI.cargarSEC();
@@ -193,7 +194,7 @@
   }
 
   /* ───── Ajustes ───── */
-  const APP_VERSION = '25 · resultados y valoración';
+  const APP_VERSION = '26 · resultados, IA y precios';
   function ajustes() {
     const d = Store.get(), A = d.ajustes, cp = Store.ultimaCopia();
     dlg('<h2>Ajustes</h2><p class="small mut">Versión de la app: ' + APP_VERSION + '</p><h3>Umbrales del Inicio (rentabilidad anual esperada a 5 años)</h3><div class="f2">' + campo('a-b', 'Barata ≥ %', A.umbral_barata, 'number') + campo('a-c', 'Cara ≤ %', A.umbral_cara, 'number') + '</div>' +
@@ -357,7 +358,7 @@
   $('#btn-ajustes').onclick = ajustes;
   $('#btn-sync').onclick = () => { const e = Drive.estado(); if (!e.conectado) ajustes(); else if (e.estado === 'conflicto' || e.estado === 'reconectar' || e.estado === 'error') Drive.ahora(); else toast(textoDrive()); };
 
-  Object.assign(UI, { dlg, cerrar, toast, esc, nf, pct, money, eur, guardar, render, campo, val, cls, irA: t => { tab = t; render(); window.scrollTo(0, 0); } });
+  Object.assign(UI, { lineaPrecios: () => lineaPrecios(), dlg, cerrar, toast, esc, nf, pct, money, eur, guardar, render, campo, val, cls, irA: t => { tab = t; render(); window.scrollTo(0, 0); } });
   Store.load(); render();
   Drive.init({ onEstado: pintaSync, onDatos: () => { render(); toast('Datos actualizados desde Drive'); Store.cargarPreciosAuto().then(n => n && render()); }, preguntar: preguntarConflicto });
   if (Store.aviso()) toast(Store.aviso());

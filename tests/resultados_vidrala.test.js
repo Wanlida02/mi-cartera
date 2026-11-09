@@ -1,0 +1,15 @@
+/* Caso real: Vidrala (europea, ficha borrador incompleta) con las cifras del 9M 2026 publicadas el 28-oct-2026. Uso: node tests/resultados_vidrala.test.js datos.json */
+const assert = require('assert'), { chromium } = require('playwright'), http = require('http'), fs = require('fs'), path = require('path');
+const root = path.join(__dirname, '..'), mime = { html: 'text/html', js: 'text/javascript', css: 'text/css', json: 'application/json', png: 'image/png', svg: 'image/svg+xml', webmanifest: 'application/json' };
+const srv = http.createServer((q, r) => { const p = path.join(root, q.url.split('?')[0].replace(/\/$/, '/index.html')); fs.readFile(p, (e, b) => { if (e) { r.writeHead(404); r.end(); } else { r.writeHead(200, { 'content-type': mime[p.split('.').pop()] || 'text/plain' }); r.end(b); } }); }).listen(0, async () => {
+  const b = await chromium.launch(), pg = await (await b.newContext({ viewport: { width: 390, height: 800 } })).newPage(), errs = [];
+  pg.on('pageerror', e => errs.push(e.message)); pg.on('console', m => m.type() === 'error' && !/404/.test(m.text()) && errs.push(m.text())); pg.on('dialog', d => d.accept());
+  await pg.goto('http://localhost:' + srv.address().port + '/'); await pg.click('#btn-ajustes'); await pg.setInputFiles('#a-imp', process.argv[2]); await pg.waitForTimeout(600);
+  for (const t of ['inicio', 'valoracion', 'cribado', 'resultados', 'cartera']) { await pg.click('[data-tab=' + t + ']'); await pg.waitForTimeout(250); if (t !== 'cartera') assert(/Actualizar precios/.test(await pg.textContent('#vista')), 'falta el botón de precios en ' + t); }
+  await pg.click('[data-tab=resultados]'); await pg.click('[data-r=nuevo]'); await pg.selectOption('#r-tk', 'VID'); await pg.fill('#r-f', '2026-10-28'); await pg.click('#r-ok'); await pg.waitForTimeout(200);
+  await pg.evaluate(() => document.querySelector('[data-r=rev][data-id="' + Store.get().resultados.find(r => r.tk === 'VID').id + '"]').click());
+  await pg.click('#r-ia'); const pr = await pg.inputValue('#ia-p'); assert(/Vidrala/.test(pr) && /ebitda_12m/.test(pr) && /1465/.test(pr), pr.slice(0, 300)); console.log(pr.slice(0, 900));
+  await pg.fill('#ia-r', JSON.stringify({ periodo: 'T3 2026', fin: '2026-09-30', ventas_12m: 1487.1, ebit_12m: null, ebitda_12m: null, ni_12m: null, deuda_neta: 200.8, acciones: null, guidance: 'EBITDA 2026 ≈ 450 M; beneficio +5 %; FCF ≈ 200 M', resumen: '9M: ventas 1.146,5 M (+2,0 %; −3,0 % orgánico), EBITDA 338,5 M (+2,9 %), beneficio 173,4 M. Demanda europea débil.', fiabilidad: 'media', fuentes: ['quartr.com Q3 2026', 'Vidrala 9M 2026'] })); await pg.click('#ia-ok'); await pg.waitForTimeout(300);
+  const t = await pg.textContent('#dlg'); console.log('---\n' + t.slice(0, 900)); assert(/Ventas\+1,5 %|Ventas\+1,5/.test(t.replace(/\s/g, '')) || /1,5 %/.test(t), t.slice(0, 400)); assert(/no puedo calcular la rentabilidad/.test(t) && /Resumen de la IA/.test(t));
+  assert.deepEqual(errs, []); console.log('resultados_vidrala ok'); await b.close(); srv.close();
+});

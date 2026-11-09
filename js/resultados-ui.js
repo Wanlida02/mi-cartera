@@ -83,7 +83,7 @@
     const d = D(), R = d.resultados || [], hechas = R.filter(r => r.estado === 'revisado').sort((a, b) => (b.revisado || '').localeCompare(a.revisado || ''));
     const pend = R.filter(r => r.estado !== 'revisado').sort((a, b) => (publico(b) - publico(a)) || (a.fecha || '9').localeCompare(b.fecha || '9'));
     const conFecha = new Set(pend.map(r => r.tk)), sin = seguidas().filter(k => !conFecha.has(k));
-    let h = '<div class="tools"><button class="btn" data-r="nuevo">+ Añadir fecha</button></div>';
+    let h = (U.lineaPrecios ? U.lineaPrecios() : '') + '<div class="tools"><button class="btn" data-r="nuevo">+ Añadir fecha</button></div>';
     h += '<p class="small mut" style="margin:0 2px 8px">Lo importante de cada resultado: ¿la empresa va como suponía tu valoración? Abre una fila para ver las cifras de los últimos 12 meses frente a lo esperado y cómo cambia la rentabilidad a 5 años. EE. UU. se rellena solo con la SEC; en el resto, una IA te saca las cifras.</p>';
     h += '<h3 style="margin:8px 2px 6px">Próximos resultados <span class="mut small">' + pend.length + '</span></h3><div class="card">' + (pend.length ? pend.map(r => {
       const n = r.fecha ? dif(r.fecha) : null, pub = publico(r), v = pub || r.doce ? revDe(r) : null;
@@ -109,26 +109,27 @@
   /* ───── Prompt para una IA (empresas sin SEC, o cuando la SEC aún no tiene el trimestre) ───── */
   function promptIA(r) {
     const f = D().fichas[r.tk] || {}, h = f.hist || {}, n = (h.ventas || []).length - 1, g = k => (h[k] || [])[n];
-    const esc1 = Object.assign({}, L.V.defaults(f).conservador, (f.escenarios || {}).conservador || {});
-    const ebit = isN(g('ebit')) ? g('ebit') - (isN((h.extra || [])[n]) ? h.extra[n] : 0) : null, nd = (isN(g('deuda')) ? g('deuda') : 0) + (isN(g('leases_deuda')) ? g('leases_deuda') : 0) - (isN(g('caja')) ? g('caja') : 0);
+    let esc1 = null; try { esc1 = Object.assign({}, L.V.defaults(f).conservador, (f.escenarios || {}).conservador || {}); } catch (e) { /* ficha borrador sin todas las líneas */ }
+    const ebit = isN(g('ebit')) ? g('ebit') - (isN((h.extra || [])[n]) ? h.extra[n] : 0) : null, nd = isN(g('deuda')) || isN(g('caja')) ? (isN(g('deuda')) ? g('deuda') : 0) + (isN(g('leases_deuda')) ? g('leases_deuda') : 0) - (isN(g('caja')) ? g('caja') : 0) : null;
     const r1 = x => (isN(x) ? Math.round(x * 10) / 10 : 'n/d');
     return 'Necesito las cifras de los ÚLTIMOS 12 MESES (suma de los 4 últimos trimestres publicados) de ' + (f.nombre || r.tk) + ' (ticker ' + (f.ticker || r.tk) + '), para comprobar si va en línea con mi valoración. Busca en internet los resultados trimestrales más recientes (' + (r.periodo || 'último trimestre') + ' o el último que exista).\n\n' +
       'CÓMO BUSCAR: usa la nota de prensa/presentación de resultados de la web de relación con inversores y contrástala con páginas financieras de prestigio (Yahoo Finance, MarketScreener, Investing.com, Morningstar, Reuters, TIKR, StockAnalysis…). Si un dato no está publicado todavía o las fuentes no coinciden, pon null y dilo en "resumen"; NO inventes ni estimes.\n\n' +
       'MIS CIFRAS DEL AÑO BASE (' + f.anio_base + ', en millones de ' + (f.divisa || '') + ', para que uses las mismas unidades y el mismo criterio): ventas ' + r1(g('ventas')) + ' · EBIT recurrente ' + r1(ebit) + ' · deuda neta ' + r1(nd) + ' · acciones (millones) ' + r1(g('acciones')) + '.\n' +
-      'LO QUE SUPONÍA MI VALORACIÓN: crecimiento de ventas ' + r1(esc1.g * 100) + ' % anual (se va moderando) y margen EBIT ' + r1(esc1.m * 100) + ' %.\n\n' +
+      (esc1 ? 'LO QUE SUPONÍA MI VALORACIÓN: crecimiento de ventas ' + r1(esc1.g * 100) + ' % anual (se va moderando) y margen EBIT ' + r1(esc1.m * 100) + ' %.\n\n' : '\n') +
       'DEVUELVE SOLO ESTE JSON (sin texto antes ni después), importes en millones de ' + (f.divisa || 'la divisa de mis cifras') + ':\n' +
-      '{"periodo":"T3 2026","fin":"AAAA-MM-DD (cierre del último trimestre publicado)","ventas_12m":0,"ebit_12m":0,"ni_12m":0,"deuda_neta":0,"acciones":0,"guidance":"previsión de la dirección para el año, si la dio","resumen":"2-4 frases: qué ha pasado frente a lo esperado (ventas, margen, deuda, recompras o dilución, hechos extraordinarios)","fiabilidad":"alta|media|baja","fuentes":["url o nombre de cada fuente usada"]}\n' +
-      'EBIT = resultado de explotación (excluye extraordinarios y deterioros si puedes). deuda_neta = deuda financiera − caja del último balance. acciones = diluidas, en millones.';
+      '{"periodo":"T3 2026","fin":"AAAA-MM-DD (cierre del último trimestre publicado)","ventas_12m":0,"ebit_12m":0,"ebitda_12m":0,"ni_12m":0,"deuda_neta":0,"acciones":0,"guidance":"previsión de la dirección para el año, si la dio","resumen":"2-4 frases: qué ha pasado frente a lo esperado (ventas, margen, deuda, recompras o dilución, hechos extraordinarios)","fiabilidad":"alta|media|baja","fuentes":["url o nombre de cada fuente usada"]}\n' +
+      'EBIT = resultado de explotación (excluye extraordinarios y deterioros si puedes); si la empresa no publica el EBIT, deja ebit_12m en null y da ebitda_12m. deuda_neta = deuda financiera − caja del último balance. acciones = diluidas, en millones.';
   }
   function parseIA(txt, r) {
     const m = /\{[\s\S]*\}/.exec(txt || ''); if (!m) throw new Error('No encuentro el JSON en lo que has pegado.');
     let j; try { j = JSON.parse(m[0]); } catch (e) { throw new Error('El JSON no es válido (' + e.message + ').'); }
     const f = D().fichas[r.tk], h = f.hist, n = h.ventas.length - 1, v0 = h.ventas[n], eb0 = h.ebit[n] - (isN((h.extra || [])[n]) ? h.extra[n] : 0), num = x => (isN(x) ? x : typeof x === 'string' && x.trim() !== '' && isFinite(Number(x.replace(',', '.'))) ? Number(x.replace(',', '.')) : null);
-    const ventas = num(j.ventas_12m), ebit = num(j.ebit_12m);
+    const ventas = num(j.ventas_12m); let ebit = num(j.ebit_12m); const ebitda = num(j.ebitda_12m), da0 = (h.da || [])[n], avisos = [];
+    if (ebit == null && ebitda != null && isN(da0)) { ebit = ebitda - da0; avisos.push('La fuente no da el EBIT: lo estimo como EBITDA de 12 meses − la amortización del año base (' + nf(da0, 0) + ' M). Es una aproximación.'); }
     if (ventas == null) throw new Error('Falta ventas_12m: la IA no ha encontrado la cifra. Prueba con otra fuente o introdúcela tú.');
     if (!/^\d{4}-\d\d-\d\d$/.test(j.fin || '')) throw new Error('Falta la fecha de cierre del trimestre ("fin": AAAA-MM-DD).');
     const dv = ventas / v0 - 1, de = ebit != null && eb0 > 0 ? ebit / eb0 - 1 : null;
-    const avisos = []; if (ventas / v0 > 3 || ventas / v0 < 0.33) avisos.push('Las ventas de 12 meses son ' + nf(ventas / v0, 1) + ' veces las de tu año base: revisa unidades (millones) y divisa.');
+    if (ventas / v0 > 3 || ventas / v0 < 0.33) avisos.push('Las ventas de 12 meses son ' + nf(ventas / v0, 1) + ' veces las de tu año base: revisa unidades (millones) y divisa.');
     if (ebit == null) avisos.push('Sin EBIT de 12 meses: solo se compara con las ventas.');
     return { doce: { fin: j.fin, dv, de, ventas, ebit, ni: num(j.ni_12m), deuda_neta: num(j.deuda_neta) == null ? undefined : num(j.deuda_neta), acciones: num(j.acciones) == null ? undefined : num(j.acciones), anio_base: f.anio_base, fuente: 'IA' },
       ia: { resumen: String(j.resumen || ''), guidance: String(j.guidance || ''), fuentes: Array.isArray(j.fuentes) ? j.fuentes.map(String) : [], fiabilidad: String(j.fiabilidad || ''), periodo: String(j.periodo || ''), fecha: hoy() }, avisos };
@@ -168,6 +169,11 @@
         ((Math.abs(rv.desvVentas) > 0.3 || (rv.desvEbit != null && Math.abs(rv.desvEbit) > 0.5)) ? '<div class="alert warn" style="margin-top:8px">Desviación muy grande: antes de fiarte, comprueba si hay una adquisición, una venta de negocio o una ampliación de capital (cambian ventas y acciones), o un extraordinario en el EBIT.</div>' : '') +
         '<p class="small mut" style="margin:6px 0 0">Precio hoy ' + nf(rv.precio, 2) + (v && v.entrada ? ' · entrada ' + nf(v.entrada, 2) : '') + '. Esto compara con el año base de la ficha: no sustituye a actualizar las cuentas.</p>';
       if (r.ia && (r.ia.resumen || r.ia.guidance)) cuerpo += '<details class="card" style="margin-top:8px"><summary>Resumen de la IA' + (r.ia.fiabilidad ? ' · fiabilidad ' + esc(r.ia.fiabilidad) : '') + '</summary><p class="small">' + esc(r.ia.resumen) + '</p>' + (r.ia.guidance ? '<p class="small"><b>Guidance:</b> ' + esc(r.ia.guidance) + '</p>' : '') + (r.ia.fuentes && r.ia.fuentes.length ? '<p class="small mut">Fuentes: ' + r.ia.fuentes.map(esc).join(' · ') + '</p>' : '') + '</details>';
+    } else if (dc) {
+      cuerpo += '<div class="alert warn" style="margin-top:8px">Cifras de 12 meses guardadas (' + esc(dc.fuente) + ', hasta ' + esc(dc.fin) + '), pero no puedo calcular la rentabilidad esperada: ' + 'la ficha está incompleta o es de un tipo que el motor no valora (suelen faltar impuestos, amortización, capex, deuda o caja)' + '. Completa la ficha en Valoración → Editar datos.</div>' +
+        '<table class="small" style="width:100%;border-collapse:collapse"><tr class="mut"><td></td><td>Últimos 12 meses frente al año base ' + f.anio_base + '</td></tr>' + fila3('Ventas', pc(dc.dv), '', '') + fila3('EBIT', isN(dc.de) ? pc(dc.de) : 'n/d (la fuente no lo da)', '', '') + '</table>' +
+        (isN(dc.deuda_neta) ? '<p class="small mut" style="margin:6px 0 0">Deuda neta indicada: ' + nf(dc.deuda_neta, 0) + ' M.</p>' : '') +
+        (r.ia && (r.ia.resumen || r.ia.guidance) ? '<details class="card" style="margin-top:8px" open><summary>Resumen de la IA' + (r.ia.fiabilidad ? ' · fiabilidad ' + esc(r.ia.fiabilidad) : '') + '</summary><p class="small">' + esc(r.ia.resumen) + '</p>' + (r.ia.guidance ? '<p class="small"><b>Guidance:</b> ' + esc(r.ia.guidance) + '</p>' : '') + (r.ia.fuentes && r.ia.fuentes.length ? '<p class="small mut">Fuentes: ' + r.ia.fuentes.map(esc).join(' · ') + '</p>' : '') + '</details>' : '');
     } else {
       cuerpo += (ok ? '<div class="kpis"><div class="kpi"><span>Rentab. esperada</span><b>' + nf(v.ref * 100, 1) + ' %</b><span>5 años, antes de los resultados</span></div><div class="kpi"><span>Precio de entrada</span><b>' + nf(v.entrada, 2) + '</b><span>precio ' + nf(v.precio, 2) + '</span></div></div>' : '') +
         '<div class="alert" style="background:var(--chip)">' + (f && f.divisa === 'USD' && secFin(r.tk) ? 'Aún no hay un trimestre nuevo en la SEC (último: ' + esc(secFin(r.tk)) + '). Se actualiza solo cada domingo, o pide las cifras a una IA ahora.' : 'Para ver si va en línea con tu valoración necesito las cifras de 12 meses. Pídeselas a una IA con búsqueda web (te preparo el texto) o espera a actualizar las cuentas.') + '</div>';
