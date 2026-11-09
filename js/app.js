@@ -191,7 +191,7 @@
   }
 
   /* ───── Ajustes ───── */
-  const APP_VERSION = '23 · 12 meses SEC';
+  const APP_VERSION = '24 · 12 meses SEC';
   function ajustes() {
     const d = Store.get(), A = d.ajustes, cp = Store.ultimaCopia();
     dlg('<h2>Ajustes</h2><p class="small mut">Versión de la app: ' + APP_VERSION + '</p><h3>Umbrales del Inicio (rentabilidad anual esperada a 5 años)</h3><div class="f2">' + campo('a-b', 'Barata ≥ %', A.umbral_barata, 'number') + campo('a-c', 'Cara ≤ %', A.umbral_cara, 'number') + '</div>' +
@@ -360,5 +360,13 @@
   Drive.init({ onEstado: pintaSync, onDatos: () => { render(); toast('Datos actualizados desde Drive'); Store.cargarPreciosAuto().then(n => n && render()); }, preguntar: preguntarConflicto });
   if (Store.aviso()) toast(Store.aviso());
   Store.cargarPreciosAuto().then(n => { if (n) { render(); toast('Precios actualizados'); } });
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => { });
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(r => r.update()).catch(() => { });
+  // Si el servidor ya tiene una versión más nueva que la cargada, recarga una vez (evita quedarse con código viejo por cachés)
+  try {
+    const actual = (document.querySelector('script[src*="js/app.js"]').getAttribute('src').match(/v=(\d+)/) || [])[1];
+    fetch('index.html?_=' + Date.now(), { cache: 'no-store' }).then(r => r.text()).then(t => {
+      const nueva = (t.match(/js\/app\.js\?v=(\d+)/) || [])[1];
+      if (actual && nueva && nueva !== actual && !sessionStorage.getItem('recarga-' + nueva)) { sessionStorage.setItem('recarga-' + nueva, '1'); (navigator.serviceWorker ? caches.keys().then(k => Promise.all(k.map(x => caches.delete(x)))) : Promise.resolve()).then(() => location.reload()); }
+    }).catch(() => { });
+  } catch (e) { }
 })();
