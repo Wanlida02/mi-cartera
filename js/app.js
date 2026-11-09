@@ -44,6 +44,8 @@
       '<div class="kpi"><span>Cartera valorada</span><b>' + (R.cubierto == null ? '—' : nf(R.cubierto * 100, 0) + '%') + '</b></div></div>';
     D.alertas.forEach(a => h += '<div class="alert bad">⚠ ' + esc(a.nombre) + ' pesa ' + nf(a.pct, 1) + '% (límite ' + (a.tipo === 'empresa' ? 'por empresa' : 'por sector') + ' ' + a.lim + '%)</div>');
     if (R.preciosViejos) h += '<div class="alert warn">' + R.preciosViejos + ' posición(es) con precio de hace más de ' + d.ajustes.dias_precio_viejo + ' días.</div>';
+    if (UI.cargarSEC) UI.cargarSEC();
+    if (UI.avisosResultados) h += UI.avisosResultados();
     const A = d.ajustes;
     h += '<div class="sec-t"><h2>Muy baratas <span class="mut small">≥ ' + A.umbral_barata + '% anual</span></h2></div><div class="card">' +
       (D.baratas.length ? D.baratas.map(v => filaVal(v, '<span class="pill ok">' + nf(v.ref * 100, 1) + '%</span>')).join('') : '<div class="empty">Ninguna posición supera el umbral.</div>') + '</div>';
@@ -121,7 +123,7 @@
     h += lineaPrecios();
     h += '<div class="card">' + (filas.length ? filas.map(r => {
       const p = r.p, pp = L.precioPos(d, p), v = L.variacion(d, p), w = W.total && r.eur != null ? r.eur / W.total : null;
-      return '<div class="row click" data-pos="' + r.i + '"><div class="main"><div class="name">' + esc(p.empresa) + '</div><div class="meta">' + esc(p.broker || '') + ' · ' + nf(p.cantidad, 4).replace(/,?0+$/, '') + ' acc. · ' + money(pp && pp.precio, p.moneda) +
+      return '<div class="row click" data-pos="' + r.i + '"><div class="main"><div class="name">' + esc(p.empresa) + (UI.etiquetasResultados ? UI.etiquetasResultados(L.tickerDe(d, p)) : '') + '</div><div class="meta">' + esc(p.broker || '') + ' · ' + nf(p.cantidad, 4).replace(/,?0+$/, '') + ' acc. · ' + money(pp && pp.precio, p.moneda) +
         (pp && pp.convertido ? ' (conv.)' : '') + fechaPrecio(pp) + '</div></div><div class="num"><b>' + eur(r.eur) + '</b><div class="meta"><span class="' + cls(v) + '">' + pct(v) + '</span> · ' + (w == null ? '—' : nf(w * 100, 1) + '%') + '</div></div></div>';
     }).join('') : '<div class="empty">Sin posiciones' + (q ? ' que coincidan' : '') + '.</div>') + '</div>';
     h += '<button class="btn fab" data-a="compra">+ Compra</button>';
@@ -191,7 +193,7 @@
   }
 
   /* ───── Ajustes ───── */
-  const APP_VERSION = '24 · 12 meses SEC';
+  const APP_VERSION = '25 · resultados y valoración';
   function ajustes() {
     const d = Store.get(), A = d.ajustes, cp = Store.ultimaCopia();
     dlg('<h2>Ajustes</h2><p class="small mut">Versión de la app: ' + APP_VERSION + '</p><h3>Umbrales del Inicio (rentabilidad anual esperada a 5 años)</h3><div class="f2">' + campo('a-b', 'Barata ≥ %', A.umbral_barata, 'number') + campo('a-c', 'Cara ≤ %', A.umbral_cara, 'number') + '</div>' +
@@ -355,7 +357,7 @@
   $('#btn-ajustes').onclick = ajustes;
   $('#btn-sync').onclick = () => { const e = Drive.estado(); if (!e.conectado) ajustes(); else if (e.estado === 'conflicto' || e.estado === 'reconectar' || e.estado === 'error') Drive.ahora(); else toast(textoDrive()); };
 
-  Object.assign(UI, { dlg, cerrar, toast, esc, nf, pct, money, eur, guardar, render, campo, val, cls });
+  Object.assign(UI, { dlg, cerrar, toast, esc, nf, pct, money, eur, guardar, render, campo, val, cls, irA: t => { tab = t; render(); window.scrollTo(0, 0); } });
   Store.load(); render();
   Drive.init({ onEstado: pintaSync, onDatos: () => { render(); toast('Datos actualizados desde Drive'); Store.cargarPreciosAuto().then(n => n && render()); }, preguntar: preguntarConflicto });
   if (Store.aviso()) toast(Store.aviso());

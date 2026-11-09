@@ -222,6 +222,50 @@ const Logic = (function () {
     } catch (e) { return { tk, nombre: f0.nombre || tk, error: e.message }; }
   }
 
+  /* ───── Resultados trimestrales: ¿la empresa va en línea con lo que suponía la valoración? ─────
+     doce = {fin:'AAAA-MM-DD' (cierre del último trimestre), dv: ventas 12m / ventas año base − 1, de: EBIT 12m / EBIT año base − 1, basefin?: cierre del año base, deuda_neta?, acciones?}
+     Compara el crecimiento real desde el año base con el que el escenario conservador proyectaba para ese mismo periodo, y recalcula la rentabilidad a 5 años partiendo de las cifras de 12 meses
+     (mismos supuestos) y, aparte, si el margen de 12 meses se mantuviera. */
+  const UMBRAL_DESV = 0.10, UMBRAL_REF = 0.015;
+  function revision(d, tk, doce, hoy) {
+    const f0 = d.fichas[tk]; if (!f0 || !doce || !V.soportado(f0) || !isN(doce.dv)) return null;
+    try {
+      const pf = precioFicha(d, tk), f = Object.assign({}, f0, { precio: pf.precio });
+      const esc = Object.assign({}, V.defaults(f).conservador, (f.escenarios || {}).conservador || {});
+      const res = V.proyectar(f, esc), antes = res.cagr[5].ref, h = f.hist, n = h.ventas.length - 1, r0 = res.rows[0];
+      const eb0 = h.ebit[n] - ((h.extra && isN(h.extra[n])) ? h.extra[n] : 0), v0 = h.ventas[n];
+      const fb = doce.basefin || (f.anio_base + '-12-31');
+      const t = Math.max(0, Math.min(1.5, (Date.parse(doce.fin) - Date.parse(fb)) / (365.25 * 864e5)));
+      const gv = r0.ventas / v0 - 1, ge = eb0 > 0 && r0.ebit > 0 ? r0.ebit / eb0 - 1 : null;
+      const ventasEsp = Math.pow(1 + gv, t) - 1, ebitEsp = ge == null ? null : Math.pow(1 + ge, t) - 1;
+      const desvVentas = (1 + doce.dv) / (1 + ventasEsp) - 1, desvEbit = isN(doce.de) && ebitEsp != null && eb0 > 0 ? (1 + doce.de) / (1 + ebitEsp) - 1 : null;
+      const f2 = Object.assign({}, f, { escenarios: { conservador: esc }, hist: Object.assign({}, h) });
+      const esc1 = (arr, k) => { const a = (arr || []).slice(); if (isN(a[n])) a[n] = a[n] * k; return a; };
+      f2.hist.ventas = esc1(h.ventas, 1 + doce.dv); f2.hist.da = esc1(h.da, 1 + doce.dv); f2.hist.capex = esc1(h.capex, 1 + doce.dv);
+      if (isN(doce.de) && eb0 > 0) f2.hist.ebit = esc1(h.ebit, 1 + doce.de);
+      if (isN(doce.acciones) && doce.acciones > 0) { f2.hist.acciones = (h.acciones || []).slice(); f2.hist.acciones[n] = doce.acciones; }
+      if (isN(doce.deuda_neta)) { const cj = isN(last0(h.caja)) ? last0(h.caja) : 0, ls = isN(last0(h.leases_deuda)) ? last0(h.leases_deuda) : 0; f2.hist.deuda = (h.deuda || []).slice(); f2.hist.deuda[n] = doce.deuda_neta + cj - ls; }
+      const despues = V.proyectar(f2, esc).cagr[5].ref;
+      const m12 = isN(doce.de) && eb0 > 0 ? (eb0 * (1 + doce.de)) / (v0 * (1 + doce.dv)) : null;
+      const conMargen = m12 != null && m12 > 0 ? V.proyectar(f2, Object.assign({}, esc, { m: m12 })).cagr[5].ref : null;
+      const desv = desvEbit != null ? desvEbit : desvVentas, dr = isN(despues) && isN(antes) ? despues - antes : 0;
+      const pos = desv >= UMBRAL_DESV || dr >= UMBRAL_REF, neg = desv <= -UMBRAL_DESV || dr <= -UMBRAL_REF;
+      const veredicto = pos && neg ? 'mixto' : pos ? 'mejor' : neg ? 'peor' : 'linea';
+      return { tk, antes: isN(antes) ? antes : null, despues: isN(despues) ? despues : null, conMargen: isN(conMargen) ? conMargen : null,
+        margenBase: v0 > 0 && eb0 > 0 ? eb0 / v0 : null, margen12: m12, t, ventasEsp, ebitEsp, desvVentas, desvEbit, dv: doce.dv, de: isN(doce.de) ? doce.de : null,
+        veredicto, precio: pf.precio, fin: doce.fin };
+    } catch (e) { return { tk, error: e.message }; }
+  }
+  const last0 = a => (a && a.length ? a[a.length - 1] : undefined);
+  /* Precio de referencia para la alerta de ±25 %: el de la última revisión hecha o, si no hay, el anotado al crear el registro pendiente */
+  function precioRef(d, tk, hoy) {
+    const R = (d.resultados || []).filter(r => r.tk === tk), rev = R.filter(r => r.estado === 'revisado' && r.snap && isN(r.snap.precio)).sort((a, b) => (b.revisado || '').localeCompare(a.revisado || ''))[0];
+    const ref = rev ? { precio: rev.snap.precio, fecha: rev.revisado } : (R.filter(r => r.estado !== 'revisado' && isN(r.precio_ref)).sort((a, b) => (b.precio_fecha || '').localeCompare(a.precio_fecha || ''))[0] || null);
+    if (!ref) return null; const pr = ref.precio_ref != null ? ref.precio_ref : ref.precio, fecha = ref.fecha || ref.precio_fecha || null, f = d.fichas[tk];
+    if (!f || !isN(pr) || pr <= 0) return null; const pf = precioFicha(d, tk); if (!isN(pf.precio)) return null;
+    const cambio = pf.precio / pr - 1; return { ref: pr, fecha, precio: pf.precio, cambio, alerta: Math.abs(cambio) >= 0.25 };
+  }
+
   /* ───── Informes anuales: cruza el índice (indice_informes.json) con cartera y watchlist ───── */
   const baseTk = t => (t || '').toUpperCase().split('.')[0];
   function informes(d, hoy) {
@@ -299,6 +343,6 @@ const Logic = (function () {
   }
 
   return { isN, today, clone, nuevoDatos, normalizar, norm, coreName, sameCompany, findExisting, tickerDe, fxPorEur, aEur, precioPos, costeEur, mercadoEur, valorEur, variacion, diasDesde,
-    compra, venta, editar, eliminar, borrarMov, reverseMov, precioManual, precioFicha, valoracion, pesos, dashboard, informes, V };
+    compra, venta, editar, eliminar, borrarMov, reverseMov, precioManual, precioFicha, valoracion, revision, precioRef, pesos, dashboard, informes, V };
 })();
 if (typeof module !== 'undefined') module.exports = Logic;

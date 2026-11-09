@@ -22,17 +22,29 @@
   let SECR = null, secCarga = false;
   function cargarSEC() { if (SECR || secCarga) return; secCarga = true; fetch('datos/resumen.json', { cache: 'no-cache' }).then(r => (r.ok ? r.json() : null)).then(j => { SECR = (j && j.empresas) || {}; U.render(); }).catch(() => { SECR = {}; }); }
   /* Para una ficha: ejercicio nuevo publicado y factor de 12 meses (EBIT 12 meses / EBIT del mismo ejercicio en la SEC) */
-  function secDe(tk, f) {
+  function secSEC(tk, f) {
     const e = SECR && SECR[tk]; if (!e || e.error || !f || f.divisa !== 'USD') return null;
     const out = { nombre: e.nombre };
     if (e.ultimo_ejercicio && e.ultimo_ejercicio.anio > f.anio_base) out.nuevo = e.ultimo_ejercicio.anio;
     const an = (e.anual && e.anual.anios) || [], i = an.indexOf(f.anio_base) >= 0 && !(e.ultimo_ejercicio && f.anio_base > e.ultimo_ejercicio.anio) ? an.indexOf(f.anio_base) : an.length - 1;
     const eb = e.anual && e.anual.ebit && e.anual.ebit[i], vb = e.anual && e.anual.ventas && e.anual.ventas[i], t = e.ttm;
     if (t && isN(t.ebit) && isN(eb) && eb > 0 && !out.nuevo && t.fin > (e.ultimo_ejercicio ? e.ultimo_ejercicio.fin : '')) {
-      out.doce = { fin: t.fin, k: t.ebit / eb, ventas: t.ventas, ebit: t.ebit, ni: t.ni_reportado, dv: isN(t.ventas) && vb > 0 ? t.ventas / vb - 1 : null, de: t.ebit / eb - 1, anio: an[i] };
+      out.doce = { fin: t.fin, k: t.ebit / eb, ventas: t.ventas, ebit: t.ebit, ni: t.ni_reportado, dv: isN(t.ventas) && vb > 0 ? t.ventas / vb - 1 : null, de: t.ebit / eb - 1, anio: an[i], basefin: e.ultimo_ejercicio && e.ultimo_ejercicio.anio === an[i] ? e.ultimo_ejercicio.fin : null, fuente: 'SEC' };
     }
     return out;
   }
+  /* Cifras de 12 meses pegadas a mano / desde una IA en la revisión de resultados (empresas sin SEC): se usan igual que las de la SEC mientras la ficha siga en el mismo año base */
+  function secManual(tk, f) {
+    const R = (Store.get().resultados || []).filter(r => r.tk === tk && r.doce && r.doce.anio_base === f.anio_base && isN(r.doce.dv)).sort((a, b) => (b.doce.fin || '').localeCompare(a.doce.fin || ''))[0];
+    return R ? Object.assign({}, R.doce, { k: 1 + R.doce.de, anio: f.anio_base, fuente: R.doce.fuente || 'IA' }) : null;
+  }
+  function secDe(tk, f) {
+    const out = secSEC(tk, f); if (out && (out.doce || out.nuevo)) return out;
+    const m = f ? secManual(tk, f) : null; if (!m) return out;
+    return Object.assign(out || {}, { doce: Object.assign({ ebit: null }, m) });
+  }
+  U.abrirFicha = tk => { sel = tk; U.irA('valoracion'); };
+  U.secDe = secDe; U.cargarSEC = cargarSEC; U.secRaw = () => SECR;
 
   /* Ejercicio nuevo desde datos/TICKER.json (SEC): se añaden los años que faltan a la ficha (o se sustituye si está muy desfasada) */
   async function nuevoEjercicio(tk) {
@@ -67,7 +79,7 @@
       if (!rows.length) return;
       h += '<h3 style="margin:14px 2px 6px">' + t + ' <span class="mut small">' + rows.length + '</span></h3><div class="card">' + rows.map(({ k, v }) => {
         if (v.noSoportado || v.error) return '<div class="row click" data-v="abrir" data-k="' + esc(k) + '"><div class="main"><div class="name">' + esc(v.nombre) + '</div><div class="meta">' + esc(k) + (v.error ? ' · error: ' + esc(v.error) : ' · tipo no soportado') + '</div></div></div>';
-        return '<div class="row click" data-v="abrir" data-k="' + esc(k) + '"><div class="main"><div class="name">' + esc(v.nombre) + (v.graves ? ' <span class="pill warn">datos dudosos</span>' : '') + ((secDe(k, d.fichas[k]) || {}).nuevo ? ' <span class="pill">ejercicio ' + secDe(k, d.fichas[k]).nuevo + ' publicado</span>' : '') + '</div>' +
+        return '<div class="row click" data-v="abrir" data-k="' + esc(k) + '"><div class="main"><div class="name">' + esc(v.nombre) + (v.graves ? ' <span class="pill warn">datos dudosos</span>' : '') + ((secDe(k, d.fichas[k]) || {}).nuevo ? ' <span class="pill">ejercicio ' + secDe(k, d.fichas[k]).nuevo + ' publicado</span>' : '') + (U.etiquetasResultados ? U.etiquetasResultados(k) : '') + '</div>' +
           '<div class="meta">' + esc(k) + ' · ' + nf(v.precio, 2) + ' ' + esc(v.divisa) + (v.entrada ? ' · entrada ' + nf(v.entrada, 2) : '') + '</div></div>' +
           '<div class="num"><span class="pill ' + tono(v.ref, a) + '">' + (v.ref == null ? '—' : pc(v.ref)) + '</span><div class="meta">anual · 5 años</div></div></div>';
       }).join('') + '</div>';
@@ -109,7 +121,7 @@
       (vm && vm.sinBeneficio ? ' <b>¿Chollo ahora?</b> No hay lectura: en los últimos 12 meses (hasta ' + esc(vm.doce.fin) + ') el EBIT es negativo.' : '') +
       (vm && !vm.sinBeneficio ? ' <b>¿Chollo ahora?</b> Con las cifras ' + (vm.doce ? 'de los últimos 12 meses (hasta ' + esc(vm.doce.fin) + ')' : 'del último año') + ' a sus múltiplos de siempre valdría ' + nf(vm.valor, 2) + ': cotiza ' + nf(Math.abs(vm.descuento) * 100, 0) + ' % ' + (vm.descuento >= 0 ? 'por debajo' : 'por encima') + '. Lectura a corto plazo: supone que esas cifras se mantienen y el múltiplo vuelve a su media.' +
         (vm.raro ? ' <span class="c-y">Ojo: su múltiplo de siempre es ' + nf(vm.ratioHist, 1) + ' veces el de hoy' + (vm.raro === 'alto' ? ' (años de rampa o de euforia en la media): la lectura exagera el chollo.' : ' (años más baratos en la media): la lectura exagera lo cara.') + '</span>' : '') : '') + '</p>' +
-      (sd && sd.doce ? '<p class="small' + (Math.abs(sd.doce.de) > 0.25 ? ' c-y' : ' mut') + '" style="margin:6px 0 0"><b>Últimos 12 meses</b> (SEC, hasta ' + esc(sd.doce.fin) + '): ventas ' + nf(sd.doce.ventas, 0) + ' M' + (isN(sd.doce.dv) ? ' (' + (sd.doce.dv >= 0 ? '+' : '') + nf(sd.doce.dv * 100, 0) + ' %)' : '') + ', EBIT ' + nf(sd.doce.ebit, 0) + ' M (' + (sd.doce.de >= 0 ? '+' : '') + nf(sd.doce.de * 100, 0) + ' %) frente a ' + sd.doce.anio + '.' + (Math.abs(sd.doce.de) > 0.25 ? ' El negocio se ha movido mucho desde el año base: el objetivo a 5 años parte de cifras desfasadas.' : '') + '</p>' : '') +
+      (sd && sd.doce ? '<p class="small' + (Math.abs(sd.doce.de) > 0.25 ? ' c-y' : ' mut') + '" style="margin:6px 0 0"><b>Últimos 12 meses</b> (' + esc(sd.doce.fuente === 'SEC' ? 'SEC' : 'IA, sin verificar') + ', hasta ' + esc(sd.doce.fin) + '): ventas ' + nf(sd.doce.ventas, 0) + ' M' + (isN(sd.doce.dv) ? ' (' + (sd.doce.dv >= 0 ? '+' : '') + nf(sd.doce.dv * 100, 0) + ' %)' : '') + ', EBIT ' + (isN(sd.doce.ebit) && isN(sd.doce.de) ? nf(sd.doce.ebit, 0) + ' M (' + (sd.doce.de >= 0 ? '+' : '') + nf(sd.doce.de * 100, 0) + ' %)' : 'n/d') + ' frente a ' + sd.doce.anio + '.' + (Math.abs(sd.doce.de) > 0.25 ? ' El negocio se ha movido mucho desde el año base: el objetivo a 5 años parte de cifras desfasadas.' : '') + '</p>' : '') +
       (sd && sd.nuevo ? '<div class="alert warn" style="margin-top:8px">La SEC ya tiene el ejercicio ' + sd.nuevo + ' y esta ficha llega a ' + f.anio_base + '. <button class="btn sm" data-v="nuevoej">' + (sd.nuevo - f.anio_base > 1 || f.anio_base < 2020 ? 'Sustituir por los datos de la SEC' : 'Añadir ' + sd.nuevo + ' desde la SEC') + '</button></div>' : '') + '</div>' +
       '<div class="tools"><button class="btn sm" data-v="precio">Precio</button><button class="btn sec sm" data-v="datos">Editar datos</button><button class="btn sec sm" data-v="reset">Restablecer supuestos</button></div>';
     // escenarios
@@ -138,7 +150,7 @@
     // fiabilidad
     h += sec('dat', 'Fiabilidad de los datos', fi.puntuacion + ' % · ' + fi.nivel, '<ul class="crl">' + (fi.avisos.length ? fi.avisos.map(x => '<li class="cr s-' + x.nivel + '"><span class="bdg">' + ({ g: '✓', y: '!', r: '✕' }[x.nivel] || '!') + '</span><div>' + esc(x.txt) + '</div></li>').join('') : '<li class="cr s-g"><span class="bdg">✓</span><div>Sin avisos.</div></li>') + '</ul>' +
       (f.fecha_datos ? '<p class="small mut">Datos de ' + esc(f.fecha_datos) + (f.fuentes && f.fuentes.length ? ' · ' + esc(f.fuentes.join(', ')) : '') + '</p>' : '') + (Array.isArray(f.notas) && f.notas.length ? '<details><summary class="small">Notas de la ficha (' + f.notas.length + ')</summary><ul class="small">' + f.notas.map(n => '<li>' + esc(n) + '</li>').join('') + '</ul></details>' : ''));
-    return h + acciones(f);
+    return h + (U.historialResultados ? U.historialResultados(sel) : '') + acciones(f);
   }
   const acciones = f => '<div class="tools" style="margin-top:12px"><button class="btn sec sm" data-v="estado">' + (estadoDe(sel) === 'cartera' ? 'Está en cartera' : estadoDe(sel) === 'candidata' ? 'Pasar a watchlist' : 'Marcar candidata') + '</button><button class="btn sec sm" data-v="copiar">Copiar ficha (JSON)</button><button class="btn sec sm" data-v="borrar">Eliminar ficha</button></div>';
 
@@ -202,6 +214,7 @@
     const t = e.target.closest('[data-v]'); if (!t) return false; const a = t.dataset.v, d = D();
     if (a === 'nueva') nuevaDlg();
     else if (a === 'abrir') { sel = t.dataset.k; U.render(); window.scrollTo(0, 0); }
+    else if (a === 'abrir-tk') U.abrirFicha(t.dataset.k);
     else if (a === 'volver') { sel = null; U.render(); }
     else if (a === 'precio') precioDlg();
     else if (a === 'datos') datosDlg();
