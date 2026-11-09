@@ -1,0 +1,293 @@
+{
+ "ticker": "GOOGL",
+ "nombre": "Alphabet Inc.",
+ "cik": "0001652044",
+ "divisa": "USD",
+ "generado": "2026-11-09T09:49:19.165Z",
+ "fuente": "SEC EDGAR (XBRL, 10-K)",
+ "anios": [
+  2016,
+  2017,
+  2018,
+  2019,
+  2020,
+  2021,
+  2022,
+  2023,
+  2024,
+  2025
+ ],
+ "hist": {
+  "ventas": [
+   90272,
+   110855,
+   136819,
+   161857,
+   182527,
+   257637,
+   282836,
+   307394,
+   350018,
+   402836
+  ],
+  "ebit": [
+   23716,
+   26178,
+   27524,
+   34231,
+   41224,
+   78714,
+   74842,
+   84293,
+   112390,
+   129039
+  ],
+  "da": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "intereses": [
+   124,
+   109,
+   114,
+   100,
+   135,
+   346,
+   357,
+   308,
+   268,
+   736
+  ],
+  "impuestos": [
+   4672,
+   14531,
+   4177,
+   5282,
+   7813,
+   14701,
+   11356,
+   11922,
+   19697,
+   26656
+  ],
+  "minoritarios": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "otros": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "acciones": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   13159,
+   12722,
+   12447,
+   12230
+  ],
+  "capex": [
+   10212,
+   13184,
+   25139,
+   23548,
+   22281,
+   24640,
+   31485,
+   32251,
+   52535,
+   91447
+  ],
+  "leases": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "caja": [
+   12918,
+   101871,
+   109140,
+   119675,
+   136694,
+   139649,
+   113762,
+   110916,
+   95657,
+   126843
+  ],
+  "deuda": [
+   3935,
+   3943,
+   3950,
+   3958,
+   14931,
+   14817,
+   14701,
+   12870,
+   11882,
+   48543
+  ],
+  "leases_deuda": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "goodwill": [
+   16468,
+   16747,
+   17888,
+   20624,
+   21175,
+   22956,
+   28960,
+   29198,
+   31885,
+   33380
+  ],
+  "equity": [
+   139036,
+   152502,
+   177628,
+   201442,
+   222544,
+   251635,
+   256144,
+   283379,
+   325084,
+   415265
+  ],
+  "ni_reportado": [
+   19478,
+   12662,
+   30736,
+   34343,
+   40269,
+   76033,
+   59972,
+   73795,
+   100118,
+   132170
+  ],
+  "fco": [
+   36036,
+   37091,
+   47971,
+   54520,
+   65124,
+   91652,
+   91495,
+   101746,
+   125299,
+   164713
+  ],
+  "sbc": [
+   6703,
+   7679,
+   9353,
+   10794,
+   12991,
+   15376,
+   19362,
+   22460,
+   22785,
+   24953
+  ],
+  "dividendos": [
+   0,
+   0,
+   null,
+   null,
+   null,
+   null,
+   0,
+   0,
+   7363,
+   10049
+  ],
+  "recompras": [
+   3693,
+   4846,
+   9075,
+   18396,
+   31149,
+   50274,
+   59296,
+   61504,
+   62222,
+   45709
+  ],
+  "bpa": [
+   27.85,
+   18,
+   43.7,
+   49.16,
+   2.93,
+   5.61,
+   4.56,
+   5.8,
+   8.04,
+   10.81
+  ]
+ },
+ "ttm": {
+  "fin": "2026-09-30",
+  "ventas": 471098,
+  "ebit": 156976,
+  "ni_reportado": 235694
+ },
+ "ultimo_ejercicio": {
+  "anio": 2025,
+  "fin": "2025-12-31"
+ },
+ "precio": null,
+ "notas": [
+  "Datos automáticos de la SEC (XBRL de los 10-K). Revísalos contra el informe anual antes de decidir: pueden faltar líneas o haber reexpresiones.",
+  "Caja = efectivo + inversiones a corto plazo; deuda = deuda financiera (sin arrendamientos). Intereses = gasto bruto (no netos de ingresos). Minoritarios, otros y arrendamientos van a 0 o sin dato: complétalos si importan.",
+  "Líneas sin datos en la SEC: da."
+ ],
+ "faltan": [
+  "da"
+ ]
+}

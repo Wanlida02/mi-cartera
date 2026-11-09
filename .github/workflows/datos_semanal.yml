@@ -1,0 +1,29 @@
+name: Datos de la SEC (semanal)
+# Cada domingo: últimos 12 meses (10-Q) y último ejercicio (10-K) de las empresas de EE. UU. de simbolos.json → datos/*.json y datos/resumen.json
+on:
+  schedule:
+    - cron: '17 6 * * 0'
+  workflow_dispatch: {}
+permissions:
+  contents: write
+concurrency:
+  group: datos-empresa
+  cancel-in-progress: false
+jobs:
+  datos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Descargar cuentas de la SEC
+        run: node scripts/datos_sec.js --todos
+      - name: Guardar
+        run: |
+          git config user.name "mi-cartera-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add datos
+          if git diff --cached --quiet; then echo "Sin cambios"; exit 0; fi
+          git commit -m "Datos de la SEC: actualización semanal"
+          for i in 1 2 3; do git pull --rebase origin ${{ github.ref_name }} && git push && break || sleep 5; done

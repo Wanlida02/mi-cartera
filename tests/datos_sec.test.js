@@ -43,3 +43,18 @@ console.log('datos_sec ok');
   A.deepEqual(r3.hist.acciones, [null, 20000, 19000, 18000]); A.deepEqual(r3.hist.bpa, [null, 3, 3, 3]);
   A(r3.notas.some(x => /split/.test(x))); console.log('datos_sec split ok');
 }
+
+// Últimos 12 meses: trimestres sueltos + 4.º deducido de anual − 9 meses; elige la etiqueta más reciente
+{
+  const { ttm } = require('../scripts/datos_sec.js'), F = (a, b, v, form = '10-Q', filed = b) => ({ start: a, end: b, val: v * 1e6, form, filed });
+  const gaap = {
+    Revenues: { units: { USD: [F('2018-01-01', '2018-12-31', 5, '10-K')] } },
+    RevenueFromContractWithCustomerExcludingAssessedTax: { units: { USD: [
+      F('2025-01-01', '2025-09-30', 300), F('2025-07-01', '2025-09-30', 100), F('2025-01-01', '2025-12-31', 420, '10-K'),
+      F('2026-01-01', '2026-03-31', 110), F('2026-01-01', '2026-06-30', 230), F('2026-04-01', '2026-06-30', 120), F('2026-01-01', '2026-09-30', 360)] } }
+  };
+  const r = ttm(gaap, { tags: ['Revenues', 'RevenueFromContractWithCustomerExcludingAssessedTax'] });
+  // 4T25 = 420 − 300 = 120; 3T26 = 360 − 230 = 130 → 120 + 110 + 120 + 130 = 480
+  assert.deepStrictEqual(r, { fin: '2026-09-30', valor: 480 });
+  console.log('ttm ok');
+}

@@ -3,7 +3,7 @@
  "nombre": "AutoZone, Inc.",
  "cik": "0000866787",
  "divisa": "USD",
- "generado": "2026-11-04T17:29:22.063Z",
+ "generado": "2026-11-09T09:49:16.520Z",
  "fuente": "SEC EDGAR (XBRL, 10-K)",
  "anios": [
   2017,
@@ -271,12 +271,22 @@
    152.55
   ]
  },
+ "ttm": {
+  "fin": "2026-08-29",
+  "ventas": 20338.556,
+  "ebit": 3723.35,
+  "ni_reportado": 2572.777,
+  "da": 684.265
+ },
+ "ultimo_ejercicio": {
+  "anio": 2026,
+  "fin": "2026-08-29"
+ },
  "precio": null,
  "notas": [
   "Datos automáticos de la SEC (XBRL de los 10-K). Revísalos contra el informe anual antes de decidir: pueden faltar líneas o haber reexpresiones.",
   "Caja = efectivo + inversiones a corto plazo; deuda = deuda financiera (sin arrendamientos). Intereses = gasto bruto (no netos de ingresos). Minoritarios, otros y arrendamientos van a 0 o sin dato: complétalos si importan.",
-  "Líneas sin datos en la SEC: dividendos.",
-  "Sin precio automático (fetch failed)."
+  "Líneas sin datos en la SEC: dividendos."
  ],
  "faltan": [
   "dividendos"

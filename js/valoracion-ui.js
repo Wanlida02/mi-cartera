@@ -18,9 +18,47 @@
   const escDe = (f, s) => Object.assign({}, V.defaults(f)[s], (f.escenarios || {})[s] || {});
   const tono = (v, a) => v == null ? '' : v >= a.umbral_barata / 100 ? 'ok' : v <= a.umbral_cara / 100 ? 'bad' : '';
 
+  /* ───── Datos públicos de la SEC: últimos 12 meses y último ejercicio (datos/resumen.json, lo genera el workflow semanal) ───── */
+  let SECR = null, secCarga = false;
+  function cargarSEC() { if (SECR || secCarga) return; secCarga = true; fetch('datos/resumen.json', { cache: 'no-cache' }).then(r => (r.ok ? r.json() : null)).then(j => { SECR = (j && j.empresas) || {}; U.render(); }).catch(() => { SECR = {}; }); }
+  /* Para una ficha: ejercicio nuevo publicado y factor de 12 meses (EBIT 12 meses / EBIT del mismo ejercicio en la SEC) */
+  function secDe(tk, f) {
+    const e = SECR && SECR[tk]; if (!e || e.error || !f || f.divisa !== 'USD') return null;
+    const out = { nombre: e.nombre };
+    if (e.ultimo_ejercicio && e.ultimo_ejercicio.anio > f.anio_base) out.nuevo = e.ultimo_ejercicio.anio;
+    const an = (e.anual && e.anual.anios) || [], i = an.indexOf(f.anio_base) >= 0 && !(e.ultimo_ejercicio && f.anio_base > e.ultimo_ejercicio.anio) ? an.indexOf(f.anio_base) : an.length - 1;
+    const eb = e.anual && e.anual.ebit && e.anual.ebit[i], vb = e.anual && e.anual.ventas && e.anual.ventas[i], t = e.ttm;
+    if (t && isN(t.ebit) && isN(eb) && eb > 0 && !out.nuevo && t.fin > (e.ultimo_ejercicio ? e.ultimo_ejercicio.fin : '')) {
+      out.doce = { fin: t.fin, k: t.ebit / eb, ventas: t.ventas, ebit: t.ebit, ni: t.ni_reportado, dv: isN(t.ventas) && vb > 0 ? t.ventas / vb - 1 : null, de: t.ebit / eb - 1, anio: an[i] };
+    }
+    return out;
+  }
+
+  /* Ejercicio nuevo desde datos/TICKER.json (SEC): se añaden los años que faltan a la ficha (o se sustituye si está muy desfasada) */
+  async function nuevoEjercicio(tk) {
+    const d = D(), f = d.fichas[tk]; let j;
+    try { const r = await fetch('datos/' + tk.replace(/[^A-Z0-9]/g, '_') + '.json', { cache: 'no-cache' }); j = r.ok ? await r.json() : null; } catch (e) { j = null; }
+    if (!j || !j.anios) return U.toast('No encuentro los datos de la SEC de ' + tk);
+    const nuevos = j.anios.filter(a => a > f.anio_base);
+    if (!nuevos.length) return U.toast('No hay ejercicios nuevos');
+    if (nuevos.length > 1 || f.anio_base < 2020) {
+      if (!confirm('La ficha de ' + tk + ' está muy desfasada (' + f.anio_base + '). ¿Sustituirla por los datos de la SEC (' + j.anios[0] + '–' + j.anios[j.anios.length - 1] + ')? Se conservan los múltiplos históricos y las notas.')) return;
+      const g = DatosWeb.aFicha(j, hoy()); ['mult_hist', 'escenarios', 'tipo', 'precio', 'fecha_precio'].forEach(k => { if (f[k] != null && g[k] == null) g[k] = f[k]; });
+      g.notas = (f.notas || []).concat(g.notas || [], ['Ficha sustituida por los datos de la SEC el ' + hoy() + ' (antes llegaba a ' + f.anio_base + ').']);
+      d.fichas[tk] = g; return U.guardar({ ok: true, msg: 'Ficha de ' + tk + ' actualizada hasta ' + g.anio_base });
+    }
+    const y = nuevos[0], i = j.anios.indexOf(y), copiadas = [];
+    f.anios.push(y);
+    Object.keys(f.hist).forEach(k => { const s = f.hist[k]; if (!Array.isArray(s)) return; let v = j.hist[k] && isN(j.hist[k][i]) ? j.hist[k][i] : k === 'extra' ? 0 : null; if (v == null && isN(s[s.length - 1])) { v = s[s.length - 1]; copiadas.push(k); } s.push(v); });
+    f.anio_base = y; f.fecha_datos = hoy();
+    f.notas = (f.notas || []).concat(['Ejercicio ' + y + ' añadido desde la SEC el ' + hoy() + ' (sin verificar con el informe anual). Revisa en especial intereses (la SEC da el gasto bruto) y caja (efectivo + inversiones a corto); sin dato en la SEC, copiadas del año anterior: ' + (copiadas.join(', ') || 'ninguna') + '.']);
+    U.guardar({ ok: true, msg: 'Añadido ' + y + ' a ' + tk + ' desde la SEC' });
+  }
+
   /* ───── Lista ───── */
   function vistaLista() {
     const d = D(), a = d.ajustes, q = L.norm(filtro), ks = Object.keys(d.fichas).filter(k => !q || L.norm(k + ' ' + (d.fichas[k].nombre || '')).includes(q));
+    cargarSEC();
     const filas = ks.map(k => ({ k, est: estadoDe(k), v: L.valoracion(d, k, hoy()) })).filter(x => x.v);
     const grupos = [['cartera', 'En cartera'], ['watchlist', 'Watchlist'], ['candidata', 'Candidatas']];
     let h = '<div class="tools"><button class="btn" data-v="nueva">+ Nueva ficha</button><input id="v-q" type="search" placeholder="Buscar" value="' + esc(filtro) + '"></div>';
@@ -29,7 +67,7 @@
       if (!rows.length) return;
       h += '<h3 style="margin:14px 2px 6px">' + t + ' <span class="mut small">' + rows.length + '</span></h3><div class="card">' + rows.map(({ k, v }) => {
         if (v.noSoportado || v.error) return '<div class="row click" data-v="abrir" data-k="' + esc(k) + '"><div class="main"><div class="name">' + esc(v.nombre) + '</div><div class="meta">' + esc(k) + (v.error ? ' · error: ' + esc(v.error) : ' · tipo no soportado') + '</div></div></div>';
-        return '<div class="row click" data-v="abrir" data-k="' + esc(k) + '"><div class="main"><div class="name">' + esc(v.nombre) + (v.graves ? ' <span class="pill warn">datos dudosos</span>' : '') + '</div>' +
+        return '<div class="row click" data-v="abrir" data-k="' + esc(k) + '"><div class="main"><div class="name">' + esc(v.nombre) + (v.graves ? ' <span class="pill warn">datos dudosos</span>' : '') + ((secDe(k, d.fichas[k]) || {}).nuevo ? ' <span class="pill">ejercicio ' + secDe(k, d.fichas[k]).nuevo + ' publicado</span>' : '') + '</div>' +
           '<div class="meta">' + esc(k) + ' · ' + nf(v.precio, 2) + ' ' + esc(v.divisa) + (v.entrada ? ' · entrada ' + nf(v.entrada, 2) : '') + '</div></div>' +
           '<div class="num"><span class="pill ' + tono(v.ref, a) + '">' + (v.ref == null ? '—' : pc(v.ref)) + '</span><div class="meta">anual · 5 años</div></div></div>';
       }).join('') + '</div>';
@@ -51,7 +89,8 @@
     try { ESC.forEach(s => { sc[s] = escDe(f, s); R = R || {}; R[s] = V.proyectar(f, sc[s]); }); fi = V.fiabilidad(f, hoy()); act = V.actuales(f); }
     catch (e) { return h + '<div class="alert bad" style="margin-top:10px">No se pudo calcular: ' + esc(e.message) + '</div><div class="tools"><button class="btn sec sm" data-v="datos">Revisar datos</button></div>' + acciones(f); }
     const cons = R.conservador, ref5 = cons.cagr[5].ref, pe = V.precioEntrada(f, cons, o / 100), pt = V.precioEntrada(f, cons, m / 100);
-    const vm = V.valorMultiplo ? V.valorMultiplo(f) : null, VMT = { chollo: ['g', 'Chollo ahora'], debajo: ['y', 'Algo por debajo'], encima: ['y', 'Algo por encima'], cara: ['r', 'Cara ahora'] };
+    cargarSEC(); const sd = secDe(sel, f);
+    const vm = V.valorMultiplo ? V.valorMultiplo(f, sd && sd.doce) : null, VMT = { chollo: ['g', 'Chollo ahora'], debajo: ['y', 'Algo por debajo'], encima: ['y', 'Algo por encima'], cara: ['r', 'Cara ahora'] };
     let t = 'r', title = 'Cara frente a su valor', sub;
     if (ref5 >= o / 100) { t = 'g'; title = 'Compra: supera tu objetivo'; sub = 'Rentabilidad anual esperada a 5 años: ' + pc(ref5) + ' (objetivo ' + nf(o, 0) + ' %).'; }
     else if (ref5 >= m / 100) { t = 'y'; title = 'Watchlist: buena empresa, precio justo'; sub = 'Rentabilidad esperada ' + pc(ref5) + ': sobre tu mínimo (' + nf(m, 0) + ' %) pero bajo el objetivo. Compra por debajo de ' + nf(pe, 2) + '.'; }
@@ -64,9 +103,14 @@
       '<p class="small mut" style="margin:0 0 8px">En el pesimista: ' + pc(R.pesimista.cagr[5].ref) + ' anual · en el optimista: ' + pc(R.optimista.cagr[5].ref) + '</p>' +
       '<div class="kpis"><div class="kpi"><span>Precio actual</span><b>' + nf(f.precio, 2) + '</b><span>' + esc(f.divisa) + (dp != null ? ' · hace ' + dp + ' d' : '') + '</span></div><div class="kpi"><span>Objetivo a 5 años</span><b>' + nf(cons.po[5].ref, 2) + '</b></div>' +
       '<div class="kpi"><span>Entrada para ' + nf(o, 0) + ' %</span><b>' + (pe ? nf(pe, 2) : '—') + '</b></div><div class="kpi"><span>Máximo para ' + nf(m, 0) + ' %</span><b>' + (pt ? nf(pt, 2) : '—') + '</b></div>' +
-      (vm ? '<div class="kpi"><span>A su múltiplo de siempre</span><b>' + nf(vm.valor, 2) + '</b><span class="c-' + VMT[vm.nivel][0] + '">' + VMT[vm.nivel][1] + ' (' + (vm.descuento >= 0 ? '−' : '+') + nf(Math.abs(vm.descuento) * 100, 0) + ' %)</span></div>' : '') + '</div>' +
+      (vm && vm.sinBeneficio ? '<div class="kpi"><span>¿Chollo ahora?</span><b>—</b><span class="c-r">EBIT de 12 meses negativo</span></div>' : '') +
+      (vm && !vm.sinBeneficio ? '<div class="kpi"><span>A su múltiplo de siempre</span><b>' + nf(vm.valor, 2) + '</b><span class="c-' + VMT[vm.nivel][0] + '">' + VMT[vm.nivel][1] + ' (' + (vm.descuento >= 0 ? '−' : '+') + nf(Math.abs(vm.descuento) * 100, 0) + ' %)' + (vm.doce ? ' · 12 meses' : '') + '</span></div>' : '') + '</div>' +
       '<p class="small" style="margin:8px 0 0"><b>Precio objetivo hoy</b>: ' + (pe && pt ? 'hasta ' + nf(pe, 2) + ' para ganar tu ' + nf(o, 0) + ' % anual; hasta ' + nf(pt, 2) + ' para tu mínimo del ' + nf(m, 0) + ' %' : '—') + '. Es el objetivo a 5 años traído a hoy.' +
-      (vm ? ' <b>¿Chollo ahora?</b> Con las cifras del último año a sus múltiplos de siempre valdría ' + nf(vm.valor, 2) + ': cotiza ' + nf(Math.abs(vm.descuento) * 100, 0) + ' % ' + (vm.descuento >= 0 ? 'por debajo' : 'por encima') + '. Lectura a corto plazo: supone que el último año se repite y el múltiplo vuelve a su media.' : '') + '</p></div>' +
+      (vm && vm.sinBeneficio ? ' <b>¿Chollo ahora?</b> No hay lectura: en los últimos 12 meses (hasta ' + esc(vm.doce.fin) + ') el EBIT es negativo.' : '') +
+      (vm && !vm.sinBeneficio ? ' <b>¿Chollo ahora?</b> Con las cifras ' + (vm.doce ? 'de los últimos 12 meses (hasta ' + esc(vm.doce.fin) + ')' : 'del último año') + ' a sus múltiplos de siempre valdría ' + nf(vm.valor, 2) + ': cotiza ' + nf(Math.abs(vm.descuento) * 100, 0) + ' % ' + (vm.descuento >= 0 ? 'por debajo' : 'por encima') + '. Lectura a corto plazo: supone que esas cifras se mantienen y el múltiplo vuelve a su media.' +
+        (vm.raro ? ' <span class="c-y">Ojo: su múltiplo de siempre es ' + nf(vm.ratioHist, 1) + ' veces el de hoy' + (vm.raro === 'alto' ? ' (años de rampa o de euforia en la media): la lectura exagera el chollo.' : ' (años más baratos en la media): la lectura exagera lo cara.') + '</span>' : '') : '') + '</p>' +
+      (sd && sd.doce ? '<p class="small' + (Math.abs(sd.doce.de) > 0.25 ? ' c-y' : ' mut') + '" style="margin:6px 0 0"><b>Últimos 12 meses</b> (SEC, hasta ' + esc(sd.doce.fin) + '): ventas ' + nf(sd.doce.ventas, 0) + ' M' + (isN(sd.doce.dv) ? ' (' + (sd.doce.dv >= 0 ? '+' : '') + nf(sd.doce.dv * 100, 0) + ' %)' : '') + ', EBIT ' + nf(sd.doce.ebit, 0) + ' M (' + (sd.doce.de >= 0 ? '+' : '') + nf(sd.doce.de * 100, 0) + ' %) frente a ' + sd.doce.anio + '.' + (Math.abs(sd.doce.de) > 0.25 ? ' El negocio se ha movido mucho desde el año base: el objetivo a 5 años parte de cifras desfasadas.' : '') + '</p>' : '') +
+      (sd && sd.nuevo ? '<div class="alert warn" style="margin-top:8px">La SEC ya tiene el ejercicio ' + sd.nuevo + ' y esta ficha llega a ' + f.anio_base + '. <button class="btn sm" data-v="nuevoej">' + (sd.nuevo - f.anio_base > 1 || f.anio_base < 2020 ? 'Sustituir por los datos de la SEC' : 'Añadir ' + sd.nuevo + ' desde la SEC') + '</button></div>' : '') + '</div>' +
       '<div class="tools"><button class="btn sm" data-v="precio">Precio</button><button class="btn sec sm" data-v="datos">Editar datos</button><button class="btn sec sm" data-v="reset">Restablecer supuestos</button></div>';
     // escenarios
     const P = fin ? [['rote', 'ROTE (%)', 100, .5], ['pdiv', 'Dividendos (% beneficio)', 100, 2.5], ['prec', 'Recompras (% beneficio)', 100, 2.5], ['per', 'PER', 1, .5], ['ptbv', 'P/TBV', 1, .1], ['ke', 'Coste del capital (%)', 100, .5], ['gt', 'Crecimiento largo plazo (%)', 100, .5]] :
@@ -86,7 +130,7 @@
     if (!fin) {
       const dcf = V.dcfInverso(f, 0.10, 0.03), gh = V.cagr(f.hist.ventas, 5);
       if (dcf) extra += '<li class="y"><b>DCF inverso</b>: con 10 % exigido y 3 % a perpetuidad, el precio descuenta un crecimiento del FCF de ' + (dcf.g == null ? 'más de un 60 %' : pc(dcf.g)) + ' anual 10 años. Ventas históricas a 5 años: ' + pc(gh) + '. Solo contraste.</li>';
-      if (vm) extra += '<li class="y"><b>Valor a su múltiplo histórico</b>: ' + [['per', 'PER'], ['pfcf', 'P/FCF'], ['ev_ebitda', 'EV/EBITDA'], ['ev_ebit', 'EV/EBIT']].filter(([k]) => isN(vm.porMetodo[k])).map(([k, n]) => n + ' ' + nf(vm.porMetodo[k], 2)).join(' · ') + ' → mediana ' + nf(vm.valor, 2) + '. Si el último ejercicio fue excepcional (bueno o malo) o los múltiplos históricos son de años raros, esta lectura engaña: mira el objetivo a 5 años.</li>';
+      if (vm && !vm.sinBeneficio) extra += '<li class="y"><b>Valor a su múltiplo histórico</b>: ' + [['per', 'PER'], ['pfcf', 'P/FCF'], ['ev_ebitda', 'EV/EBITDA'], ['ev_ebit', 'EV/EBIT']].filter(([k]) => isN(vm.porMetodo[k])).map(([k, n]) => n + ' ' + nf(vm.porMetodo[k], 2)).join(' · ') + ' → mediana ' + nf(vm.valor, 2) + '. Si el último ejercicio fue excepcional (bueno o malo) o los múltiplos históricos son de años raros, esta lectura engaña: mira el objetivo a 5 años.</li>';
       const mio = V.margenImplicito(f, sc.conservador, o / 100);
       extra += '<li class="y"><b>Margen implícito</b>: para ganar un ' + nf(o, 0) + ' % anual el margen EBIT tendría que ser ' + (mio == null ? 'imposible (>95 %)' : pc(mio)) + '. Solo contraste.</li>';
     }
@@ -161,6 +205,7 @@
     else if (a === 'volver') { sel = null; U.render(); }
     else if (a === 'precio') precioDlg();
     else if (a === 'datos') datosDlg();
+    else if (a === 'nuevoej') nuevoEjercicio(sel);
     else if (a === 'reset') { delete d.fichas[sel].escenarios; Store.save(); restore(() => {}); U.toast('Supuestos restablecidos'); }
     else if (a === 'estado') { const f = d.fichas[sel], e0 = estadoDe(sel); if (e0 === 'cartera') U.toast('Está en tu cartera: se gestiona en la pestaña Cartera'); else { if (e0 === 'candidata') delete f.estado; else f.estado = 'candidata'; Store.save(); restore(() => {}); } }
     else if (a === 'copiar') { const t2 = JSON.stringify(d.fichas[sel], null, 1); (navigator.clipboard ? navigator.clipboard.writeText(t2) : Promise.reject()).then(() => U.toast('Ficha copiada'), () => U.toast('No se pudo copiar')); }

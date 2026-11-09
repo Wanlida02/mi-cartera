@@ -3,7 +3,7 @@
  "nombre": "CHEMED CORPORATION",
  "cik": "0000019584",
  "divisa": "USD",
- "generado": "2026-11-04T17:29:30.986Z",
+ "generado": "2026-11-09T09:49:26.729Z",
  "fuente": "SEC EDGAR (XBRL, 10-K)",
  "anios": [
   2016,
@@ -271,11 +271,21 @@
    18.34
   ]
  },
+ "ttm": {
+  "fin": "2026-09-30",
+  "ventas": 2661.041,
+  "ebit": 370.858,
+  "ni_reportado": 282.404,
+  "da": 67.59
+ },
+ "ultimo_ejercicio": {
+  "anio": 2025,
+  "fin": "2025-12-31"
+ },
  "precio": null,
  "notas": [
   "Datos automáticos de la SEC (XBRL de los 10-K). Revísalos contra el informe anual antes de decidir: pueden faltar líneas o haber reexpresiones.",
-  "Caja = efectivo + inversiones a corto plazo; deuda = deuda financiera (sin arrendamientos). Intereses = gasto bruto (no netos de ingresos). Minoritarios, otros y arrendamientos van a 0 o sin dato: complétalos si importan.",
-  "Sin precio automático (fetch failed)."
+  "Caja = efectivo + inversiones a corto plazo; deuda = deuda financiera (sin arrendamientos). Intereses = gasto bruto (no netos de ingresos). Minoritarios, otros y arrendamientos van a 0 o sin dato: complétalos si importan."
  ],
  "faltan": []
 }

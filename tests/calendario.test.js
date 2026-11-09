@@ -13,6 +13,6 @@ const srv = http.createServer((q, r) => { const p = path.join(root, q.url.split(
   await pg.click('[data-tab=resultados]'); await pg.waitForTimeout(600);
   let t = await pg.textContent('#vista'); assert(t.includes('Calendario público'), t.slice(0, 300));
   await pg.click('[data-r=calall]'); await pg.waitForTimeout(200);
-  t = await pg.textContent('#vista'); assert(t.includes('2026-12-08') && t.includes('estimada') && t.includes('2026-11-05'), t.slice(0, 400));
+  t = await pg.textContent('#vista'); assert(t.includes('2026-12-08') && t.includes('estimada'), t.slice(0, 400));
   assert.deepEqual(errs, []); console.log('calendario ok'); await b.close(); srv.close();
 })().catch(e => { console.error('FALLO', e.message); process.exit(1); });

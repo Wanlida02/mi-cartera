@@ -1,0 +1,162 @@
+{
+ "ticker": "SNDK",
+ "nombre": "Sandisk Corporation",
+ "cik": "0002023554",
+ "divisa": "USD",
+ "generado": "2026-11-09T09:49:24.535Z",
+ "fuente": "SEC EDGAR (XBRL, 10-K)",
+ "anios": [
+  2023,
+  2024,
+  2025,
+  2026
+ ],
+ "hist": {
+  "ventas": [
+   6086,
+   6663,
+   7355,
+   20248
+  ],
+  "ebit": [
+   -2035,
+   -468,
+   -1377,
+   12389
+  ],
+  "da": [
+   448,
+   224,
+   163,
+   149
+  ],
+  "intereses": [
+   31,
+   40,
+   63,
+   73
+  ],
+  "impuestos": [
+   141,
+   169,
+   162,
+   1584
+  ],
+  "minoritarios": [
+   0,
+   0,
+   0,
+   0
+  ],
+  "otros": [
+   0,
+   0,
+   0,
+   0
+  ],
+  "acciones": [
+   145,
+   145,
+   145,
+   155
+  ],
+  "capex": [
+   219,
+   166,
+   204,
+   177
+  ],
+  "leases": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "caja": [
+   292,
+   328,
+   1481,
+   4762
+  ],
+  "deuda": [
+   null,
+   0,
+   1849,
+   0
+  ],
+  "leases_deuda": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "goodwill": [
+   null,
+   7207,
+   4999,
+   4994
+  ],
+  "equity": [
+   11439,
+   11082,
+   9216,
+   15736
+  ],
+  "ni_reportado": [
+   -2143,
+   -672,
+   -1641,
+   11433
+  ],
+  "fco": [
+   -713,
+   -309,
+   84,
+   11671
+  ],
+  "sbc": [
+   165,
+   149,
+   182,
+   232
+  ],
+  "dividendos": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "recompras": [
+   null,
+   0,
+   0,
+   4524
+  ],
+  "bpa": [
+   -14.78,
+   -4.63,
+   -11.32,
+   73.76
+  ]
+ },
+ "ttm": {
+  "fin": "2026-10-02",
+  "ventas": 28971,
+  "ebit": 20993,
+  "ni_reportado": 19422,
+  "da": 156
+ },
+ "ultimo_ejercicio": {
+  "anio": 2026,
+  "fin": "2026-07-03"
+ },
+ "precio": null,
+ "notas": [
+  "Datos automáticos de la SEC (XBRL de los 10-K). Revísalos contra el informe anual antes de decidir: pueden faltar líneas o haber reexpresiones.",
+  "Caja = efectivo + inversiones a corto plazo; deuda = deuda financiera (sin arrendamientos). Intereses = gasto bruto (no netos de ingresos). Minoritarios, otros y arrendamientos van a 0 o sin dato: complétalos si importan.",
+  "Líneas sin datos en la SEC: dividendos."
+ ],
+ "faltan": [
+  "dividendos"
+ ]
+}

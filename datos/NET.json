@@ -1,0 +1,273 @@
+{
+ "ticker": "NET",
+ "nombre": "Cloudflare, Inc.",
+ "cik": "0001477333",
+ "divisa": "USD",
+ "generado": "2026-11-09T09:49:23.150Z",
+ "fuente": "SEC EDGAR (XBRL, 10-K)",
+ "anios": [
+  2017,
+  2018,
+  2019,
+  2020,
+  2021,
+  2022,
+  2023,
+  2024,
+  2025
+ ],
+ "hist": {
+  "ventas": [
+   134.915,
+   192.674,
+   287.022,
+   431.059,
+   656.426,
+   975.241,
+   1296.745,
+   1669.626,
+   2167.937
+  ],
+  "ebit": [
+   -9.73,
+   -84.899,
+   -107.946,
+   -106.768,
+   -127.684,
+   -201.203,
+   -185.485,
+   -154.761,
+   -207.205
+  ],
+  "da": [
+   12.174,
+   18.905,
+   29.479,
+   49.387,
+   66.607,
+   102.335,
+   135.82,
+   127.722,
+   189.742
+  ],
+  "intereses": [
+   0.862,
+   0.992,
+   1.112,
+   24.964,
+   49.234,
+   4.984,
+   5.872,
+   5.196,
+   8.766
+  ],
+  "impuestos": [
+   1.033,
+   1.077,
+   1.115,
+   -5.603,
+   12.333,
+   2.648,
+   6.087,
+   7.929,
+   9.561
+  ],
+  "minoritarios": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "otros": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "acciones": [
+   null,
+   null,
+   null,
+   299.774,
+   312.321,
+   326.332,
+   333.656,
+   341.411,
+   348.421
+  ],
+  "capex": [
+   19.031,
+   25.466,
+   43.289,
+   56.375,
+   92.986,
+   143.606,
+   114.396,
+   185.037,
+   315.617
+  ],
+  "leases": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "caja": [
+   26.881,
+   160.657,
+   636.948,
+   1032.096,
+   1821.843,
+   1649.937,
+   1673.7440000000001,
+   1855.919,
+   4101.251
+  ],
+  "deuda": [
+   null,
+   0.255,
+   0,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "leases_deuda": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "goodwill": [
+   null,
+   4.083,
+   4.083,
+   17.167,
+   23.53,
+   148.047,
+   148.047,
+   181.087,
+   226.563
+  ],
+  "equity": [
+   -59.834,
+   -113.505,
+   725.828,
+   816.94,
+   811.359,
+   623.964,
+   763.047,
+   1046.201,
+   1459.123
+  ],
+  "ni_reportado": [
+   -10.748,
+   -87.164,
+   -105.828,
+   -119.37,
+   -260.309,
+   -193.381,
+   -183.949,
+   -78.8,
+   -102.267
+  ],
+  "fco": [
+   3.167,
+   -43.281,
+   -38.917,
+   -17.129,
+   64.648,
+   123.595,
+   254.406,
+   380.429,
+   603.114
+  ],
+  "sbc": [
+   2.755,
+   27.347,
+   36.627,
+   56.334,
+   90.137,
+   202.777,
+   273.989,
+   338.461,
+   451.454
+  ],
+  "dividendos": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "recompras": [
+   0.016,
+   0.065,
+   0.283,
+   0.157,
+   0.189,
+   0.003,
+   0.034,
+   0,
+   0
+  ],
+  "bpa": [
+   null,
+   null,
+   null,
+   -0.4,
+   -0.83,
+   -0.59,
+   -0.55,
+   -0.23,
+   -0.29
+  ]
+ },
+ "ttm": {
+  "fin": "2026-09-30",
+  "ventas": 2732.836,
+  "ebit": -384.85,
+  "ni_reportado": -239.05,
+  "da": 243.131
+ },
+ "ultimo_ejercicio": {
+  "anio": 2025,
+  "fin": "2025-12-31"
+ },
+ "precio": null,
+ "notas": [
+  "Datos automáticos de la SEC (XBRL de los 10-K). Revísalos contra el informe anual antes de decidir: pueden faltar líneas o haber reexpresiones.",
+  "Caja = efectivo + inversiones a corto plazo; deuda = deuda financiera (sin arrendamientos). Intereses = gasto bruto (no netos de ingresos). Minoritarios, otros y arrendamientos van a 0 o sin dato: complétalos si importan.",
+  "Acciones y BPA anteriores a 2020 descartados: saltan de 146 a 300 millones (probable split sin reexpresar), así que no son comparables.",
+  "Líneas sin datos en la SEC: dividendos."
+ ],
+ "faltan": [
+  "dividendos"
+ ]
+}

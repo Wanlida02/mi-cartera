@@ -1,0 +1,186 @@
+{
+ "ticker": "GCT",
+ "nombre": "GIGACLOUD TECHNOLOGY INC",
+ "cik": "0001857816",
+ "divisa": "USD",
+ "generado": "2026-11-09T09:49:18.849Z",
+ "fuente": "SEC EDGAR (XBRL, 10-K)",
+ "anios": [
+  2021,
+  2022,
+  2023,
+  2024,
+  2025
+ ],
+ "hist": {
+  "ventas": [
+   414.197,
+   490.071,
+   703.831,
+   1161.042,
+   1289.897
+  ],
+  "ebit": [
+   39.353,
+   35.023,
+   110.078,
+   130.622,
+   144.976
+  ],
+  "da": [
+   0.775,
+   1.386,
+   2.873,
+   8.524,
+   8.332
+  ],
+  "intereses": [
+   0.309,
+   0.568,
+   1.24,
+   0.256,
+   0.2
+  ],
+  "impuestos": [
+   8.468,
+   7.192,
+   20.887,
+   14.806,
+   23.818
+  ],
+  "minoritarios": [
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "otros": [
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "acciones": [
+   null,
+   24.412,
+   40.923,
+   41.201,
+   38.233
+  ],
+  "capex": [
+   1.825,
+   0.709,
+   4.38,
+   15.536,
+   7.873
+  ],
+  "leases": [
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "caja": [
+   63.862,
+   143.531,
+   183.283,
+   302.433,
+   416.096
+  ],
+  "deuda": [
+   null,
+   0.207,
+   0,
+   null,
+   null
+  ],
+  "leases_deuda": [
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "goodwill": [
+   null,
+   0,
+   12.586,
+   12.586,
+   12.586
+  ],
+  "equity": [
+   99.18,
+   195.165,
+   290.416,
+   405.217,
+   485.799
+  ],
+  "ni_reportado": [
+   29.257,
+   23.972,
+   94.108,
+   125.808,
+   137.372
+  ],
+  "fco": [
+   8.556,
+   49.656,
+   133.452,
+   158.078,
+   190.66
+  ],
+  "sbc": [
+   9.681,
+   9.196,
+   2.503,
+   16.825,
+   4.951
+  ],
+  "dividendos": [
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "recompras": [
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "bpa": [
+   null,
+   0.6,
+   2.3,
+   3.05,
+   3.59
+  ]
+ },
+ "ttm": {
+  "fin": "2026-09-30",
+  "ventas": 1557.442,
+  "ebit": 189.311,
+  "ni_reportado": 169.566,
+  "da": 8.757
+ },
+ "ultimo_ejercicio": {
+  "anio": 2025,
+  "fin": "2025-12-31"
+ },
+ "precio": null,
+ "notas": [
+  "Datos automáticos de la SEC (XBRL de los 10-K). Revísalos contra el informe anual antes de decidir: pueden faltar líneas o haber reexpresiones.",
+  "Caja = efectivo + inversiones a corto plazo; deuda = deuda financiera (sin arrendamientos). Intereses = gasto bruto (no netos de ingresos). Minoritarios, otros y arrendamientos van a 0 o sin dato: complétalos si importan.",
+  "Acciones y BPA anteriores a 2022 descartados: saltan de 10 a 24 millones (probable split sin reexpresar), así que no son comparables.",
+  "Líneas sin datos en la SEC: dividendos, recompras."
+ ],
+ "faltan": [
+  "dividendos",
+  "recompras"
+ ]
+}

@@ -76,9 +76,17 @@ const Val = (function () {
   /* Valor hoy a su múltiplo histórico † (lectura a corto plazo, ¿chollo ahora?): el último ejercicio recurrente valorado a los múltiplos
      medios de la propia empresa (PER, P/FCF, EV/EBITDA, EV/EBIT; los mismos mult_hist del motor). Mediana de las métricas positivas.
      Supone que el último año se mantiene y que el múltiplo vuelve a su media; no proyecta crecimiento. Sin mult_hist no se calcula. */
-  function valorMultiplo(f) {
+  function valorMultiplo(f, aj) {
     const mh = f.mult_hist; if (!mh) return null;
-    const a = actuales(f), acc = last(f.hist.acciones); if (!(acc > 0)) return null;
+    const a0 = actuales(f), acc = last(f.hist.acciones); if (!(acc > 0)) return null;
+    let a = a0, doce = null;
+    /* aj: últimos 12 meses (SEC). k = EBIT 12 meses / EBIT del mismo año base en la SEC; el beneficio y el FCF recurrentes de la ficha se escalan
+       con él (el beneficio neto de 12 meses puede llevar extraordinarios: plusvalías de inversiones, efectos fiscales). */
+    if (aj && isN(aj.k)) {
+      if (!(aj.k > 0)) return { sinBeneficio: true, doce: aj };
+      const da = isN(a0.ebitda) && isN(a0.ebit) ? a0.ebitda - a0.ebit : 0;
+      a = Object.assign({}, a0, { ni: a0.ni * aj.k, fcf: a0.fcf * aj.k, ebit: a0.ebit * aj.k, ebitda: a0.ebit * aj.k + da }); doce = aj;
+    }
     const caja = a.nd < 0 ? -a.nd : 0, v = {};
     if (a.ni > 0 && mh.per > 0) v.per = (a.ni * mh.per + caja) / acc;
     if (a.fcf > 0 && mh.pfcf > 0) v.pfcf = (a.fcf * mh.pfcf + caja) / acc;
@@ -86,7 +94,10 @@ const Val = (function () {
     if (a.ebit > 0 && mh.ev_ebit > 0) v.ev_ebit = (a.ebit * mh.ev_ebit - a.nd) / acc;
     const val = median(Object.values(v).filter(x => isN(x) && x > 0)); if (!isN(val)) return null;
     const desc = isN(f.precio) && f.precio > 0 ? 1 - f.precio / val : null;   // >0: cotiza por debajo de su valor a múltiplo histórico
-    return { valor: val, porMetodo: v, descuento: desc, nivel: desc == null ? null : desc >= 0.2 ? 'chollo' : desc >= 0 ? 'debajo' : desc > -0.2 ? 'encima' : 'cara' };
+    /* Múltiplos «de siempre» poco normales: el histórico se aleja mucho del de hoy (años de rampa, de crisis o historia corta) */
+    const r1 = mh.per > 0 && a0.per > 0 ? mh.per / a0.per : mh.ev_ebitda > 0 && a0.ev_ebitda > 0 ? mh.ev_ebitda / a0.ev_ebitda : null;
+    const raro = r1 == null ? null : r1 > 1.4 ? 'alto' : r1 < 0.7 ? 'bajo' : null;
+    return { valor: val, porMetodo: v, descuento: desc, doce, raro, ratioHist: r1, nivel: desc == null ? null : desc >= 0.2 ? 'chollo' : desc >= 0 ? 'debajo' : desc > -0.2 ? 'encima' : 'cara' };
   }
 
   /* ---- Proyección de un escenario a 5 años (réplica de las 4 pestañas del Excel) ---- */
@@ -241,7 +252,7 @@ const Val = (function () {
     CRIT.forEach(k => { if (!isN(last(h[k]))) add('r', k, `Falta el dato de ${k} del último ejercicio.`); });
     // signo de los intereses (M14: positivo = coste; negativo solo con caja neta)
     const nd = z(last(h.deuda)) + z(last(h.leases_deuda)) - z(last(h.caja));
-    if (isN(last(h.intereses)) && last(h.intereses) < 0 && nd > 0) add('r', 'intereses', `Intereses negativos con deuda neta positiva (${Math.round(nd)} M): probable signo cambiado. Según M14, el coste financiero va en positivo y solo se introduce en negativo con caja neta. Con el signo mal, el beneficio y el FCF salen inflados.`);
+    if (isN(last(h.intereses)) && last(h.intereses) < 0 && nd > 0) add('y', 'intereses', `Intereses negativos con deuda neta positiva (${Math.round(nd)} M): correcto si la empresa ingresa más por su tesorería e inversiones (que no cuentan como caja) de lo que paga por su deuda; si no, signo cambiado. Según M14, el coste financiero va en positivo y solo se introduce en negativo con caja neta. Con el signo mal, el beneficio y el FCF salen inflados.`);
     // beneficio neto calculado: continuidad
     const ni = h.ventas.map((v, j) => z(h.ebit[j]) - z(h.intereses[j]) - z(h.impuestos[j]) - z(h.minoritarios[j]) + z(h.otros && h.otros[j]));
     if (h.ni_reportado) ni.forEach((v, j) => { const r = h.ni_reportado[j]; if (j >= n - 4 && isN(r) && r > 0 && Math.abs(v / r - 1) > 0.04) add('y', 'ni', `Beneficio neto calculado ${Math.round(v)} M frente a ${Math.round(r)} M reportado en ${f.anios[j]} (${((v / r - 1) * 100).toFixed(0)} %): faltan líneas (participadas, pensiones) o alguna cifra está mal.`); });
@@ -390,7 +401,7 @@ const Val = (function () {
   const M14 = { defaults, proyectar, dcfInverso, actuales, realismo, fiabilidad, margenImplicito, trampa, valorMultiplo };
   const pick = nombre => function (f) { return (isFin(f) ? Fin : M14)[nombre].apply(null, arguments); };
 
-  return { CFG, crisisYears, gAnio, valorMultiplo: f => (isFin(f) || esMO(f) ? null : valorMultiplo(f)), defaults: pick('defaults'), proyectar: pick('proyectar'), precioEntrada, dcfInverso: pick('dcfInverso'), actuales: pick('actuales'), realismo: pick('realismo'), margenImplicito: pick('margenImplicito'), trampa: f => (isFin(f) ? [] : trampa(f)), esMO, fiabilidad: pick('fiabilidad'), cagr, avg, isN, isFin, Fin,
+  return { CFG, crisisYears, gAnio, valorMultiplo: (f, aj) => (isFin(f) || esMO(f) ? null : valorMultiplo(f, aj)), defaults: pick('defaults'), proyectar: pick('proyectar'), precioEntrada, dcfInverso: pick('dcfInverso'), actuales: pick('actuales'), realismo: pick('realismo'), margenImplicito: pick('margenImplicito'), trampa: f => (isFin(f) ? [] : trampa(f)), esMO, fiabilidad: pick('fiabilidad'), cagr, avg, isN, isFin, Fin,
     soportado: f => !(f && f.tipo === 'reit') };
 })();
 if (typeof module !== 'undefined') module.exports = Val;

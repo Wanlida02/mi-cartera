@@ -3,7 +3,7 @@
  "nombre": "Apple Inc.",
  "cik": "0000320193",
  "divisa": "USD",
- "generado": "2026-11-04T17:29:06.833Z",
+ "generado": "2026-11-09T09:49:26.418Z",
  "fuente": "SEC EDGAR (XBRL, 10-K)",
  "anios": [
   2017,
@@ -271,12 +271,22 @@
    8.98
   ]
  },
+ "ttm": {
+  "fin": "2026-09-26",
+  "ventas": 478834,
+  "ebit": 158063,
+  "ni_reportado": 132175,
+  "da": 13423
+ },
+ "ultimo_ejercicio": {
+  "anio": 2026,
+  "fin": "2026-09-26"
+ },
  "precio": null,
  "notas": [
   "Datos automáticos de la SEC (XBRL de los 10-K). Revísalos contra el informe anual antes de decidir: pueden faltar líneas o haber reexpresiones.",
   "Caja = efectivo + inversiones a corto plazo; deuda = deuda financiera (sin arrendamientos). Intereses = gasto bruto (no netos de ingresos). Minoritarios, otros y arrendamientos van a 0 o sin dato: complétalos si importan.",
-  "Acciones y BPA anteriores a 2018 descartados: saltan de 5252 a 20000 millones (probable split sin reexpresar), así que no son comparables.",
-  "Sin precio automático (fetch failed)."
+  "Acciones y BPA anteriores a 2018 descartados: saltan de 5252 a 20000 millones (probable split sin reexpresar), así que no son comparables."
  ],
  "faltan": []
 }

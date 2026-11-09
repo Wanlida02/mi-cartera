@@ -51,6 +51,45 @@ function serie(gaap, def) {
   }
   return Object.keys(res).length ? res : null;
 }
+/* Últimos 12 meses (TTM) de una línea de flujo: suma de los 4 últimos trimestres consecutivos. Los trimestres que no se publican
+   sueltos (el 4.º, o el 2.º/3.º cuando solo hay acumulados) se deducen restando periodos con el mismo inicio. Usa 10-K y 10-Q. */
+function ttm(gaap, def) {
+  let mejor = null;   // se prueba cada etiqueta por separado (no se mezclan definiciones) y gana la de trimestre más reciente
+  for (const tag of def.tags) { const x = ttmTag(gaap[tag], def); if (x && (!mejor || x.fin > mejor.fin)) mejor = x; }
+  return mejor;
+}
+const esTrim = d => d >= 80 && d <= 120;   // 13 semanas; algunos minoristas (AutoZone) tienen un trimestre de 16
+function ttmTag(t, def) {
+  const u = t && t.units && t.units[def.unidad || 'USD']; if (!u) return null;
+  const P = {};
+  for (const h of u) {
+    if (!/^10-[KQ]/.test(h.form || '') || !isN(h.val) || !h.start || !h.end) continue;
+    const k = h.start + '|' + h.end; if (!P[k] || (h.filed || '') > P[k].filed) P[k] = { val: h.val, filed: h.filed || '' };
+  }
+  const per = Object.keys(P).map(k => { const [a, b] = k.split('|'); return { a, b, d: dias(a, b), v: P[k].val }; });
+  const q = {};   // fin del trimestre → {ini, v}
+  per.filter(x => esTrim(x.d)).forEach(x => { q[x.b] = { ini: x.a, v: x.v }; });
+  for (let vuelta = 0; vuelta < 3; vuelta++) per.filter(x => x.d > 120).forEach(x => {
+    if (q[x.b]) return;
+    const c = per.find(y => y.a === x.a && y.b < x.b && esTrim(dias(y.b, x.b)));
+    if (c) q[x.b] = { ini: c.b, v: x.v - c.v };
+  });
+  const fines = Object.keys(q).sort(); if (!fines.length) return null;
+  const fin = fines[fines.length - 1]; let cur = fin, tot = 0, n = 0;
+  while (n < 4 && q[cur]) {
+    tot += q[cur].v; n++;
+    const ini = q[cur].ini; cur = Object.keys(q).find(f => Math.abs(dias(f, ini)) <= 7);
+    if (!cur) break;
+  }
+  return n === 4 ? { fin, valor: Math.round(tot / (def.escala || 1e6) * 1000) / 1000 } : null;
+}
+/* Fecha de cierre del último ejercicio anual (10-K) publicado */
+function ultimoEjercicio(gaap) {
+  let fin = null;
+  for (const tag of LINEAS.ventas.tags.concat(LINEAS.ebit.tags)) { const u = gaap[tag] && gaap[tag].units && gaap[tag].units.USD; if (!u) continue;
+    u.forEach(h => { if (/^10-K/.test(h.form || '') && h.start && h.end && dias(h.start, h.end) >= 350 && dias(h.start, h.end) <= 380 && (!fin || h.end > fin)) fin = h.end; }); }
+  return fin ? { anio: anioDe(fin), fin } : null;
+}
 /* Construye {anios, hist} a partir del JSON «companyfacts» de la SEC */
 function construir(cf) {
   const gaap = cf && cf.facts && cf.facts['us-gaap']; if (!gaap) throw new Error('Sin datos US-GAAP (¿empresa extranjera con 20-F/IFRS? Usa los informes anuales).');
@@ -82,23 +121,42 @@ function construir(cf) {
     'Caja = efectivo + inversiones a corto plazo; deuda = deuda financiera (sin arrendamientos). Intereses = gasto bruto (no netos de ingresos). Minoritarios, otros y arrendamientos van a 0 o sin dato: complétalos si importan.'];
   avisosSplit.forEach(x => notas.push(x));
   if (faltan.length) notas.push('Líneas sin datos en la SEC: ' + faltan.join(', ') + '.');
-  return { anios, hist, notas, faltan, nombre: cf.entityName || null };
+  const t12 = {}; ['ventas', 'ebit', 'ni_reportado', 'da'].forEach(k => { const x = ttm(gaap, LINEAS[k]); if (x) t12[k] = x; });
+  const finT = t12.ventas ? t12.ventas.fin : t12.ebit ? t12.ebit.fin : null;
+  const doce = finT ? { fin: finT } : null;   // solo líneas cuyo trimestre final coincide con el de las ventas
+  if (doce) Object.keys(t12).forEach(k => { if (t12[k].fin === finT) doce[k] = t12[k].valor; });
+  return { anios, hist, notas, faltan, nombre: cf.entityName || null, ttm: doce, ultimo: ultimoEjercicio(gaap) };
 }
 async function pedir(url) {
   let ult; for (let i = 0; i < 3; i++) { try { const r = await fetch(url, { headers: UA, signal: AbortSignal.timeout(30000) }); if (r.ok) return r; ult = new Error('HTTP ' + r.status + ' en ' + url); if (r.status === 404) break; } catch (e) { ult = e; } await esperar(1500 * (i + 1)); }
   throw ult;
 }
-async function principal(tk) {
+async function principal(tk, opc = {}) {
   tk = String(tk || '').trim().toUpperCase(); if (!/^[A-Z0-9.\-]{1,10}$/.test(tk)) throw new Error('Ticker no válido');
-  const mapa = await (await pedir('https://www.sec.gov/files/company_tickers.json')).json();
+  const mapa = opc.mapa || await (await pedir('https://www.sec.gov/files/company_tickers.json')).json();
   const e = Object.values(mapa).find(x => x.ticker.toUpperCase() === tk.replace('.', '-')) || Object.values(mapa).find(x => x.ticker.toUpperCase() === tk);
   if (!e) throw new Error('«' + tk + '» no está en la lista de la SEC: solo cubre empresas de EE. UU. Para otras, usa los informes anuales.');
   const cik = String(e.cik_str).padStart(10, '0');
   const r = construir(await (await pedir('https://data.sec.gov/api/xbrl/companyfacts/CIK' + cik + '.json')).json());
-  let precio = null; try { const P = require('./actualizar_precios.js'); let p; try { p = await P.cnbc(tk); } catch (x) { p = await P.nasdaq(tk); } precio = { precio: p.precio, divisa: p.divisa, fecha: p.fecha }; } catch (x) { r.notas.push('Sin precio automático (' + x.message + ').'); }
-  const salida = { ticker: tk, nombre: r.nombre || e.title, cik, divisa: 'USD', generado: new Date().toISOString(), fuente: 'SEC EDGAR (XBRL, 10-K)', anios: r.anios, hist: r.hist, precio, notas: r.notas, faltan: r.faltan };
+  let precio = null; if (!opc.sinPrecio) try { const P = require('./actualizar_precios.js'); let p; try { p = await P.cnbc(tk); } catch (x) { p = await P.nasdaq(tk); } precio = { precio: p.precio, divisa: p.divisa, fecha: p.fecha }; } catch (x) { r.notas.push('Sin precio automático (' + x.message + ').'); }
+  const salida = { ticker: tk, nombre: r.nombre || e.title, cik, divisa: 'USD', generado: new Date().toISOString(), fuente: 'SEC EDGAR (XBRL, 10-K)', anios: r.anios, hist: r.hist, ttm: r.ttm, ultimo_ejercicio: r.ultimo, precio, notas: r.notas, faltan: r.faltan };
   fs.mkdirSync(path.join(RAIZ, 'datos'), { recursive: true }); fs.writeFileSync(path.join(RAIZ, 'datos', tk.replace(/[^A-Z0-9]/g, '_') + '.json'), JSON.stringify(salida, null, 1) + '\n');
-  console.log(tk + ': ' + r.anios[0] + '–' + r.anios[r.anios.length - 1] + ' · sin datos: ' + (r.faltan.join(', ') || 'ninguna línea'));
+  console.log(tk + ': ' + r.anios[0] + '–' + r.anios[r.anios.length - 1] + (r.ttm ? ' · 12 meses hasta ' + r.ttm.fin : '') + ' · sin datos: ' + (r.faltan.join(', ') || 'ninguna línea'));
+  return salida;
 }
-if (require.main === module) principal(process.argv[2]).catch(e => { console.error('ERROR: ' + e.message); fs.mkdirSync(path.join(RAIZ, 'datos'), { recursive: true }); try { fs.writeFileSync(path.join(RAIZ, 'datos', String(process.argv[2] || 'x').toUpperCase().replace(/[^A-Z0-9]/g, '_') + '.json'), JSON.stringify({ ticker: String(process.argv[2] || '').toUpperCase(), error: e.message, generado: new Date().toISOString() }, null, 1) + '\n'); } catch (x) { } process.exit(0); });
-module.exports = { construir, serie, anioDe };
+/* Lote semanal: todas las empresas de simbolos.json que cotizan en EE. UU. (símbolo sin sufijo de bolsa) → datos/TICKER.json y datos/resumen.json */
+async function lote() {
+  const cfg = JSON.parse(fs.readFileSync(path.join(RAIZ, 'simbolos.json'), 'utf8')).simbolos || {};
+  const mapa = await (await pedir('https://www.sec.gov/files/company_tickers.json')).json();
+  const tks = Object.keys(cfg).filter(k => !cfg[k].pausa && Array.isArray(cfg[k].y) && cfg[k].y[0] && !/[.=^]/.test(cfg[k].y[0]) && cfg[k].sec !== false);
+  const resumen = { generado: new Date().toISOString(), nota: 'Últimos 12 meses (10-Q) y último ejercicio anual (10-K) de la SEC. Solo empresas de EE. UU. con cuentas US-GAAP.', empresas: {} };
+  for (const tk of tks) {
+    try { const s = await principal(tk, { mapa, sinPrecio: true }); resumen.empresas[tk] = { nombre: s.nombre, ultimo_ejercicio: s.ultimo_ejercicio, ttm: s.ttm, anual: { anios: s.anios, ventas: s.hist.ventas, ebit: s.hist.ebit } }; }
+    catch (e) { resumen.empresas[tk] = { error: e.message.slice(0, 120) }; console.log(tk + ': ' + e.message); }
+    await esperar(250);   // la SEC pide como mucho 10 peticiones por segundo
+  }
+  fs.writeFileSync(path.join(RAIZ, 'datos', 'resumen.json'), JSON.stringify(resumen, null, 1) + '\n');
+}
+if (require.main === module && process.argv[2] === '--todos') lote().catch(e => { console.error('ERROR: ' + e.message); process.exit(1); });
+else if (require.main === module) principal(process.argv[2]).catch(e => { console.error('ERROR: ' + e.message); fs.mkdirSync(path.join(RAIZ, 'datos'), { recursive: true }); try { fs.writeFileSync(path.join(RAIZ, 'datos', String(process.argv[2] || 'x').toUpperCase().replace(/[^A-Z0-9]/g, '_') + '.json'), JSON.stringify({ ticker: String(process.argv[2] || '').toUpperCase(), error: e.message, generado: new Date().toISOString() }, null, 1) + '\n'); } catch (x) { } process.exit(0); });
+module.exports = { construir, serie, anioDe, ttm, ultimoEjercicio };

@@ -1,0 +1,273 @@
+{
+ "ticker": "UBER",
+ "nombre": "UBER TECHNOLOGIES, INC.",
+ "cik": "0001543151",
+ "divisa": "USD",
+ "generado": "2026-11-09T09:49:25.458Z",
+ "fuente": "SEC EDGAR (XBRL, 10-K)",
+ "anios": [
+  2017,
+  2018,
+  2019,
+  2020,
+  2021,
+  2022,
+  2023,
+  2024,
+  2025
+ ],
+ "hist": {
+  "ventas": [
+   7932,
+   10433,
+   13000,
+   11139,
+   17455,
+   31877,
+   37281,
+   43978,
+   52017
+  ],
+  "ebit": [
+   -4080,
+   -3033,
+   -8596,
+   -4863,
+   -3834,
+   -1832,
+   1110,
+   2799,
+   5565
+  ],
+  "da": [
+   510,
+   426,
+   472,
+   575,
+   902,
+   947,
+   823,
+   711,
+   719
+  ],
+  "intereses": [
+   479,
+   648,
+   559,
+   458,
+   483,
+   565,
+   633,
+   523,
+   440
+  ],
+  "impuestos": [
+   -542,
+   283,
+   45,
+   -192,
+   -492,
+   -181,
+   213,
+   -5758,
+   -4346
+  ],
+  "minoritarios": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "otros": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "acciones": [
+   null,
+   null,
+   1248.353,
+   1752.96,
+   1895.519,
+   1974.928,
+   2091.782,
+   2150.508,
+   2119.689
+  ],
+  "capex": [
+   821,
+   558,
+   588,
+   616,
+   298,
+   252,
+   223,
+   242,
+   336
+  ],
+  "leases": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "caja": [
+   4393,
+   6406,
+   11313,
+   6827,
+   4295,
+   4311,
+   5407,
+   6977,
+   7633
+  ],
+  "deuda": [
+   null,
+   6896,
+   5734,
+   7587,
+   9303,
+   9292,
+   9484,
+   9497,
+   10521
+  ],
+  "leases_deuda": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "goodwill": [
+   39,
+   153,
+   167,
+   6109,
+   8420,
+   8263,
+   8151,
+   8066,
+   8931
+  ],
+  "equity": [
+   -8557,
+   -7385,
+   14190,
+   12266,
+   14458,
+   7340,
+   11249,
+   21558,
+   27041
+  ],
+  "ni_reportado": [
+   -4033,
+   997,
+   -8506,
+   -6768,
+   -496,
+   -9141,
+   1887,
+   9856,
+   10053
+  ],
+  "fco": [
+   -1418,
+   -1541,
+   -4321,
+   -2745,
+   -445,
+   642,
+   3585,
+   7137,
+   10099
+  ],
+  "sbc": [
+   124,
+   170,
+   4596,
+   827,
+   1168,
+   1793,
+   1935,
+   1796,
+   1826
+  ],
+  "dividendos": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "recompras": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   0,
+   0,
+   1252,
+   6523
+  ],
+  "bpa": [
+   null,
+   null,
+   -6.81,
+   -3.86,
+   -0.29,
+   -4.65,
+   0.87,
+   4.56,
+   4.73
+  ]
+ },
+ "ttm": {
+  "fin": "2026-09-30",
+  "ventas": 56526,
+  "ebit": 7034,
+  "ni_reportado": 3465,
+  "da": 769
+ },
+ "ultimo_ejercicio": {
+  "anio": 2025,
+  "fin": "2025-12-31"
+ },
+ "precio": null,
+ "notas": [
+  "Datos automáticos de la SEC (XBRL de los 10-K). Revísalos contra el informe anual antes de decidir: pueden faltar líneas o haber reexpresiones.",
+  "Caja = efectivo + inversiones a corto plazo; deuda = deuda financiera (sin arrendamientos). Intereses = gasto bruto (no netos de ingresos). Minoritarios, otros y arrendamientos van a 0 o sin dato: complétalos si importan.",
+  "Acciones y BPA anteriores a 2019 descartados: saltan de 479 a 1248 millones (probable split sin reexpresar), así que no son comparables.",
+  "Líneas sin datos en la SEC: dividendos."
+ ],
+ "faltan": [
+  "dividendos"
+ ]
+}

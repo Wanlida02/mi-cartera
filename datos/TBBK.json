@@ -1,0 +1,223 @@
+{
+ "ticker": "TBBK",
+ "nombre": "THE BANCORP, INC.",
+ "cik": "0001295401",
+ "divisa": "USD",
+ "generado": "2026-11-09T09:49:24.875Z",
+ "fuente": "SEC EDGAR (XBRL, 10-K)",
+ "anios": [
+  2019,
+  2020,
+  2021,
+  2022,
+  2023,
+  2024,
+  2025
+ ],
+ "hist": {
+  "ventas": [
+   9.376,
+   7.101,
+   7.526,
+   86.171,
+   99.239,
+   116.798,
+   141.147
+  ],
+  "ebit": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "da": [
+   5.227,
+   3.758,
+   3.301,
+   3.3,
+   3.472,
+   null,
+   null
+  ],
+  "intereses": [
+   38.281,
+   15.916,
+   11.239,
+   59.454,
+   155.455,
+   null,
+   null
+  ],
+  "impuestos": [
+   21.226,
+   27.688,
+   33.724,
+   47.701,
+   64.478,
+   74.616,
+   74.824
+  ],
+  "minoritarios": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "otros": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "acciones": [
+   57.339,
+   58.411,
+   58.83,
+   57.269,
+   55.053,
+   50.713,
+   46.422
+  ],
+  "capex": [
+   2.012,
+   3.738,
+   1.549,
+   5.134,
+   12.689,
+   4.974,
+   7.09
+  ],
+  "leases": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "caja": [
+   944.472,
+   345.515,
+   601.784,
+   888.189,
+   1038.09,
+   570.123,
+   112.649
+  ],
+  "deuda": [
+   41,
+   40.3,
+   39.5,
+   10,
+   38.6,
+   14.1,
+   null
+  ],
+  "leases_deuda": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "goodwill": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   0.263,
+   0.263
+  ],
+  "equity": [
+   484.497,
+   581.164,
+   652.454,
+   694.031,
+   807.281,
+   789.783,
+   689.796
+  ],
+  "ni_reportado": [
+   51.559,
+   80.084,
+   110.653,
+   130.213,
+   192.296,
+   217.54,
+   228.213
+  ],
+  "fco": [
+   66.88,
+   120.685,
+   83.892,
+   119.615,
+   186.853,
+   209.911,
+   265.009
+  ],
+  "sbc": [
+   5.689,
+   6.429,
+   8.626,
+   7.592,
+   11.392,
+   14.983,
+   19.604
+  ],
+  "dividendos": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "recompras": [
+   null,
+   null,
+   40,
+   60,
+   99.999,
+   252.352,
+   378.341
+  ],
+  "bpa": [
+   0.9,
+   1.37,
+   1.88,
+   2.27,
+   3.49,
+   4.29,
+   4.92
+  ]
+ },
+ "ttm": null,
+ "ultimo_ejercicio": {
+  "anio": 2025,
+  "fin": "2025-12-31"
+ },
+ "precio": null,
+ "notas": [
+  "Datos automáticos de la SEC (XBRL de los 10-K). Revísalos contra el informe anual antes de decidir: pueden faltar líneas o haber reexpresiones.",
+  "Caja = efectivo + inversiones a corto plazo; deuda = deuda financiera (sin arrendamientos). Intereses = gasto bruto (no netos de ingresos). Minoritarios, otros y arrendamientos van a 0 o sin dato: complétalos si importan.",
+  "Líneas sin datos en la SEC: ebit, dividendos."
+ ],
+ "faltan": [
+  "ebit",
+  "dividendos"
+ ]
+}

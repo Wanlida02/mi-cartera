@@ -1,0 +1,272 @@
+{
+ "ticker": "CRWD",
+ "nombre": "CrowdStrike Holdings, Inc.",
+ "cik": "0001535527",
+ "divisa": "USD",
+ "generado": "2026-11-09T09:49:17.592Z",
+ "fuente": "SEC EDGAR (XBRL, 10-K)",
+ "anios": [
+  2017,
+  2018,
+  2019,
+  2020,
+  2021,
+  2022,
+  2023,
+  2024,
+  2025
+ ],
+ "hist": {
+  "ventas": [
+   118.752,
+   249.824,
+   481.413,
+   874.438,
+   1451.594,
+   2241.236,
+   3055.555,
+   3953.624,
+   4812.005
+  ],
+  "ebit": [
+   -131.44,
+   -136.864,
+   -146.065,
+   -92.529,
+   -142.548,
+   -190.112,
+   -19.141,
+   -116.4,
+   -293.292
+  ],
+  "da": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "intereses": [
+   1.648,
+   0.428,
+   0.442,
+   1.559,
+   25.231,
+   25.319,
+   25.756,
+   26.311,
+   28.021
+  ],
+  "impuestos": [
+   0.929,
+   1.367,
+   1.997,
+   4.76,
+   72.355,
+   22.402,
+   32.232,
+   71.13,
+   34.176
+  ],
+  "minoritarios": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "otros": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "acciones": [
+   null,
+   null,
+   148.062,
+   217.756,
+   227.142,
+   233.139,
+   243.635,
+   244.75,
+   250.576
+  ],
+  "capex": [
+   22.906,
+   35.851,
+   80.198,
+   52.799,
+   112.143,
+   235.019,
+   176.529,
+   254.852,
+   302.108
+  ],
+  "leases": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "caja": [
+   63.179,
+   191.655,
+   912.064,
+   1918.608,
+   1996.633,
+   2705.369,
+   3474.66,
+   4323.295,
+   5230.125
+  ],
+  "deuda": [
+   null,
+   null,
+   0,
+   738.029,
+   739.517,
+   741.005,
+   742.494,
+   743.983,
+   745.471
+  ],
+  "leases_deuda": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "goodwill": [
+   null,
+   7.947,
+   7.722,
+   83.566,
+   416.445,
+   430.645,
+   638.041,
+   912.805,
+   1363.294
+  ],
+  "equity": [
+   -369.474,
+   -487.793,
+   742.107,
+   870.574,
+   1025.764,
+   1463.641,
+   2303.95,
+   3279.494,
+   4428.39
+  ],
+  "ni_reportado": [
+   -135.49,
+   -140.077,
+   -141.779,
+   -92.629,
+   -234.802,
+   -183.245,
+   72.181,
+   -15.241,
+   -162.502
+  ],
+  "fco": [
+   -58.766,
+   -22.968,
+   99.943,
+   356.566,
+   574.784,
+   941.007,
+   1166.207,
+   1381.727,
+   1612.349
+  ],
+  "sbc": [
+   12.343,
+   20.505,
+   79.94,
+   149.675,
+   309.952,
+   526.504,
+   648.665,
+   861.391,
+   1096.679
+  ],
+  "dividendos": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "recompras": [
+   0,
+   2.33,
+   0,
+   0,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "bpa": [
+   null,
+   null,
+   -0.96,
+   -0.43,
+   -1.03,
+   -0.79,
+   0.3,
+   -0.06,
+   -0.65
+  ]
+ },
+ "ttm": {
+  "fin": "2026-07-31",
+  "ventas": 5396.145,
+  "ebit": -119.489,
+  "ni_reportado": 58.46
+ },
+ "ultimo_ejercicio": {
+  "anio": 2025,
+  "fin": "2026-01-31"
+ },
+ "precio": null,
+ "notas": [
+  "Datos automáticos de la SEC (XBRL de los 10-K). Revísalos contra el informe anual antes de decidir: pueden faltar líneas o haber reexpresiones.",
+  "Caja = efectivo + inversiones a corto plazo; deuda = deuda financiera (sin arrendamientos). Intereses = gasto bruto (no netos de ingresos). Minoritarios, otros y arrendamientos van a 0 o sin dato: complétalos si importan.",
+  "Líneas sin datos en la SEC: da, dividendos."
+ ],
+ "faltan": [
+  "da",
+  "dividendos"
+ ]
+}
