@@ -1,0 +1,299 @@
+{
+ "ticker": "BELFA",
+ "nombre": "BEL FUSE INC /NJ",
+ "cik": "0000729580",
+ "divisa": "USD",
+ "generado": "2026-11-09T18:53:28.783Z",
+ "fuente": "SEC EDGAR (XBRL, 10-K)",
+ "anios": [
+  2016,
+  2017,
+  2018,
+  2019,
+  2020,
+  2021,
+  2022,
+  2023,
+  2024,
+  2025
+ ],
+ "hist": {
+  "ventas": [
+   500.153,
+   491.611,
+   548.184,
+   492.412,
+   465.771,
+   543.494,
+   654.233,
+   639.813,
+   534.792,
+   675.455
+  ],
+  "ebit": [
+   -76.512,
+   17.386,
+   26.948,
+   -1.595,
+   18.667,
+   31.257,
+   65.147,
+   87.976,
+   64.297,
+   110.996
+  ],
+  "da": [
+   21.778,
+   20.718,
+   18.207,
+   16.471,
+   16.423,
+   16.861,
+   14.863,
+   13.312,
+   16.457,
+   26.592
+  ],
+  "intereses": [
+   6.662,
+   6.802,
+   5.317,
+   5.448,
+   4.746,
+   3.542,
+   3.379,
+   2.85,
+   4.078,
+   14.751
+  ],
+  "impuestos": [
+   -17.718,
+   21.54,
+   2.907,
+   1.441,
+   -0.659,
+   2.506,
+   6.37,
+   9.469,
+   12.616,
+   20.939
+  ],
+  "minoritarios": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "otros": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "acciones": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "capex": [
+   8.223,
+   6.425,
+   11.594,
+   9.891,
+   5.476,
+   9.397,
+   8.832,
+   12.126,
+   14.108,
+   12.002
+  ],
+  "leases": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "caja": [
+   73.411,
+   69.354,
+   53.911,
+   72.289,
+   84.939,
+   61.756,
+   70.266,
+   89.371,
+   68.253,
+   57.8
+  ],
+  "deuda": [
+   141.245,
+   122.694,
+   114.213,
+   143.704,
+   115.58,
+   112.5,
+   95,
+   60,
+   287.5,
+   197.5
+  ],
+  "leases_deuda": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "goodwill": [
+   17.951,
+   20.177,
+   19.817,
+   21.993,
+   23.966,
+   26.651,
+   25.099,
+   26.642,
+   208.036,
+   214.821
+  ],
+  "equity": [
+   158.434,
+   157.96,
+   176.47,
+   168.051,
+   185.799,
+   208.743,
+   262.346,
+   340.558,
+   360.576,
+   425.513
+  ],
+  "ni_reportado": [
+   -64.834,
+   -11.897,
+   20.709,
+   -8.743,
+   12.795,
+   24.821,
+   52.689,
+   73.831,
+   40.96,
+   61.536
+  ],
+  "fco": [
+   38.603,
+   24.12,
+   10.097,
+   24.45,
+   46.108,
+   4.632,
+   40.257,
+   108.349,
+   74.064,
+   80.612
+  ],
+  "sbc": [
+   2.817,
+   3.03,
+   2.835,
+   2.888,
+   2.318,
+   2.3,
+   2.382,
+   3.486,
+   3.74,
+   6.813
+  ],
+  "dividendos": [
+   3.245,
+   3.281,
+   3.295,
+   3.352,
+   3.363,
+   3.379,
+   3.413,
+   3.492,
+   3.453,
+   3.465
+  ],
+  "recompras": [
+   null,
+   null,
+   null,
+   0.448,
+   0,
+   0,
+   0.349,
+   0.105,
+   16.053,
+   0
+  ],
+  "bpa": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ]
+ },
+ "ttm": {
+  "fin": "2026-09-30",
+  "ventas": 785.624,
+  "ebit": 127.414,
+  "ni_reportado": 57.7,
+  "da": 27.462
+ },
+ "ultimo_ejercicio": {
+  "anio": 2025,
+  "fin": "2025-12-31"
+ },
+ "precio": {
+  "precio": 179.64,
+  "divisa": "USD",
+  "fecha": "2026-11-09"
+ },
+ "notas": [
+  "Datos automáticos de la SEC (XBRL de los 10-K). Revísalos contra el informe anual antes de decidir: pueden faltar líneas o haber reexpresiones.",
+  "Caja = efectivo + inversiones a corto plazo; deuda = deuda financiera (sin arrendamientos). Intereses = gasto bruto (no netos de ingresos). Minoritarios, otros y arrendamientos van a 0 o sin dato: complétalos si importan.",
+  "Líneas sin datos en la SEC: acciones, bpa."
+ ],
+ "faltan": [
+  "acciones",
+  "bpa"
+ ]
+}
