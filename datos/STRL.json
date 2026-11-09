@@ -1,0 +1,299 @@
+{
+ "ticker": "STRL",
+ "nombre": "STERLING INFRASTRUCTURE, INC.",
+ "cik": "0000874238",
+ "divisa": "USD",
+ "generado": "2026-11-09T19:48:47.044Z",
+ "fuente": "SEC EDGAR (XBRL, 10-K)",
+ "anios": [
+  2016,
+  2017,
+  2018,
+  2019,
+  2020,
+  2021,
+  2022,
+  2023,
+  2024,
+  2025
+ ],
+ "hist": {
+  "ventas": [
+   690.123,
+   957.958,
+   1037.667,
+   1126.278,
+   1226.738,
+   1414.374,
+   1769.436,
+   1972.229,
+   2115.756,
+   2490.049
+  ],
+  "ebit": [
+   -4.729,
+   26.176,
+   42.611,
+   37.751,
+   92.615,
+   107.011,
+   159.87,
+   205.795,
+   264.622,
+   405.916
+  ],
+  "da": [
+   15.699,
+   16.994,
+   16.77,
+   20.74,
+   32.785,
+   34.201,
+   52.066,
+   57.403,
+   68.41,
+   77.114
+  ],
+  "intereses": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "impuestos": [
+   0.088,
+   0.118,
+   1.738,
+   -26.216,
+   19.41,
+   24.874,
+   41.707,
+   47.77,
+   87.36,
+   98.752
+  ],
+  "minoritarios": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "otros": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "acciones": [
+   23.14,
+   26.712,
+   27.194,
+   27.119,
+   28.195,
+   29.101,
+   30.564,
+   31.208,
+   31.146,
+   30.947
+  ],
+  "capex": [
+   10.888,
+   9.42,
+   13.171,
+   15.397,
+   32.864,
+   46.651,
+   60.909,
+   64.379,
+   80.954,
+   77.312
+  ],
+  "leases": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "caja": [
+   42.785,
+   83.953,
+   94.095,
+   45.733,
+   47.656,
+   60.945,
+   181.544,
+   471.563,
+   664.195,
+   390.721
+  ],
+  "deuda": [
+   5.394,
+   90.13799999999999,
+   82.016,
+   433.1,
+   368.683,
+   451.88,
+   431.345,
+   341.51599999999996,
+   316.321,
+   291.04900000000004
+  ],
+  "leases_deuda": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "goodwill": [
+   54.82,
+   85.231,
+   85.231,
+   191.892,
+   192.014,
+   258.29,
+   262.692,
+   281.117,
+   264.597,
+   585.221
+  ],
+  "equity": [
+   107.434,
+   141.333,
+   164.401,
+   219.918,
+   267.27,
+   358.767,
+   474.599,
+   618.913,
+   808.081,
+   1108.517
+  ],
+  "ni_reportado": [
+   -9.238,
+   11.617,
+   29.54,
+   40.695,
+   42.306,
+   62.645,
+   106.461,
+   138.655,
+   257.461,
+   290.153
+  ],
+  "fco": [
+   44.274,
+   24.767,
+   39.474,
+   42.067,
+   122.896,
+   158.932,
+   219.116,
+   478.584,
+   497.104,
+   439.988
+  ],
+  "sbc": [
+   1.81,
+   2.843,
+   3.064,
+   3.788,
+   11.643,
+   11.771,
+   12.726,
+   14.622,
+   19.003,
+   24.181
+  ],
+  "dividendos": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "recompras": [
+   0,
+   0,
+   4.731,
+   3.201,
+   0,
+   0,
+   0,
+   0,
+   70.596,
+   74.2
+  ],
+  "bpa": [
+   -0.4,
+   0.43,
+   0.93,
+   1.47,
+   1.5,
+   2.15,
+   3.48,
+   4.44,
+   8.27,
+   9.38
+  ]
+ },
+ "ttm": {
+  "fin": "2026-09-30",
+  "ventas": 4313.394,
+  "ebit": 783.884,
+  "ni_reportado": 554.325,
+  "da": 98.418
+ },
+ "ultimo_ejercicio": {
+  "anio": 2025,
+  "fin": "2025-12-31"
+ },
+ "precio": {
+  "precio": 291.02,
+  "divisa": "USD",
+  "fecha": "2026-11-09"
+ },
+ "notas": [
+  "Datos automáticos de la SEC (XBRL de los 10-K). Revísalos contra el informe anual antes de decidir: pueden faltar líneas o haber reexpresiones.",
+  "Caja = efectivo + inversiones a corto plazo; deuda = deuda financiera (sin arrendamientos). Intereses = gasto bruto (no netos de ingresos). Minoritarios, otros y arrendamientos van a 0 o sin dato: complétalos si importan.",
+  "Líneas sin datos en la SEC: intereses, dividendos."
+ ],
+ "faltan": [
+  "intereses",
+  "dividendos"
+ ]
+}
