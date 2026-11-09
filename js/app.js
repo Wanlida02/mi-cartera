@@ -194,7 +194,7 @@
   }
 
   /* ───── Ajustes ───── */
-  const APP_VERSION = '26 · resultados, IA y precios';
+  const APP_VERSION = '27 · resultados, IA y precios';
   function ajustes() {
     const d = Store.get(), A = d.ajustes, cp = Store.ultimaCopia();
     dlg('<h2>Ajustes</h2><p class="small mut">Versión de la app: ' + APP_VERSION + '</p><h3>Umbrales del Inicio (rentabilidad anual esperada a 5 años)</h3><div class="f2">' + campo('a-b', 'Barata ≥ %', A.umbral_barata, 'number') + campo('a-c', 'Cara ≤ %', A.umbral_cara, 'number') + '</div>' +
@@ -315,8 +315,12 @@
     document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
     const v = $('#vista'), keep = document.activeElement && document.activeElement.id === 'q';
     const keepI = document.activeElement && document.activeElement.id === 'qi';
-    v.innerHTML = tab === 'inicio' ? vistaInicio() : tab === 'cartera' ? vistaCartera() : tab === 'informes' ? vistaInformes() : UI.vistas[tab] ? UI.vistas[tab]() :
-      '<div class="card empty"><h2>' + PEND[tab][0] + '</h2><p>' + PEND[tab][1] + '</p></div>';
+    try {
+      v.innerHTML = tab === 'inicio' ? vistaInicio() : tab === 'cartera' ? vistaCartera() : tab === 'informes' ? vistaInformes() : UI.vistas[tab] ? UI.vistas[tab]() :
+        '<div class="card empty"><h2>' + PEND[tab][0] + '</h2><p>' + PEND[tab][1] + '</p></div>';
+    } catch (err) {   // un fallo al dibujar una pestaña no debe dejarla en blanco sin explicación
+      console.error(err); v.innerHTML = '<div class="alert bad"><b>Error al mostrar esta pestaña:</b> ' + esc(err && err.message || String(err)) + '<br><small>Tus datos están intactos. Cuéntame este mensaje y la pestaña (versión ' + esc(APP_VERSION) + ').</small></div>';
+    }
     (UI.pies[tab] || []).forEach(fn => { v.insertAdjacentHTML('beforeend', fn()); });
     const fx = d.ajustes.fx.fecha;
     $('#sub').textContent = d.posiciones.length ? d.posiciones.length + ' posiciones · divisas ' + (fx || '') : 'sin datos';

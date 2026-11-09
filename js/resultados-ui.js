@@ -45,7 +45,8 @@
 
   /* ───── Avisos para otras pestañas ───── */
   const pendientes = () => (D().resultados || []).filter(r => r.estado !== 'revisado');
-  U.etiquetasResultados = tk => {
+  U.etiquetasResultados = tk => { try { return etiquetas(tk); } catch (e) { return ''; } };
+  const etiquetas = tk => {
     let h = ''; const P = pendientes().filter(r => r.tk === tk).sort((a, b) => (a.fecha || '9').localeCompare(b.fecha || '9'));
     const pub = P.find(publico), prox = P.find(r => r.fecha && dif(r.fecha) >= 0 && dif(r.fecha) <= 14);
     if (pub) h += ' <span class="pill warn" title="Resultados publicados: revisa si la valoración sigue en línea">resultados sin revisar</span>';
@@ -55,7 +56,8 @@
     if (pr && pr.alerta) h += ' <span class="pill ' + (pr.cambio > 0 ? 'ok' : 'bad') + '" title="Precio frente al de la última revisión (' + nf(pr.ref, 2) + '): revisa por si ha cambiado el motivo">' + pc(pr.cambio) + ' desde la revisión</span>';
     return h;
   };
-  U.avisosResultados = () => {
+  U.avisosResultados = () => { try { return avisos(); } catch (e) { console.error(e); return ''; } };
+  const avisos = () => {
     const P = pendientes(), pub = P.filter(publico), prox = P.filter(r => !publico(r) && r.fecha && dif(r.fecha) >= 0 && dif(r.fecha) <= 7).sort((a, b) => a.fecha.localeCompare(b.fecha));
     const vencidas = P.filter(r => !publico(r) && r.fecha && dif(r.fecha) < 0 && dif(r.fecha) >= -30);
     const precio = Object.keys(D().fichas).filter(k => (enCartera(k) || D().fichas[k].estado === 'watchlist') && (L.precioRef(D(), k, hoy()) || {}).alerta);
@@ -69,7 +71,8 @@
     return h + '</div>';
   };
   /* Historial de revisiones de una empresa (para la ficha) */
-  U.historialResultados = tk => {
+  U.historialResultados = tk => { try { return historial(tk); } catch (e) { return ''; } };
+  const historial = tk => {
     const H = (D().resultados || []).filter(r => r.tk === tk && r.estado === 'revisado').sort((a, b) => (b.revisado || '').localeCompare(a.revisado || ''));
     if (!H.length) return '';
     return '<h3 style="margin:14px 2px 6px">Revisiones de resultados</h3><div class="card">' + H.map(r => {
