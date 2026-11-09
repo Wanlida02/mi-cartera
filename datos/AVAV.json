@@ -1,0 +1,299 @@
+{
+ "ticker": "AVAV",
+ "nombre": "AEROVIRONMENT, INC.",
+ "cik": "0001368622",
+ "divisa": "USD",
+ "generado": "2026-11-09T17:51:42.874Z",
+ "fuente": "SEC EDGAR (XBRL, 10-K)",
+ "anios": [
+  2017,
+  2018,
+  2019,
+  2020,
+  2021,
+  2022,
+  2023,
+  2024,
+  2025,
+  2026
+ ],
+ "hist": {
+  "ventas": [
+   228.94,
+   271.052,
+   314.274,
+   367.296,
+   394.912,
+   445.732,
+   540.536,
+   716.72,
+   820.627,
+   1976.845
+  ],
+  "ebit": [
+   20.766,
+   30.426,
+   33.826,
+   47.135,
+   43.313,
+   -9.887,
+   -178.663,
+   71.824,
+   40.795,
+   -310.995
+  ],
+  "da": [
+   5.054,
+   5.982,
+   7.669,
+   9.888,
+   19.262,
+   60.825,
+   99.999,
+   35.749,
+   40.998,
+   265.037
+  ],
+  "intereses": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   24.197
+  ],
+  "impuestos": [
+   4.758,
+   9.8,
+   4.641,
+   5.848,
+   0.539,
+   -10.369,
+   -14.663,
+   1.891,
+   0.882,
+   -23.059
+  ],
+  "minoritarios": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "otros": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "acciones": [
+   23.308,
+   23.814,
+   24.072,
+   24.088,
+   24.363,
+   24.686,
+   25.045,
+   27.328,
+   28.173,
+   49.087
+  ],
+  "capex": [
+   9.017,
+   9.563,
+   8.896,
+   11.22,
+   11.263,
+   22.289,
+   14.868,
+   22.983,
+   19.547,
+   62.544
+  ],
+  "leases": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "caja": [
+   199.875,
+   257.166,
+   323.195,
+   302.649,
+   180.71200000000002,
+   101.947,
+   132.859,
+   73.301,
+   40.862,
+   632.297
+  ],
+  "deuda": [
+   null,
+   null,
+   null,
+   null,
+   197.512,
+   187.84,
+   133.404,
+   27.092,
+   30,
+   728.967
+  ],
+  "leases_deuda": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "goodwill": [
+   0.122,
+   null,
+   null,
+   6.34,
+   314.205,
+   334.347,
+   180.801,
+   275.652,
+   256.781,
+   2493.678
+  ],
+  "equity": [
+   381.954,
+   409.033,
+   462.571,
+   509.901,
+   612.093,
+   607.969,
+   550.97,
+   822.745,
+   886.507,
+   4400.4
+  ],
+  "ni_reportado": [
+   13.078,
+   17.647,
+   47.419,
+   41.07,
+   23.345,
+   -4.185,
+   -176.167,
+   59.666,
+   43.619,
+   -265.122
+  ],
+  "fco": [
+   null,
+   null,
+   null,
+   25.097,
+   86.532,
+   -9.618,
+   11.4,
+   15.292,
+   -1.318,
+   -78.404
+  ],
+  "sbc": [
+   3.392,
+   4.956,
+   6.985,
+   6.227,
+   6.932,
+   5.39,
+   10.765,
+   17.069,
+   21.461,
+   38.334
+  ],
+  "dividendos": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "recompras": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "bpa": [
+   0.56,
+   0.75,
+   1.97,
+   1.71,
+   0.96,
+   -0.17,
+   -7.04,
+   2.18,
+   1.55,
+   -5.4
+  ]
+ },
+ "ttm": {
+  "fin": "2026-08-01",
+  "ventas": 2002.659,
+  "ebit": -252.594,
+  "ni_reportado": -202.818,
+  "da": 230.818
+ },
+ "ultimo_ejercicio": {
+  "anio": 2026,
+  "fin": "2026-04-30"
+ },
+ "precio": {
+  "precio": 126.45,
+  "divisa": "USD",
+  "fecha": "2026-11-09"
+ },
+ "notas": [
+  "Datos automáticos de la SEC (XBRL de los 10-K). Revísalos contra el informe anual antes de decidir: pueden faltar líneas o haber reexpresiones.",
+  "Caja = efectivo + inversiones a corto plazo; deuda = deuda financiera (sin arrendamientos). Intereses = gasto bruto (no netos de ingresos). Minoritarios, otros y arrendamientos van a 0 o sin dato: complétalos si importan.",
+  "Líneas sin datos en la SEC: dividendos, recompras."
+ ],
+ "faltan": [
+  "dividendos",
+  "recompras"
+ ]
+}
