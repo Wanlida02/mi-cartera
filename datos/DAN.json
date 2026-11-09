@@ -1,0 +1,297 @@
+{
+ "ticker": "DAN",
+ "nombre": "Dana Incorporated",
+ "cik": "0000026780",
+ "divisa": "USD",
+ "generado": "2026-11-09T19:49:47.442Z",
+ "fuente": "SEC EDGAR (XBRL, 10-K)",
+ "anios": [
+  2016,
+  2017,
+  2018,
+  2019,
+  2020,
+  2021,
+  2022,
+  2023,
+  2024,
+  2025
+ ],
+ "hist": {
+  "ventas": [
+   5826,
+   7209,
+   8143,
+   8620,
+   7106,
+   8945,
+   10156,
+   7613,
+   7734,
+   7500
+  ],
+  "ebit": [
+   332,
+   490,
+   579,
+   292,
+   124,
+   395,
+   86,
+   -108,
+   -176,
+   139
+  ],
+  "da": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "intereses": [
+   113,
+   102,
+   96,
+   122,
+   138,
+   131,
+   128,
+   152,
+   158,
+   181
+  ],
+  "impuestos": [
+   -424,
+   283,
+   78,
+   -32,
+   58,
+   72,
+   284,
+   7,
+   31,
+   53
+  ],
+  "minoritarios": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "otros": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "acciones": [
+   146.8,
+   146.9,
+   146.5,
+   145.1,
+   144.5,
+   146.2,
+   143.6,
+   144.4,
+   145.2,
+   133.7
+  ],
+  "capex": [
+   322,
+   393,
+   325,
+   426,
+   326,
+   369,
+   440,
+   427,
+   312,
+   214
+  ],
+  "leases": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "caja": [
+   707,
+   603,
+   510,
+   527,
+   580,
+   285,
+   425,
+   529,
+   494,
+   469
+  ],
+  "deuda": [
+   1664,
+   1799,
+   1775,
+   2356,
+   2428,
+   2394,
+   2356,
+   2633,
+   2601,
+   2596
+  ],
+  "leases_deuda": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "goodwill": [
+   90,
+   127,
+   264,
+   493,
+   479,
+   482,
+   259,
+   263,
+   250,
+   null
+  ],
+  "equity": [
+   1157,
+   1013,
+   1345,
+   1873,
+   1758,
+   1922,
+   1551,
+   1575,
+   1333,
+   840
+  ],
+  "ni_reportado": [
+   640,
+   111,
+   427,
+   226,
+   -31,
+   197,
+   -242,
+   38,
+   -57,
+   85
+  ],
+  "fco": [
+   384,
+   554,
+   568,
+   637,
+   386,
+   158,
+   649,
+   476,
+   450,
+   512
+  ],
+  "sbc": [
+   17,
+   23,
+   16,
+   19,
+   14,
+   17,
+   19,
+   26,
+   30,
+   40
+  ],
+  "dividendos": [
+   35,
+   35,
+   58,
+   58,
+   15,
+   58,
+   58,
+   58,
+   58,
+   54
+  ],
+  "recompras": [
+   81,
+   null,
+   25,
+   25,
+   null,
+   23,
+   25,
+   null,
+   null,
+   650
+  ],
+  "bpa": [
+   4.36,
+   0.71,
+   2.91,
+   1.56,
+   -0.21,
+   1.35,
+   -1.69,
+   0.26,
+   -0.39,
+   0.64
+  ]
+ },
+ "ttm": {
+  "fin": "2026-09-30",
+  "ventas": 7783,
+  "ebit": 249,
+  "ni_reportado": 1047
+ },
+ "ultimo_ejercicio": {
+  "anio": 2025,
+  "fin": "2025-12-31"
+ },
+ "precio": {
+  "precio": 22.98,
+  "divisa": "USD",
+  "fecha": "2026-11-09"
+ },
+ "notas": [
+  "Datos automáticos de la SEC (XBRL de los 10-K). Revísalos contra el informe anual antes de decidir: pueden faltar líneas o haber reexpresiones.",
+  "Caja = efectivo + inversiones a corto plazo; deuda = deuda financiera (sin arrendamientos). Intereses = gasto bruto (no netos de ingresos). Minoritarios, otros y arrendamientos van a 0 o sin dato: complétalos si importan.",
+  "Líneas sin datos en la SEC: da."
+ ],
+ "faltan": [
+  "da"
+ ]
+}
