@@ -23,8 +23,9 @@ const srv = http.createServer((q, r) => { const p = path.join(root, q.url.split(
   await pg.evaluate(tk => document.querySelector('[data-r=rev][data-id="' + Store.get().resultados.find(r => r.tk === tk && r.estado !== 'revisado').id + '"]').click(), eu);
   assert(/Cifras con una IA/.test(await pg.textContent('#dlg'))); await pg.click('#r-ia');
   const prompt = await pg.inputValue('#ia-p'); assert(/ÚLTIMOS 12 MESES/.test(prompt) && /Yahoo Finance/.test(prompt) && /JSON/.test(prompt) && prompt.includes(String(base.anio)), prompt.slice(0, 300));
-  await pg.fill('#ia-r', 'Aquí tienes:\n```json\n' + JSON.stringify({ periodo: 'T3 2026', fin: '2026-09-30', ventas_12m: base.v * 1.04, ebit_12m: base.e * 0.80, ni_12m: null, deuda_neta: null, acciones: null, guidance: 'Mantiene', resumen: 'Ventas algo por encima, margen a la baja.', fiabilidad: 'media', fuentes: ['ir.test/resultados'] }) + '\n```'); await pg.click('#ia-ok'); await pg.waitForTimeout(300);
-  t = await pg.textContent('#dlg'); assert(/IA/.test(t) && /Real/.test(t) && /Esperado/.test(t) && /Resumen de la IA/.test(t), t.slice(0, 500)); console.log('--- dialogo IA ' + eu + ':\n' + t.slice(0, 600));
+  await pg.fill('#ia-r', 'Aquí tienes:\n```json\n' + JSON.stringify({ periodo: 'T3 2026', fin: '2026-09-30', ventas_12m: base.v * 1.04, ebit_12m: base.e * 0.80, ni_12m: null, deuda_neta: null, acciones: null, contraste: [{ fuente: 'nota', ventas_12m: base.v * 1.04, ebit_12m: base.e * 0.80 }, { fuente: 'Yahoo', ventas_12m: base.v * 1.10, ebit_12m: base.e * 0.80 }], guidance: 'Mantiene', resumen: 'Ventas algo por encima, margen a la baja.', fiabilidad: 'media', fuentes: ['ir.test/resultados'] }) + '\n```'); await pg.click('#ia-ok'); await pg.waitForTimeout(300);
+  t = await pg.textContent('#dlg'); assert(/Las fuentes no coinciden en ventas/.test(t), 'contraste: ' + t.slice(0, 300));
+  assert(/IA/.test(t) && /Real/.test(t) && /Esperado/.test(t) && /Resumen de la IA/.test(t), t.slice(0, 500)); console.log('--- dialogo IA ' + eu + ':\n' + t.slice(0, 600));
   // JSON malo
   await pg.click('#r-ia'); await pg.fill('#ia-r', 'no sé'); await pg.click('#ia-ok'); assert(/No encuentro el JSON/.test(await pg.textContent('#ia-err'))); await pg.click('#ia-vuelve'); await pg.waitForTimeout(100);
   // 4) cifras IA alimentan la ficha de Valoración y la etiqueta

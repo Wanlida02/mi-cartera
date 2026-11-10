@@ -73,12 +73,13 @@
   const LINEAS_IA = ['intereses', 'impuestos', 'da', 'capex', 'deuda', 'caja'];
   function promptLineas(tk) {
     const f = D().fichas[tk], h = f.hist, an = f.anios || [], r1 = x => (isN(x) ? Math.round(x * 10) / 10 : null), fila = k => JSON.stringify((h[k] || []).map(r1));
-    return 'Necesito completar las cuentas de ' + (f.nombre || tk) + ' (ticker ' + tk + ', divisa ' + (f.divisa || '') + ') para los años ' + an.join(', ') + '. Busca en internet los informes anuales (cuentas consolidadas) y contrástalos con páginas financieras de prestigio (Yahoo Finance, MarketScreener, Investing.com, Morningstar, TIKR, la web de relación con inversores…). Si un dato no aparece o las fuentes no coinciden, pon null y dilo en "resumen"; NO inventes ni estimes.\n\n' +
+    return 'Necesito completar las cuentas de ' + (f.nombre || tk) + ' (ticker ' + tk + ', divisa ' + (f.divisa || '') + ') para los años ' + an.join(', ') + '. Tienes que BUSCAR EN INTERNET (si no puedes buscar, dilo y devuelve todo null; no respondas de memoria).\n\n' +
+      'CONTRASTE OBLIGATORIO: para cada línea consulta AL MENOS 3 fuentes independientes: las cuentas consolidadas del informe anual de la empresa y páginas financieras de prestigio (Yahoo Finance, MarketScreener, Investing.com, Morningstar, StockAnalysis, TIKR, Financial Times…). Apunta en "contraste" lo que da CADA fuente, año a año. Si difieren más de un 5 %, averigua por qué (definición, divisa, consolidación, extraordinarios) y usa en las listas principales el dato del informe anual; si no puedes decidir, pon null. Si solo encuentras una fuente para una línea, pon esa fuente en contraste y dilo en "resumen". NO inventes ni estimes.\n\n' +
       'YA TENGO (millones de ' + (f.divisa || '') + ', un valor por año en el mismo orden): ventas ' + fila('ventas') + ' · EBIT ' + fila('ebit') + ' · beneficio neto ' + fila('ni_reportado') + '.\n\n' +
       'NECESITO, en millones de ' + (f.divisa || 'la misma divisa') + ', VALORES POSITIVOS, un valor por cada año [' + an.join(', ') + '] en ese orden:\n' +
       '- intereses: gasto financiero neto (intereses pagados − ingresos financieros).\n- impuestos: gasto por impuesto sobre beneficios de la cuenta de resultados.\n- da: amortizaciones y depreciaciones totales (incluye derechos de uso si los hay).\n- capex: inversión bruta en inmovilizado material e intangible (flujo de caja de inversión), sin adquisiciones de empresas.\n- deuda: deuda financiera bruta a cierre (corto + largo plazo), SIN pasivos por arrendamientos.\n- caja: efectivo y equivalentes + inversiones financieras temporales a cierre.\n' +
       '- opcionales: "leases_deuda" (pasivos por arrendamientos a cierre) y "minoritarios" (resultado atribuible a minoritarios), si existen.\n\n' +
-      'DEVUELVE SOLO ESTE JSON (sin texto antes ni después):\n{"anios":[' + an.join(',') + '],"intereses":[],"impuestos":[],"da":[],"capex":[],"deuda":[],"caja":[],"leases_deuda":[],"minoritarios":[],"resumen":"qué no encontraste o dudas","fiabilidad":"alta|media|baja","fuentes":["url o nombre de cada fuente"]}';
+      'DEVUELVE SOLO ESTE JSON (sin texto antes ni después). Las listas principales llevan el dato elegido; "contraste" lleva, por línea, lo que da cada fuente (mismo orden de años):\n{"anios":[' + an.join(',') + '],"intereses":[],"impuestos":[],"da":[],"capex":[],"deuda":[],"caja":[],"leases_deuda":[],"minoritarios":[],"contraste":{"capex":[{"fuente":"Yahoo Finance","valores":[]},{"fuente":"MarketScreener","valores":[]},{"fuente":"Informe anual","valores":[]}],"da":[],"deuda":[],"caja":[],"impuestos":[],"intereses":[]},"resumen":"qué no encontraste, discrepancias y por qué elegiste cada dato","fiabilidad":"alta|media|baja","fuentes":["url o nombre de cada fuente"]}';
   }
   function aplicarLineas(tk, txt) {
     const f = D().fichas[tk], an = (f.anios || []).map(Number), n = an.length, m = /\{[\s\S]*\}/.exec(txt || ''); if (!m) throw new Error('No encuentro el JSON en lo que has pegado.');
@@ -91,13 +92,18 @@
     const faltan = ['impuestos', 'da', 'capex', 'deuda', 'caja'].filter(k => !(f.hist[k] && isN((f.hist[k] || [])[n - 1])) && !ult(k));
     if (faltan.length) throw new Error('Falta el dato del último año (' + an[n - 1] + ') de: ' + faltan.join(', ') + '. Sin eso no se puede valorar; prueba con otra fuente o ponlo a mano.');
     if (!nuevo.intereses && !(f.hist.intereses && f.hist.intereses.some(isN))) { nuevo.intereses = Array(n).fill(null); av.push('Sin intereses: se toman como 0 (si la empresa tiene deuda importante, ponlos a mano).'); }
+    const ct = j.contraste && typeof j.contraste === 'object' ? j.contraste : {}, disc = [], una = [], NOM = { intereses: 'intereses', impuestos: 'impuestos', da: 'amortización', capex: 'capex', deuda: 'deuda', caja: 'caja', leases_deuda: 'arrendamientos', minoritarios: 'minoritarios' };
+    Object.keys(nuevo).forEach(k => { const r = L.contrastar(ct[k], nuevo[k]); if (!(ct[k] && ct[k].length)) { if (nuevo[k].some(isN)) una.push(NOM[k]); return; } r.discrepancias.forEach(x => disc.push(NOM[k] + ' ' + an[x.i] + ': ' + x.min.f + ' ' + x.min.v + ' vs ' + x.max.f + ' ' + x.max.v + ' (' + Math.round(x.dif * 100) + ' %)')); if (r.sinContraste && r.nFuentes < 2) una.push(NOM[k]); });
+    if (una.length) av.push('Sin contraste entre varias fuentes: ' + una.join(', ') + '.');
+    if (disc.length) av.push(disc.length + ' diferencias de más del 5 % entre fuentes: ' + disc.slice(0, 6).join('; ') + (disc.length > 6 ? '…' : ''));
     const v0 = f.hist.ventas[n - 1];
     if (isN(v0) && v0 > 0) ['capex', 'da'].forEach(k => { const x = nuevo[k] && nuevo[k][n - 1]; if (isN(x) && x / v0 > 0.4) av.push('«' + k + '» del último año es ' + Math.round(x / v0 * 100) + ' % de las ventas: comprueba unidades y signo.'); });
     Object.keys(nuevo).forEach(k => { f.hist[k] = nuevo[k]; });
     ['minoritarios', 'otros', 'leases', 'leases_deuda'].forEach(k => { if (!Array.isArray(f.hist[k])) f.hist[k] = Array(n).fill(0); });
     ['equity', 'goodwill'].forEach(k => { if (!Array.isArray(f.hist[k])) f.hist[k] = Array(n).fill(null); });
     f.notas = (f.notas || []).concat(['Líneas completadas por IA desde webs de datos el ' + hoy() + ' (sin verificar con el informe anual): ' + Object.keys(nuevo).join(', ') + '.' + (j.resumen ? ' ' + String(j.resumen) : '') + (Array.isArray(j.fuentes) && j.fuentes.length ? ' Fuentes: ' + j.fuentes.map(String).join(' · ') + '.' : '')]);
-    f.fecha_datos = hoy(); return { av, fiab: String(j.fiabilidad || '') };
+    if (av.length) f.notas.push('Avisos al completar con IA: ' + av.join(' '));
+    f.fecha_datos = hoy(); return { av, disc, una, fiab: String(j.fiabilidad || '') };
   }
   function lineasIA(tk, aviso) {
     const f = D().fichas[tk]; if (!f) return;
@@ -106,7 +112,7 @@
       '<label for="li-r">Respuesta de la IA</label><textarea id="li-r" rows="6" placeholder="Pega aquí el JSON"></textarea><div id="li-err" class="alert bad" style="display:none"></div>' + (aviso ? '<div class="alert warn">' + esc(aviso) + '</div>' : '') +
       '<div class="acts"><button class="btn sec" data-a="cerrar">Cancelar</button><button class="btn" id="li-ok">Usar estas cifras</button></div>', dd => {
       dd.querySelector('#li-copy').onclick = () => { const t = dd.querySelector('#li-p'); t.select(); try { navigator.clipboard.writeText(t.value); } catch (e) { document.execCommand && document.execCommand('copy'); } U.toast('Texto copiado'); };
-      dd.querySelector('#li-ok').onclick = () => { try { const o = aplicarLineas(tk, dd.querySelector('#li-r').value); U.guardar({ ok: true, msg: 'Ficha completada' + (o.av.length ? ' · ' + o.av[0] : '') }); } catch (e) { const b = dd.querySelector('#li-err'); b.style.display = ''; b.textContent = e.message; } };
+      dd.querySelector('#li-ok').onclick = () => { try { const o = aplicarLineas(tk, dd.querySelector('#li-r').value); U.guardar({ ok: true, msg: 'Ficha completada' }); if (o.av.length) U.dlg('<h2>Ficha completada: revisa esto</h2>' + o.av.map(x => '<div class="alert warn">' + esc(x) + '</div>').join('') + '<p class="small mut">Los avisos también quedan en las notas de la ficha. Contrasta con el informe anual los datos con diferencias antes de fiarte de la valoración.</p><div class="acts"><button class="btn" data-a="cerrar">Entendido</button></div>'); } catch (e) { const b = dd.querySelector('#li-err'); b.style.display = ''; b.textContent = e.message; } };
     });
   }
   U._lineasIA = { promptLineas, aplicarLineas };

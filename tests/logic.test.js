@@ -29,3 +29,11 @@ console.log('logic ok');
   d3.informes = { empresas: [], avisos: ['X: «a.pdf» sin año'] };
   require('assert').deepEqual(L3.informes(d3, '2026-11-01').avisos, ['X: «a.pdf» sin año']); console.log('informes avisos ok');
 }
+
+/* Contraste entre fuentes */
+(() => {
+  const c = L.contrastar([{ fuente: 'A', valores: [100, 200] }, { fuente: 'B', valores: [101, 160] }, { fuente: 'C', valores: [100, null] }], [100, 200]);
+  assert.equal(c.discrepancias.length, 1); assert.equal(c.discrepancias[0].i, 1); assert.equal(c.discrepancias[0].min.f, 'B'); assert(Math.abs(c.discrepancias[0].dif - 0.2) < 1e-9);
+  assert.equal(L.contrastar([{ fuente: 'A', valores: [5] }], [5]).sinContraste, 1);
+  assert.equal(L.contrastar([], [5]).discrepancias.length, 0); console.log('contrastar ok');
+})();

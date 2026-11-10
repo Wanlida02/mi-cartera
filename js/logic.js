@@ -201,6 +201,19 @@ const Logic = (function () {
     return { precio, fecha };
   }
   const cache = new Map();
+  /* Contraste entre fuentes: fuentes = [{fuente, valores:[...]}] (un valor por año, o un solo valor) y elegido = lo que se usa.
+     Devuelve las diferencias de más de `umbral` (5 % por defecto) entre la fuente más baja y la más alta, y cuántas fuentes respaldan cada dato. */
+  function contrastar(fuentes, elegido, umbral) {
+    umbral = umbral == null ? 0.05 : umbral; const F = (fuentes || []).filter(x => x && Array.isArray(x.valores)), n = (elegido || []).length, disc = []; let sinContraste = 0;
+    for (let i = 0; i < n; i++) {
+      const vs = F.map(x => ({ f: String(x.fuente || '?'), v: isN(x.valores[i]) ? x.valores[i] : null })).filter(x => x.v != null);
+      if (isN(elegido[i]) && vs.length < 2) { sinContraste++; continue; }
+      if (vs.length < 2) continue;
+      const mn = vs.reduce((a, b) => (b.v < a.v ? b : a)), mx = vs.reduce((a, b) => (b.v > a.v ? b : a)), base = Math.max(Math.abs(mx.v), Math.abs(mn.v));
+      if (base > 0 && (mx.v - mn.v) / base > umbral) disc.push({ i, min: mn, max: mx, dif: (mx.v - mn.v) / base, fuentes: vs });
+    }
+    return { discrepancias: disc, sinContraste, nFuentes: F.length };
+  }
   /* Líneas que el motor necesita y la ficha no tiene (las fichas borrador creadas desde informes solo traen ventas, EBIT, beneficio neto y BPA) */
   const NOM_LINEA = { intereses: 'intereses', impuestos: 'impuestos', da: 'amortización', capex: 'capex', deuda: 'deuda', caja: 'caja' };
   function lineasFaltantes(f) { const h = (f && f.hist) || {}; return Object.keys(NOM_LINEA).filter(k => !Array.isArray(h[k])).map(k => NOM_LINEA[k]); }
@@ -346,6 +359,6 @@ const Logic = (function () {
   }
 
   return { isN, today, clone, nuevoDatos, normalizar, norm, coreName, sameCompany, findExisting, tickerDe, fxPorEur, aEur, precioPos, costeEur, mercadoEur, valorEur, variacion, diasDesde,
-    compra, venta, editar, eliminar, borrarMov, reverseMov, precioManual, precioFicha, valoracion, lineasFaltantes, revision, precioRef, pesos, dashboard, informes, V };
+    compra, venta, editar, eliminar, borrarMov, reverseMov, precioManual, precioFicha, valoracion, contrastar, lineasFaltantes, revision, precioRef, pesos, dashboard, informes, V };
 })();
 if (typeof module !== 'undefined') module.exports = Logic;
