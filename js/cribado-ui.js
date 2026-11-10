@@ -287,6 +287,7 @@
   U.fichaDeInformes = function (e) {
     const d = D(), tk = e && e.tk, dev = m => { U.avisoDlg(m); return false; };
     if (!tk) return dev('Esta empresa no tiene ticker: vincúlala primero (en Informes, «Sin informes descargados» o el desplegable de vincular).');
+    if (d.fichas[tk] && !L.lineasFaltantes(d.fichas[tk]).length) return dev('Ya tienes una ficha completa de ' + tk + ' (con intereses, impuestos, amortización…). No la sustituyo por un borrador, que tiene menos datos y no se puede valorar. Si quieres actualizarla, hazlo desde Valoración.');
     if (d.fichas[tk] && !confirm('Ya existe ficha de ' + tk + '. ¿Sustituirla por este borrador?')) return false;
     const f = DatosWeb.aFichaInformes(e, hoy()); if (!f) return dev('No se puede crear: faltan en el CSV ' + DatosWeb.faltanInformes(e).join(', ') + '. Necesito Ventas, EBIT, Beneficio neto y BPA diluido con algún dato.');
     d.fichas[tk] = f; const r = desdeFicha(tk, true); if (!d.cribado[tk]) d.cribado[tk] = { ticker: tk, nombre: f.nombre, origen: 'ficha' };

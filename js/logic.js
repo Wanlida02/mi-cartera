@@ -201,6 +201,9 @@ const Logic = (function () {
     return { precio, fecha };
   }
   const cache = new Map();
+  /* Líneas que el motor necesita y la ficha no tiene (las fichas borrador creadas desde informes solo traen ventas, EBIT, beneficio neto y BPA) */
+  const NOM_LINEA = { intereses: 'intereses', impuestos: 'impuestos', da: 'amortización', capex: 'capex', deuda: 'deuda', caja: 'caja' };
+  function lineasFaltantes(f) { const h = (f && f.hist) || {}; return Object.keys(NOM_LINEA).filter(k => !Array.isArray(h[k])).map(k => NOM_LINEA[k]); }
   function valoracion(d, tk, hoy) {
     const f0 = d.fichas[tk]; if (!f0) return null;
     hoy = hoy || today();
@@ -219,7 +222,7 @@ const Logic = (function () {
         puntuacion: fi.puntuacion == null ? null : fi.puntuacion, nivelDatos: fi.nivel || null, graves: fi.graves || 0,
         avisos: (fi.avisos || []).filter(a => a.nivel === 'r').map(a => a.txt)
       };
-    } catch (e) { return { tk, nombre: f0.nombre || tk, error: e.message }; }
+    } catch (e) { const falta = lineasFaltantes(f0); return { tk, nombre: f0.nombre || tk, error: falta.length ? 'ficha incompleta: faltan ' + falta.join(', ') : e.message, incompleta: falta.length ? falta : undefined }; }
   }
 
   /* ───── Resultados trimestrales: ¿la empresa va en línea con lo que suponía la valoración? ─────
@@ -343,6 +346,6 @@ const Logic = (function () {
   }
 
   return { isN, today, clone, nuevoDatos, normalizar, norm, coreName, sameCompany, findExisting, tickerDe, fxPorEur, aEur, precioPos, costeEur, mercadoEur, valorEur, variacion, diasDesde,
-    compra, venta, editar, eliminar, borrarMov, reverseMov, precioManual, precioFicha, valoracion, revision, precioRef, pesos, dashboard, informes, V };
+    compra, venta, editar, eliminar, borrarMov, reverseMov, precioManual, precioFicha, valoracion, lineasFaltantes, revision, precioRef, pesos, dashboard, informes, V };
 })();
 if (typeof module !== 'undefined') module.exports = Logic;

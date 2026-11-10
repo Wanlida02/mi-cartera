@@ -25,6 +25,7 @@
   function secSEC(tk, f) {
     const e = SECR && SECR[tk]; if (!e || e.error || !f || f.divisa !== 'USD') return null;
     const out = { nombre: e.nombre };
+    if (L.lineasFaltantes(f).length && !(f.tipo === 'reit')) out.completar = true;
     if (e.ultimo_ejercicio && e.ultimo_ejercicio.anio > f.anio_base) out.nuevo = e.ultimo_ejercicio.anio;
     const an = (e.anual && e.anual.anios) || [], i = an.indexOf(f.anio_base) >= 0 && !(e.ultimo_ejercicio && f.anio_base > e.ultimo_ejercicio.anio) ? an.indexOf(f.anio_base) : an.length - 1;
     const eb = e.anual && e.anual.ebit && e.anual.ebit[i], vb = e.anual && e.anual.ventas && e.anual.ventas[i], t = e.ttm;
@@ -51,10 +52,10 @@
     const d = D(), f = d.fichas[tk]; let j;
     try { const r = await fetch('datos/' + tk.replace(/[^A-Z0-9]/g, '_') + '.json', { cache: 'no-cache' }); j = r.ok ? await r.json() : null; } catch (e) { j = null; }
     if (!j || !j.anios) return U.toast('No encuentro los datos de la SEC de ' + tk);
-    const nuevos = j.anios.filter(a => a > f.anio_base);
-    if (!nuevos.length) return U.toast('No hay ejercicios nuevos');
-    if (nuevos.length > 1 || f.anio_base < 2020) {
-      if (!confirm('La ficha de ' + tk + ' está muy desfasada (' + f.anio_base + '). ¿Sustituirla por los datos de la SEC (' + j.anios[0] + '–' + j.anios[j.anios.length - 1] + ')? Se conservan los múltiplos históricos y las notas.')) return;
+    const nuevos = j.anios.filter(a => a > f.anio_base), inc = L.lineasFaltantes(f).length > 0;
+    if (!nuevos.length && !inc) return U.toast('No hay ejercicios nuevos');
+    if (inc || nuevos.length > 1 || f.anio_base < 2020) {
+      if (!confirm((inc ? 'La ficha de ' + tk + ' es un borrador incompleto.' : 'La ficha de ' + tk + ' está muy desfasada (' + f.anio_base + ').') + ' ¿Sustituirla por los datos de la SEC (' + j.anios[0] + '–' + j.anios[j.anios.length - 1] + ')? Se conservan los múltiplos históricos y las notas.')) return;
       const g = DatosWeb.aFicha(j, hoy()); ['mult_hist', 'escenarios', 'tipo', 'precio', 'fecha_precio'].forEach(k => { if (f[k] != null && g[k] == null) g[k] = f[k]; });
       g.notas = (f.notas || []).concat(g.notas || [], ['Ficha sustituida por los datos de la SEC el ' + hoy() + ' (antes llegaba a ' + f.anio_base + ').']);
       d.fichas[tk] = g; return U.guardar({ ok: true, msg: 'Ficha de ' + tk + ' actualizada hasta ' + g.anio_base });
@@ -78,7 +79,7 @@
       const rows = filas.filter(x => x.est === g).sort((x, y) => (y.v.ref == null ? -9 : y.v.ref) - (x.v.ref == null ? -9 : x.v.ref));
       if (!rows.length) return;
       h += '<h3 style="margin:14px 2px 6px">' + t + ' <span class="mut small">' + rows.length + '</span></h3><div class="card">' + rows.map(({ k, v }) => {
-        if (v.noSoportado || v.error) return '<div class="row click" data-v="abrir" data-k="' + esc(k) + '"><div class="main"><div class="name">' + esc(v.nombre) + '</div><div class="meta">' + esc(k) + (v.error ? ' · error: ' + esc(v.error) : ' · tipo no soportado') + '</div></div></div>';
+        if (v.noSoportado || v.error) return '<div class="row click" data-v="abrir" data-k="' + esc(k) + '"><div class="main"><div class="name">' + esc(v.nombre) + '</div><div class="meta">' + esc(k) + (v.incompleta ? ' · <span class="pill warn">ficha incompleta</span> faltan ' + esc(v.incompleta.join(', ')) : v.error ? ' · error: ' + esc(v.error) : ' · tipo no soportado') + '</div></div></div>';
         return '<div class="row click" data-v="abrir" data-k="' + esc(k) + '"><div class="main"><div class="name">' + esc(v.nombre) + (v.graves ? ' <span class="pill warn">datos dudosos</span>' : '') + ((secDe(k, d.fichas[k]) || {}).nuevo ? ' <span class="pill">ejercicio ' + secDe(k, d.fichas[k]).nuevo + ' publicado</span>' : '') + (U.etiquetasResultados ? U.etiquetasResultados(k) : '') + '</div>' +
           '<div class="meta">' + esc(k) + ' · ' + nf(v.precio, 2) + ' ' + esc(v.divisa) + (v.entrada ? ' · entrada ' + nf(v.entrada, 2) : '') + '</div></div>' +
           '<div class="num"><span class="pill ' + tono(v.ref, a) + '">' + (v.ref == null ? '—' : pc(v.ref)) + '</span><div class="meta">anual · 5 años</div></div></div>';
@@ -99,7 +100,10 @@
     if (!isN(f.precio)) return h + '<h2 style="margin:12px 0 4px">' + esc(sel) + ' — ' + esc(f.nombre || '') + '</h2><div class="alert warn" style="margin-top:10px">La ficha no tiene precio. Ponlo y revisa los datos para ver la valoración.</div><div class="tools"><button class="btn" data-v="precio">Poner precio</button></div>' + acciones(f);
     let R, fi, act; const sc = {};
     try { ESC.forEach(s => { sc[s] = escDe(f, s); R = R || {}; R[s] = V.proyectar(f, sc[s]); }); fi = V.fiabilidad(f, hoy()); act = V.actuales(f); }
-    catch (e) { return h + '<div class="alert bad" style="margin-top:10px">No se pudo calcular: ' + esc(e.message) + '</div><div class="tools"><button class="btn sec sm" data-v="datos">Revisar datos</button></div>' + acciones(f); }
+    catch (e) {
+      const falta = L.lineasFaltantes(f); cargarSEC(); const sd0 = secDe(sel, f);
+      return h + '<h2 style="margin:12px 0 4px">' + esc(sel) + ' — ' + esc(f.nombre || '') + '</h2><div class="alert warn" style="margin-top:10px">' + (falta.length ? '<b>Ficha incompleta.</b> Es un borrador y le faltan: ' + esc(falta.join(', ')) + '. Con esas líneas el motor no puede valorar la empresa.' : 'No se pudo calcular: ' + esc(e.message)) + (sd0 && sd0.completar ? '<br>La SEC tiene las cuentas completas de ' + esc(sel) + ': <button class="btn sm" data-v="nuevoej">Completar con los datos de la SEC</button>' : falta.length ? '<br>Complétalas en «Revisar datos» (intereses, impuestos, amortización, capex, deuda y caja de cada año; las tienes en el informe anual) o pídelas a una IA.' : '') + '</div><div class="tools"><button class="btn sec sm" data-v="datos">Revisar datos</button></div>' + acciones(f);
+    }
     const cons = R.conservador, ref5 = cons.cagr[5].ref, pe = V.precioEntrada(f, cons, o / 100), pt = V.precioEntrada(f, cons, m / 100);
     cargarSEC(); const sd = secDe(sel, f);
     const vm = V.valorMultiplo ? V.valorMultiplo(f, sd && sd.doce) : null, VMT = { chollo: ['g', 'Chollo ahora'], debajo: ['y', 'Algo por debajo'], encima: ['y', 'Algo por encima'], cara: ['r', 'Cara ahora'] };
@@ -122,6 +126,7 @@
       (vm && !vm.sinBeneficio ? ' <b>¿Chollo ahora?</b> Con las cifras ' + (vm.doce ? 'de los últimos 12 meses (hasta ' + esc(vm.doce.fin) + ')' : 'del último año') + ' a sus múltiplos de siempre valdría ' + nf(vm.valor, 2) + ': cotiza ' + nf(Math.abs(vm.descuento) * 100, 0) + ' % ' + (vm.descuento >= 0 ? 'por debajo' : 'por encima') + '. Lectura a corto plazo: supone que esas cifras se mantienen y el múltiplo vuelve a su media.' +
         (vm.raro ? ' <span class="c-y">Ojo: su múltiplo de siempre es ' + nf(vm.ratioHist, 1) + ' veces el de hoy' + (vm.raro === 'alto' ? ' (años de rampa o de euforia en la media): la lectura exagera el chollo.' : ' (años más baratos en la media): la lectura exagera lo cara.') + '</span>' : '') : '') + '</p>' +
       (sd && sd.doce ? '<p class="small' + (Math.abs(sd.doce.de) > 0.25 ? ' c-y' : ' mut') + '" style="margin:6px 0 0"><b>Últimos 12 meses</b> (' + esc(sd.doce.fuente === 'SEC' ? 'SEC' : 'IA, sin verificar') + ', hasta ' + esc(sd.doce.fin) + '): ventas ' + nf(sd.doce.ventas, 0) + ' M' + (isN(sd.doce.dv) ? ' (' + (sd.doce.dv >= 0 ? '+' : '') + nf(sd.doce.dv * 100, 0) + ' %)' : '') + ', EBIT ' + (isN(sd.doce.ebit) && isN(sd.doce.de) ? nf(sd.doce.ebit, 0) + ' M (' + (sd.doce.de >= 0 ? '+' : '') + nf(sd.doce.de * 100, 0) + ' %)' : 'n/d') + ' frente a ' + sd.doce.anio + '.' + (Math.abs(sd.doce.de) > 0.25 ? ' El negocio se ha movido mucho desde el año base: el objetivo a 5 años parte de cifras desfasadas.' : '') + '</p>' : '') +
+      (sd && sd.completar && !sd.nuevo ? '<div class="alert warn" style="margin-top:8px">Esta ficha es un borrador (faltan ' + esc(L.lineasFaltantes(f).join(', ')) + ') y por eso no se puede valorar. La SEC tiene las cuentas completas de ' + esc(sel) + ': <button class="btn sm" data-v="nuevoej">Completar con los datos de la SEC</button></div>' : '') +
       (sd && sd.nuevo ? '<div class="alert warn" style="margin-top:8px">La SEC ya tiene el ejercicio ' + sd.nuevo + ' y esta ficha llega a ' + f.anio_base + '. <button class="btn sm" data-v="nuevoej">' + (sd.nuevo - f.anio_base > 1 || f.anio_base < 2020 ? 'Sustituir por los datos de la SEC' : 'Añadir ' + sd.nuevo + ' desde la SEC') + '</button></div>' : '') + '</div>' +
       '<div class="tools"><button class="btn sm" data-v="precio">Precio</button><button class="btn sec sm" data-v="datos">Editar datos</button><button class="btn sec sm" data-v="reset">Restablecer supuestos</button></div>';
     // escenarios
