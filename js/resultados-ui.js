@@ -129,7 +129,7 @@
     const f = D().fichas[r.tk], h = f.hist, n = h.ventas.length - 1, v0 = h.ventas[n], eb0 = h.ebit[n] - (isN((h.extra || [])[n]) ? h.extra[n] : 0), num = x => (isN(x) ? x : typeof x === 'string' && x.trim() !== '' && isFinite(Number(x.replace(',', '.'))) ? Number(x.replace(',', '.')) : null);
     const ventas = num(j.ventas_12m); let ebit = num(j.ebit_12m); const ebitda = num(j.ebitda_12m), da0 = (h.da || [])[n], avisos = [];
     if (ebit == null && ebitda != null && isN(da0)) { ebit = ebitda - da0; avisos.push('La fuente no da el EBIT: lo estimo como EBITDA de 12 meses − la amortización del año base (' + nf(da0, 0) + ' M). Es una aproximación.'); }
-    if (ventas == null) throw new Error('Falta ventas_12m: la IA no ha encontrado la cifra. Prueba con otra fuente o introdúcela tú.');
+    if (ventas == null) throw new Error('La IA no ha encontrado las cifras' + (j.resumen ? ' (dice: «' + String(j.resumen).slice(0, 160) + '»)' : '') + '. Suele pasar si no tiene la búsqueda web activada: actívala o usa otra IA con búsqueda y repite.');
     if (!/^\d{4}-\d\d-\d\d$/.test(j.fin || '')) throw new Error('Falta la fecha de cierre del trimestre ("fin": AAAA-MM-DD).');
     const dv = ventas / v0 - 1, de = ebit != null && eb0 > 0 ? ebit / eb0 - 1 : null;
     if (ventas / v0 > 3 || ventas / v0 < 0.33) avisos.push('Las ventas de 12 meses son ' + nf(ventas / v0, 1) + ' veces las de tu año base: revisa unidades (millones) y divisa.');

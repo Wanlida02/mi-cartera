@@ -8,12 +8,14 @@ const srv = http.createServer((q, r) => { const p = path.join(root, q.url.split(
   const an = await pg.evaluate(() => Store.get().fichas.VID.anios); const n = an.length;
   await pg.evaluate(() => window.UI.abrirFicha('VID')); await pg.waitForTimeout(500); let t = await pg.textContent('#vista'); assert(/Ficha incompleta/.test(t) && /Completar con una IA/.test(t), t.slice(0, 300));
   await pg.click('[data-v=lineasia]'); const pr = await pg.inputValue('#li-p'); assert(/Vidrala/.test(pr) && /impuestos/.test(pr) && pr.includes(an.join(', ')) && /JSON/.test(pr), pr.slice(0, 300)); console.log(pr.slice(0, 700));
+  const arr = v => an.map(() => v), arr0 = () => arr(null);
   // años mal -> error claro
   await pg.fill('#li-r', JSON.stringify({ anios: [1999], impuestos: [1] })); await pg.click('#li-ok'); assert(/no coinciden/.test(await pg.textContent('#li-err')));
   // longitud mal
   await pg.fill('#li-r', JSON.stringify({ anios: an, impuestos: [1, 2] })); await pg.click('#li-ok'); assert(/debe tener/.test(await pg.textContent('#li-err')));
+  // la IA no pudo buscar: todo null
+  await pg.fill('#li-r', JSON.stringify({ anios: an, intereses: arr0(), impuestos: arr0(), da: arr0(), capex: arr0(), deuda: arr0(), caja: arr0(), resumen: 'no se permite buscar en la web' })); await pg.click('#li-ok'); assert(/no ha encontrado ninguna cifra/.test(await pg.textContent('#li-err')) && /búsqueda web/.test(await pg.textContent('#li-err')));
   // sin dato del último año
-  const arr = v => an.map(() => v);
   await pg.fill('#li-r', JSON.stringify({ anios: an, impuestos: arr(60), da: arr(100), capex: arr(null), deuda: arr(250), caja: arr(80) })); await pg.click('#li-ok'); assert(/Falta el dato del último año/.test(await pg.textContent('#li-err')));
   // respuesta buena (con texto alrededor y bloque de código)
   await pg.fill('#li-r', 'Claro:\n```json\n' + JSON.stringify({ anios: an, intereses: arr(8), impuestos: arr(60), da: arr(110), capex: arr(95), deuda: arr(260), caja: arr(70), resumen: 'Cifras de prueba', fiabilidad: 'media', fuentes: ['prueba'] }) + '\n```'); await pg.click('#li-ok'); await pg.waitForTimeout(400);

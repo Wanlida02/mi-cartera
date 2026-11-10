@@ -86,6 +86,7 @@
     const num = x => (isN(x) ? x : typeof x === 'string' && x.trim() !== '' && isFinite(Number(x.replace(',', '.'))) ? Number(x.replace(',', '.')) : null), nuevo = {}, av = [];
     if (Array.isArray(j.anios) && j.anios.length && (j.anios.length !== n || j.anios.some((a, i) => Number(a) !== an[i]))) throw new Error('Los años no coinciden con los de la ficha (' + an.join(', ') + '). Pídele a la IA que use exactamente esos años y en ese orden.');
     LINEAS_IA.concat(['leases_deuda', 'minoritarios']).forEach(k => { const a = j[k]; if (a == null) return; if (!Array.isArray(a) || a.length !== n) throw new Error('«' + k + '» debe tener ' + n + ' valores (uno por año), pone ' + (Array.isArray(a) ? a.length : 'otra cosa') + '.'); nuevo[k] = a.map(num); });
+    if (!Object.keys(nuevo).some(k => nuevo[k].some(isN))) throw new Error('La IA no ha encontrado ninguna cifra' + (j.resumen ? ' (dice: «' + String(j.resumen).slice(0, 160) + '»)' : '') + '. Suele pasar cuando esa IA no tiene la búsqueda web activada o la tiene bloqueada: actívala (o usa otra con búsqueda, como Claude con búsqueda web, ChatGPT con búsqueda o Gemini) y vuelve a pegar el texto.');
     const ult = k => nuevo[k] && isN(nuevo[k][n - 1]);
     const faltan = ['impuestos', 'da', 'capex', 'deuda', 'caja'].filter(k => !(f.hist[k] && isN((f.hist[k] || [])[n - 1])) && !ult(k));
     if (faltan.length) throw new Error('Falta el dato del último año (' + an[n - 1] + ') de: ' + faltan.join(', ') + '. Sin eso no se puede valorar; prueba con otra fuente o ponlo a mano.');
