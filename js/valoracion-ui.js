@@ -69,31 +69,52 @@
   }
 
 
-  /* ───── Completar con una IA las líneas que faltan de una ficha borrador (intereses, impuestos, amortización, capex, deuda, caja) ───── */
+  /* ───── Completar con una IA las líneas que faltan de una ficha borrador (intereses, impuestos, amortización, capex, deuda, caja) ─────
+     Dos modos para que valga con cualquier IA: «navegar» (la IA abre las páginas) y «pegar» (tú copias el texto de las páginas y se lo pegas: no necesita navegación). */
   const LINEAS_IA = ['intereses', 'impuestos', 'da', 'capex', 'deuda', 'caja'];
-  function promptLineas(tk) {
-    const f = D().fichas[tk], h = f.hist, an = f.anios || [], r1 = x => (isN(x) ? Math.round(x * 10) / 10 : null), fila = k => JSON.stringify((h[k] || []).map(r1));
-    return 'Necesito completar las cuentas de ' + (f.nombre || tk) + ' (ticker ' + tk + ', divisa ' + (f.divisa || '') + ') para los años ' + an.join(', ') + '. Tienes que BUSCAR EN INTERNET (si no puedes buscar, dilo y devuelve todo null; no respondas de memoria).\n\n' +
-      'CONTRASTE OBLIGATORIO: para cada línea consulta AL MENOS 3 fuentes independientes: las cuentas consolidadas del informe anual de la empresa y páginas financieras de prestigio (Yahoo Finance, MarketScreener, Investing.com, Morningstar, StockAnalysis, TIKR, Financial Times…). Apunta en "contraste" lo que da CADA fuente, año a año. Si difieren más de un 5 %, averigua por qué (definición, divisa, consolidación, extraordinarios) y usa en las listas principales el dato del informe anual; si no puedes decidir, pon null. Si solo encuentras una fuente para una línea, pon esa fuente en contraste y dilo en "resumen". NO inventes ni estimes.\n\n' +
-      'YA TENGO (millones de ' + (f.divisa || '') + ', un valor por año en el mismo orden): ventas ' + fila('ventas') + ' · EBIT ' + fila('ebit') + ' · beneficio neto ' + fila('ni_reportado') + '.\n\n' +
-      'NECESITO, en millones de ' + (f.divisa || 'la misma divisa') + ', VALORES POSITIVOS, un valor por cada año [' + an.join(', ') + '] en ese orden:\n' +
-      '- intereses: gasto financiero neto (intereses pagados − ingresos financieros).\n- impuestos: gasto por impuesto sobre beneficios de la cuenta de resultados.\n- da: amortizaciones y depreciaciones totales (incluye derechos de uso si los hay).\n- capex: inversión bruta en inmovilizado material e intangible (flujo de caja de inversión), sin adquisiciones de empresas.\n- deuda: deuda financiera bruta a cierre (corto + largo plazo), SIN pasivos por arrendamientos.\n- caja: efectivo y equivalentes + inversiones financieras temporales a cierre.\n' +
-      '- opcionales: "leases_deuda" (pasivos por arrendamientos a cierre) y "minoritarios" (resultado atribuible a minoritarios), si existen.\n\n' +
-      'DEVUELVE SOLO ESTE JSON (sin texto antes ni después). Las listas principales llevan el dato elegido; "contraste" lleva, por línea, lo que da cada fuente (mismo orden de años):\n{"anios":[' + an.join(',') + '],"intereses":[],"impuestos":[],"da":[],"capex":[],"deuda":[],"caja":[],"leases_deuda":[],"minoritarios":[],"contraste":{"capex":[{"fuente":"Yahoo Finance","valores":[]},{"fuente":"MarketScreener","valores":[]},{"fuente":"Informe anual","valores":[]}],"da":[],"deuda":[],"caja":[],"impuestos":[],"intereses":[]},"resumen":"qué no encontraste, discrepancias y por qué elegiste cada dato","fiabilidad":"alta|media|baja","fuentes":["url o nombre de cada fuente"]}';
+  const BOLSA_SA = { MC: 'bme', PA: 'epa', DE: 'etr', F: 'fra', AS: 'ams', L: 'lon', MI: 'bit', BR: 'ebr', LS: 'eli', HK: 'hkg', SW: 'swx', ST: 'sto', CO: 'cph', HE: 'hel', OL: 'osl', T: 'tyo', TO: 'tsx', AX: 'asx', AT: 'ath', VI: 'vie', IR: 'ise' };
+  const simboloYahoo = tk => { const S = U.simbolos && U.simbolos(), e = S && S[tk]; return (e && e.y && e.y[0]) || tk; };
+  /* Enlaces a las páginas de datos para un símbolo de Yahoo (ej. VID.MC, AAPL) */
+  function enlacesDatos(sym, trim) {
+    sym = String(sym || '').trim(); const m = /^(.+)\.([A-Z]{1,2})$/.exec(sym), base = m ? m[1] : sym, ex = m ? BOLSA_SA[m[2]] : null, q = trim ? '?p=quarterly' : '', y = trim ? '?frequency=quarterly' : '';
+    const sa = ex ? 'https://stockanalysis.com/quote/' + ex + '/' + base.toLowerCase() + '/' : 'https://stockanalysis.com/stocks/' + base.toLowerCase() + '/', ya = 'https://finance.yahoo.com/quote/' + encodeURIComponent(sym) + '/';
+    const L1 = [['StockAnalysis · resultados', sa + 'financials/' + q], ['StockAnalysis · balance', sa + 'financials/balance-sheet/' + q], ['Yahoo Finance · resultados', ya + 'financials/' + y], ['Yahoo Finance · balance', ya + 'balance-sheet/' + y]];
+    if (!trim) L1.splice(2, 0, ['StockAnalysis · flujos de caja', sa + 'financials/cash-flow-statement/' + q]), L1.push(['Yahoo Finance · flujos de caja', ya + 'cash-flow/' + y]);
+    return L1.map(([n, u]) => ({ n, u }));
+  }
+  U.enlacesDatos = enlacesDatos; U.simboloYahoo = simboloYahoo;
+  const REGLAS_IA = 'REGLAS: usa SOLO datos de las páginas indicadas (no tu memoria, no estimes, no inventes). Si un dato no aparece pon null. Importes en millones de la divisa de la ficha, en número (sin texto ni símbolos), con punto decimal. Responde SOLO con el JSON, sin texto antes ni después.';
+  function promptLineas(tk, modo, sym) {
+    const f = D().fichas[tk], h = f.hist, an = f.anios || [], r1 = x => (isN(x) ? Math.round(x * 10) / 10 : null), fila = k => JSON.stringify((h[k] || []).map(r1)), div = f.divisa || 'EUR', E = enlacesDatos(sym || simboloYahoo(tk));
+    const campos = 'LÍNEAS QUE NECESITO (un valor por cada año [' + an.join(', ') + '], en ese orden, números positivos):\n- intereses: gasto financiero NETO (gastos por intereses − ingresos por intereses).\n- impuestos: gasto por impuesto sobre beneficios (income tax / tax provision).\n- da: amortizaciones y depreciaciones (depreciation & amortization).\n- capex: inversión en inmovilizado (capital expenditure), sin compras de empresas.\n- deuda: deuda financiera bruta a cierre (corto + largo plazo), SIN arrendamientos (leases).\n- caja: efectivo y equivalentes + inversiones financieras a corto plazo.\n- leases_deuda: pasivos por arrendamientos a cierre (corriente + no corriente). minoritarios: resultado de minoritarios (0 si no hay).\n';
+    const formato = 'FORMATO (rellena las listas, una posición por año; "contraste" = lo que da CADA fuente por separado, para las líneas donde tengas dos fuentes):\n{"anios":[' + an.join(',') + '],"intereses":[],"impuestos":[],"da":[],"capex":[],"deuda":[],"caja":[],"leases_deuda":[],"minoritarios":[],"contraste":{"capex":{"StockAnalysis":[],"Yahoo":[]},"da":{"StockAnalysis":[],"Yahoo":[]}},"resumen":"discrepancias entre fuentes y qué dato elegiste","fiabilidad":"alta|media|baja"}\nSi las dos fuentes difieren más de un 5 %, en las listas principales pon el dato de StockAnalysis y explícalo en "resumen".';
+    const cab = 'Eres un analista financiero. Tarea: extraer cuentas anuales de ' + (f.nombre || tk) + ' (símbolo ' + (sym || simboloYahoo(tk)) + ', divisa ' + div + ') para completar mi ficha. Años: ' + an.join(', ') + '. Ya tengo (millones de ' + div + '): ventas ' + fila('ventas') + ' · EBIT ' + fila('ebit') + ' · beneficio neto ' + fila('ni_reportado') + ' — úsalos para comprobar que miras la empresa y las unidades correctas.\n\n';
+    if (modo === 'pegar') return cab + 'Debajo de este mensaje te pego el TEXTO COPIADO de las páginas de StockAnalysis y/o Yahoo Finance (resultados, balance y flujos de caja). No necesitas navegar ni buscar nada.\n\n' + campos + '\n' + formato + '\n\n' + REGLAS_IA + '\n\n=== TEXTO COPIADO DE LAS PÁGINAS (pégalo aquí debajo) ===\n';
+    return cab + 'PASO 1. Abre estas páginas:\n' + E.map(x => '- ' + x.n + ': ' + x.u).join('\n') + '\nSi no puedes abrir páginas web, responde SOLO {"error":"sin_navegacion"} y nada más (no respondas de memoria).\nSi alguna no carga, usa las demás o la web de relación con inversores de la empresa.\n\nPASO 2. Copia los datos de cada año y compara las dos fuentes.\n\n' + campos + '\n' + formato + '\n\n' + REGLAS_IA;
+  }
+  const norm = k => String(k).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z&]/g, '');
+  const ALIAS = { intereses: ['intereses', 'gastosfinancieros', 'interest', 'interesesnetos', 'resultadofinanciero'], impuestos: ['impuestos', 'impuesto', 'tax', 'taxes', 'taxprovision', 'incometax'], da: ['da', 'd&a', 'amortizacion', 'amortizaciones', 'depreciacion', 'depreciation'], capex: ['capex', 'inversiones', 'capitalexpenditure'], deuda: ['deuda', 'deudabruta', 'debt', 'deudafinanciera'], caja: ['caja', 'efectivo', 'cash'], leases_deuda: ['leasesdeuda', 'leases', 'arrendamientos', 'deudaleases'], minoritarios: ['minoritarios', 'minorities'] };
+  function normalizarRespuesta(j) {   // tolera nombres de campo en otro formato, mayúsculas, tildes
+    const o = {}; Object.keys(j).forEach(k => { const n = norm(k); const c = Object.keys(ALIAS).find(c => ALIAS[c].includes(n)); o[c || k] = j[k]; }); return o;
   }
   function aplicarLineas(tk, txt) {
     const f = D().fichas[tk], an = (f.anios || []).map(Number), n = an.length, m = /\{[\s\S]*\}/.exec(txt || ''); if (!m) throw new Error('No encuentro el JSON en lo que has pegado.');
-    let j; try { j = JSON.parse(m[0]); } catch (e) { throw new Error('El JSON no es válido (' + e.message + ').'); }
-    const num = x => (isN(x) ? x : typeof x === 'string' && x.trim() !== '' && isFinite(Number(x.replace(',', '.'))) ? Number(x.replace(',', '.')) : null), nuevo = {}, av = [];
+    let j0; try { j0 = JSON.parse(m[0]); } catch (e) { throw new Error('El JSON no es válido (' + e.message + '). Pídele a la IA que lo repita «solo con el JSON, sin texto».'); }
+    if (j0.error === 'sin_navegacion' || /sin_navegacion/.test(String(j0.error || ''))) throw new Error('Esa IA no puede abrir páginas web. Cambia a «Mi IA no puede abrir páginas»: abre los enlaces, copia el texto de las páginas y pégaselo a la IA debajo del texto.');
+    const j = normalizarRespuesta(j0);
+    const num = x => (isN(x) ? x : typeof x === 'string' && x.trim() !== '' && isFinite(Number(x.replace(/\s/g, '').replace(',', '.'))) ? Number(x.replace(/\s/g, '').replace(',', '.')) : null), nuevo = {}, av = [];
     if (Array.isArray(j.anios) && j.anios.length && (j.anios.length !== n || j.anios.some((a, i) => Number(a) !== an[i]))) throw new Error('Los años no coinciden con los de la ficha (' + an.join(', ') + '). Pídele a la IA que use exactamente esos años y en ese orden.');
-    LINEAS_IA.concat(['leases_deuda', 'minoritarios']).forEach(k => { const a = j[k]; if (a == null) return; if (!Array.isArray(a) || a.length !== n) throw new Error('«' + k + '» debe tener ' + n + ' valores (uno por año), pone ' + (Array.isArray(a) ? a.length : 'otra cosa') + '.'); nuevo[k] = a.map(num); });
-    if (!Object.keys(nuevo).some(k => nuevo[k].some(isN))) throw new Error('La IA no ha encontrado ninguna cifra' + (j.resumen ? ' (dice: «' + String(j.resumen).slice(0, 160) + '»)' : '') + '. Suele pasar cuando esa IA no tiene la búsqueda web activada o la tiene bloqueada: actívala (o usa otra con búsqueda, como Claude con búsqueda web, ChatGPT con búsqueda o Gemini) y vuelve a pegar el texto.');
+    const ABS = new Set(['impuestos', 'da', 'capex', 'deuda', 'caja', 'leases_deuda']);   // las fuentes dan capex y otras líneas en negativo: se usa el valor absoluto
+    LINEAS_IA.concat(['leases_deuda', 'minoritarios']).forEach(k => { const a = j[k]; if (a == null) return; if (!Array.isArray(a) || a.length !== n) throw new Error('«' + k + '» debe tener ' + n + ' valores (uno por año: ' + an.join(', ') + '), pone ' + (Array.isArray(a) ? a.length : 'otra cosa') + '.'); nuevo[k] = a.map(num).map(x => (x != null && ABS.has(k) ? Math.abs(x) : x)); });
+    if (!Object.keys(nuevo).some(k => nuevo[k].some(isN))) throw new Error('La IA no ha encontrado ninguna cifra' + (j.resumen ? ' (dice: «' + String(j.resumen).slice(0, 160) + '»)' : '') + '. Si esa IA no navega, usa «Mi IA no puede abrir páginas» y pega tú el texto de las páginas.');
     const ult = k => nuevo[k] && isN(nuevo[k][n - 1]);
     const faltan = ['impuestos', 'da', 'capex', 'deuda', 'caja'].filter(k => !(f.hist[k] && isN((f.hist[k] || [])[n - 1])) && !ult(k));
     if (faltan.length) throw new Error('Falta el dato del último año (' + an[n - 1] + ') de: ' + faltan.join(', ') + '. Sin eso no se puede valorar; prueba con otra fuente o ponlo a mano.');
     if (!nuevo.intereses && !(f.hist.intereses && f.hist.intereses.some(isN))) { nuevo.intereses = Array(n).fill(null); av.push('Sin intereses: se toman como 0 (si la empresa tiene deuda importante, ponlos a mano).'); }
-    const ct = j.contraste && typeof j.contraste === 'object' ? j.contraste : {}, disc = [], una = [], NOM = { intereses: 'intereses', impuestos: 'impuestos', da: 'amortización', capex: 'capex', deuda: 'deuda', caja: 'caja', leases_deuda: 'arrendamientos', minoritarios: 'minoritarios' };
-    Object.keys(nuevo).forEach(k => { const r = L.contrastar(ct[k], nuevo[k]); if (!(ct[k] && ct[k].length)) { if (nuevo[k].some(isN)) una.push(NOM[k]); return; } r.discrepancias.forEach(x => disc.push(NOM[k] + ' ' + an[x.i] + ': ' + x.min.f + ' ' + x.min.v + ' vs ' + x.max.f + ' ' + x.max.v + ' (' + Math.round(x.dif * 100) + ' %)')); if (r.sinContraste && r.nFuentes < 2) una.push(NOM[k]); });
+    const ct0 = j.contraste && typeof j.contraste === 'object' ? j.contraste : {}, ctn = {}; Object.keys(ct0).forEach(k => { ctn[norm(k) === 'da' ? 'da' : (Object.keys(ALIAS).find(c => ALIAS[c].includes(norm(k))) || k)] = ct0[k]; });
+    const fuentesDe = c => (Array.isArray(c) ? c : c && typeof c === 'object' ? Object.keys(c).map(fu => ({ fuente: fu, valores: c[fu] })) : []).filter(x => x && Array.isArray(x.valores)).map(x => ({ fuente: x.fuente, valores: x.valores.map(num).map(v => (v != null ? Math.abs(v) : v)) }));
+    const disc = [], una = [], NOM = { intereses: 'intereses', impuestos: 'impuestos', da: 'amortización', capex: 'capex', deuda: 'deuda', caja: 'caja', leases_deuda: 'arrendamientos', minoritarios: 'minoritarios' };
+    Object.keys(nuevo).forEach(k => { const F = fuentesDe(ctn[k]); if (!nuevo[k].some(isN)) return; if (F.length < 2) { if (k !== 'minoritarios') una.push(NOM[k]); return; } const r = L.contrastar(F, nuevo[k]); r.discrepancias.forEach(x => disc.push(NOM[k] + ' ' + an[x.i] + ': ' + x.min.f + ' ' + x.min.v + ' vs ' + x.max.f + ' ' + x.max.v + ' (' + Math.round(x.dif * 100) + ' %)')); });
     if (una.length) av.push('Sin contraste entre varias fuentes: ' + una.join(', ') + '.');
     if (disc.length) av.push(disc.length + ' diferencias de más del 5 % entre fuentes: ' + disc.slice(0, 6).join('; ') + (disc.length > 6 ? '…' : ''));
     const v0 = f.hist.ventas[n - 1];
@@ -105,17 +126,21 @@
     if (av.length) f.notas.push('Avisos al completar con IA: ' + av.join(' '));
     f.fecha_datos = hoy(); return { av, disc, una, fiab: String(j.fiabilidad || '') };
   }
-  function lineasIA(tk, aviso) {
-    const f = D().fichas[tk]; if (!f) return;
-    U.dlg('<h2>Completar ' + esc(tk) + ' con una IA</h2><p class="small mut">1) Copia el texto y pégalo en una IA con búsqueda web (Claude, ChatGPT, Gemini…). 2) Pega aquí su respuesta (el JSON). Las cifras quedan anotadas como «sin verificar»: contrástalas con el informe anual antes de decidir nada.</p>' +
-      '<textarea id="li-p" rows="7" readonly>' + esc(promptLineas(tk)) + '</textarea><div class="acts"><button class="btn sec" id="li-copy">Copiar texto</button></div>' +
-      '<label for="li-r">Respuesta de la IA</label><textarea id="li-r" rows="6" placeholder="Pega aquí el JSON"></textarea><div id="li-err" class="alert bad" style="display:none"></div>' + (aviso ? '<div class="alert warn">' + esc(aviso) + '</div>' : '') +
+  function lineasIA(tk) {
+    const f = D().fichas[tk]; if (!f) return; U.cargarSimb && U.cargarSimb(); const sym0 = simboloYahoo(tk);
+    U.dlg('<h2>Completar ' + esc(tk) + ' con una IA</h2><p class="small mut">Vale con cualquier IA (Claude, ChatGPT, Gemini…). Elige según lo que pueda hacer la tuya:</p>' +
+      '<div class="f2">' + U.campo('li-sym', 'Símbolo en Yahoo (ej. VID.MC)', sym0) + '<div><label for="li-modo">Mi IA…</label><select id="li-modo"><option value="pegar">no puede abrir páginas (pego yo el texto)</option><option value="nav">puede abrir páginas web</option></select></div></div>' +
+      '<div id="li-ayuda" class="small" style="margin:6px 0"></div><textarea id="li-p" rows="7" readonly></textarea><div class="acts"><button class="btn sec" id="li-copy">Copiar texto</button></div>' +
+      '<label for="li-r">Respuesta de la IA (el JSON)</label><textarea id="li-r" rows="6" placeholder="Pega aquí el JSON"></textarea><div id="li-err" class="alert bad" style="display:none"></div>' +
       '<div class="acts"><button class="btn sec" data-a="cerrar">Cancelar</button><button class="btn" id="li-ok">Usar estas cifras</button></div>', dd => {
+      const pintar = () => { const modo = dd.querySelector('#li-modo').value, sym = dd.querySelector('#li-sym').value.trim() || sym0; dd.querySelector('#li-p').value = promptLineas(tk, modo, sym);
+        dd.querySelector('#li-ayuda').innerHTML = modo === 'pegar' ? '<b>Cómo hacerlo:</b> 1) abre estos enlaces, en cada uno pulsa Ctrl+A y Ctrl+C (o «seleccionar todo» y copiar) y pega el texto debajo del mensaje en tu IA; 2) copia el texto de abajo y pégalo al principio; 3) pega aquí su respuesta.<br>' + enlacesDatos(sym).map(x => '<a href="' + esc(x.u) + '" target="_blank" rel="noopener">' + esc(x.n) + '</a>').join(' · ') : '<b>Cómo hacerlo:</b> copia el texto de abajo, pégalo en tu IA (con navegación activada) y pega aquí su respuesta. Si dice que no puede abrir páginas, cambia a la otra opción.'; };
+      dd.querySelector('#li-modo').onchange = pintar; dd.querySelector('#li-sym').oninput = pintar; pintar();
       dd.querySelector('#li-copy').onclick = () => { const t = dd.querySelector('#li-p'); t.select(); try { navigator.clipboard.writeText(t.value); } catch (e) { document.execCommand && document.execCommand('copy'); } U.toast('Texto copiado'); };
       dd.querySelector('#li-ok').onclick = () => { try { const o = aplicarLineas(tk, dd.querySelector('#li-r').value); U.guardar({ ok: true, msg: 'Ficha completada' }); if (o.av.length) U.dlg('<h2>Ficha completada: revisa esto</h2>' + o.av.map(x => '<div class="alert warn">' + esc(x) + '</div>').join('') + '<p class="small mut">Los avisos también quedan en las notas de la ficha. Contrasta con el informe anual los datos con diferencias antes de fiarte de la valoración.</p><div class="acts"><button class="btn" data-a="cerrar">Entendido</button></div>'); } catch (e) { const b = dd.querySelector('#li-err'); b.style.display = ''; b.textContent = e.message; } };
     });
   }
-  U._lineasIA = { promptLineas, aplicarLineas };
+  U._lineasIA = { promptLineas, aplicarLineas, enlacesDatos };
 
   /* ───── Lista ───── */
   function vistaLista() {

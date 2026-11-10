@@ -22,10 +22,19 @@ const srv = http.createServer((q, r) => { const p = path.join(root, q.url.split(
   const base = await pg.evaluate(tk => { const f = Store.get().fichas[tk], h = f.hist, n = h.ventas.length - 1; return { v: h.ventas[n], e: h.ebit[n] - ((h.extra || [])[n] || 0), anio: f.anio_base }; }, eu);
   await pg.evaluate(tk => document.querySelector('[data-r=rev][data-id="' + Store.get().resultados.find(r => r.tk === tk && r.estado !== 'revisado').id + '"]').click(), eu);
   assert(/Cifras con una IA/.test(await pg.textContent('#dlg'))); await pg.click('#r-ia');
-  const prompt = await pg.inputValue('#ia-p'); assert(/ÚLTIMOS 12 MESES/.test(prompt) && /Yahoo Finance/.test(prompt) && /JSON/.test(prompt) && prompt.includes(String(base.anio)), prompt.slice(0, 300));
+  const prompt = await pg.inputValue('#ia-p'); assert(/ÚLTIMOS 5 TRIMESTRES/.test(prompt) && /TEXTO COPIADO/.test(prompt) && /NO sumes/.test(prompt) && /JSON/.test(prompt) && prompt.includes(String(base.anio)), prompt.slice(0, 300));
+  await pg.selectOption('#ia-modo', 'nav'); const pn = await pg.inputValue('#ia-p'); assert(/PASO 1/.test(pn) && /sin_navegacion/.test(pn) && /p=quarterly/.test(pn) && /frequency=quarterly/.test(pn), pn.slice(0, 600)); await pg.selectOption('#ia-modo', 'pegar');
   await pg.fill('#ia-r', 'Aquí tienes:\n```json\n' + JSON.stringify({ periodo: 'T3 2026', fin: '2026-09-30', ventas_12m: base.v * 1.04, ebit_12m: base.e * 0.80, ni_12m: null, deuda_neta: null, acciones: null, contraste: [{ fuente: 'nota', ventas_12m: base.v * 1.04, ebit_12m: base.e * 0.80 }, { fuente: 'Yahoo', ventas_12m: base.v * 1.10, ebit_12m: base.e * 0.80 }], guidance: 'Mantiene', resumen: 'Ventas algo por encima, margen a la baja.', fiabilidad: 'media', fuentes: ['ir.test/resultados'] }) + '\n```'); await pg.click('#ia-ok'); await pg.waitForTimeout(300);
   t = await pg.textContent('#dlg'); assert(/Las fuentes no coinciden en ventas/.test(t), 'contraste: ' + t.slice(0, 300));
   assert(/IA/.test(t) && /Real/.test(t) && /Esperado/.test(t) && /Resumen de la IA/.test(t), t.slice(0, 500)); console.log('--- dialogo IA ' + eu + ':\n' + t.slice(0, 600));
+  // formato nuevo: la IA copia trimestres y la app suma; una IA sin navegación avisa
+  await pg.click('#r-ia'); await pg.fill('#ia-r', '{"error":"sin_navegacion"}'); await pg.click('#ia-ok'); assert(/no puede abrir páginas/.test(await pg.textContent('#ia-err')));
+  const q = (fin, f) => ({ fin, ventas: base.v / 4 * f, ebit: base.e / 4 * 0.9 }), tri = [q('2026-09-30', 1.05), q('2026-06-30', 1.04), q('2026-03-31', 1.03), q('2025-12-31', 1.02), q('2025-09-30', 1.0)];
+  await pg.fill('#ia-r', '```json\n' + JSON.stringify({ trimestres: tri, por_fuente: { StockAnalysis: tri, Yahoo: tri.map(x => ({ fin: x.fin, ventas: x.ventas * 1.08, ebit: x.ebit })) }, resumen: 'ok', fiabilidad: 'media' }) + '\n```'); await pg.click('#ia-ok'); await pg.waitForTimeout(300);
+  const dc = await pg.evaluate(tk => Store.get().resultados.find(r => r.tk === tk && r.estado !== 'revisado').doce, eu); const suma = base.v / 4 * (1.05 + 1.04 + 1.03 + 1.02);
+  assert(Math.abs(dc.ventas - suma) < 1e-6 && dc.fin === '2026-09-30', JSON.stringify(dc)); t = await pg.textContent('#dlg'); assert(/Trimestres sumados por la app/.test(t) && /Las fuentes no coinciden en ventas/.test(t), t.slice(0, 500));
+  // trimestres no consecutivos
+  await pg.click('#r-ia'); await pg.fill('#ia-r', JSON.stringify({ trimestres: [q('2026-09-30', 1), q('2026-06-30', 1), q('2025-12-31', 1), q('2025-09-30', 1)] })); await pg.click('#ia-ok'); assert(/no son consecutivos/.test(await pg.textContent('#ia-err'))); await pg.click('#ia-vuelve'); await pg.waitForTimeout(100);
   // JSON malo
   await pg.click('#r-ia'); await pg.fill('#ia-r', 'no sé'); await pg.click('#ia-ok'); assert(/No encuentro el JSON/.test(await pg.textContent('#ia-err'))); await pg.click('#ia-vuelve'); await pg.waitForTimeout(100);
   // 4) cifras IA alimentan la ficha de Valoración y la etiqueta

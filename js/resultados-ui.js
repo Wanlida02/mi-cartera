@@ -109,45 +109,72 @@
       dd.querySelector('#r-ok').onclick = () => { const t = U.val('r-tk'), f = U.val('r-f'); D().resultados.push(nuevoReg(t, { fecha: f || null, periodo: U.val('r-p') || trimestre(f), confirmada: true })); U.guardar({ ok: true, msg: 'Fecha anotada' }); }; });
   }
 
-  /* ───── Prompt para una IA (empresas sin SEC, o cuando la SEC aún no tiene el trimestre) ───── */
-  function promptIA(r) {
-    const f = D().fichas[r.tk] || {}, h = f.hist || {}, n = (h.ventas || []).length - 1, g = k => (h[k] || [])[n];
+  /* ───── Prompt para una IA (empresas sin SEC, o cuando la SEC aún no tiene el trimestre) ─────
+     La IA solo copia los últimos trimestres; la SUMA de 12 meses la hace la app (los modelos fallan sumando). Dos modos: «navegar» y «pegar» (vale con cualquier IA). */
+  function promptIA(r, modo, sym) {
+    const f = D().fichas[r.tk] || {}, h = f.hist || {}, n = (h.ventas || []).length - 1, g = k => (h[k] || [])[n], div = f.divisa || 'EUR', s0 = sym || (U.simboloYahoo ? U.simboloYahoo(r.tk) : r.tk);
     let esc1 = null; try { esc1 = Object.assign({}, L.V.defaults(f).conservador, (f.escenarios || {}).conservador || {}); } catch (e) { /* ficha borrador sin todas las líneas */ }
-    const ebit = isN(g('ebit')) ? g('ebit') - (isN((h.extra || [])[n]) ? h.extra[n] : 0) : null, nd = isN(g('deuda')) || isN(g('caja')) ? (isN(g('deuda')) ? g('deuda') : 0) + (isN(g('leases_deuda')) ? g('leases_deuda') : 0) - (isN(g('caja')) ? g('caja') : 0) : null;
-    const r1 = x => (isN(x) ? Math.round(x * 10) / 10 : 'n/d');
-    return 'Necesito las cifras de los ÚLTIMOS 12 MESES (suma de los 4 últimos trimestres publicados) de ' + (f.nombre || r.tk) + ' (ticker ' + (f.ticker || r.tk) + '), para comprobar si va en línea con mi valoración. Busca en internet los resultados trimestrales más recientes (' + (r.periodo || 'último trimestre') + ' o el último que exista).\n\n' +
-      'CÓMO BUSCAR (tienes que buscar en internet; si no puedes, devuelve todo null y dilo, no respondas de memoria): usa la nota de prensa/presentación de resultados de la web de relación con inversores y CONTRÁSTALA con al menos 2 páginas financieras de prestigio más (Yahoo Finance, MarketScreener, Investing.com, Morningstar, Reuters, TIKR, StockAnalysis…). Apunta en "contraste" lo que da cada fuente. Si difieren más de un 3 %, averigua por qué (definición, divisa, extraordinarios) y usa el dato de la nota de resultados de la empresa; si no puedes decidir, pon null. NO inventes ni estimes.\n\n' +
-      'MIS CIFRAS DEL AÑO BASE (' + f.anio_base + ', en millones de ' + (f.divisa || '') + ', para que uses las mismas unidades y el mismo criterio): ventas ' + r1(g('ventas')) + ' · EBIT recurrente ' + r1(ebit) + ' · deuda neta ' + r1(nd) + ' · acciones (millones) ' + r1(g('acciones')) + '.\n' +
-      (esc1 ? 'LO QUE SUPONÍA MI VALORACIÓN: crecimiento de ventas ' + r1(esc1.g * 100) + ' % anual (se va moderando) y margen EBIT ' + r1(esc1.m * 100) + ' %.\n\n' : '\n') +
-      'DEVUELVE SOLO ESTE JSON (sin texto antes ni después), importes en millones de ' + (f.divisa || 'la divisa de mis cifras') + ':\n' +
-      '{"periodo":"T3 2026","fin":"AAAA-MM-DD (cierre del último trimestre publicado)","ventas_12m":0,"ebit_12m":0,"ebitda_12m":0,"ni_12m":0,"contraste":[{"fuente":"nota de resultados","ventas_12m":0,"ebit_12m":0},{"fuente":"Yahoo Finance","ventas_12m":0,"ebit_12m":0},{"fuente":"MarketScreener","ventas_12m":0,"ebit_12m":0}],"deuda_neta":0,"acciones":0,"guidance":"previsión de la dirección para el año, si la dio","resumen":"2-4 frases: qué ha pasado frente a lo esperado (ventas, margen, deuda, recompras o dilución, hechos extraordinarios)","fiabilidad":"alta|media|baja","fuentes":["url o nombre de cada fuente usada"]}\n' +
-      'EBIT = resultado de explotación (excluye extraordinarios y deterioros si puedes); si la empresa no publica el EBIT, deja ebit_12m en null y da ebitda_12m. deuda_neta = deuda financiera − caja del último balance. acciones = diluidas, en millones.';
+    const ebit = isN(g('ebit')) ? g('ebit') - (isN((h.extra || [])[n]) ? h.extra[n] : 0) : null, r1 = x => (isN(x) ? Math.round(x * 10) / 10 : 'n/d');
+    const cab = 'Eres un analista financiero. Tarea: copiar los ÚLTIMOS 5 TRIMESTRES publicados de ' + (f.nombre || r.tk) + ' (símbolo ' + s0 + ', divisa ' + div + ') para que yo compruebe si va en línea con mi valoración (' + (r.periodo || 'último trimestre') + ' o el último que exista). NO sumes ni calcules nada: solo copia trimestre a trimestre.\n' +
+      'Para que uses la empresa y las unidades correctas, mi año base (' + f.anio_base + ', millones de ' + div + '): ventas ' + r1(g('ventas')) + ' · EBIT ' + r1(ebit) + ' · deuda neta ' + r1(g('deuda') != null ? (g('deuda') || 0) + (g('leases_deuda') || 0) - (g('caja') || 0) : null) + '.\n';
+    const datos = 'POR CADA TRIMESTRE (del más reciente al más antiguo, 5 trimestres, millones de ' + div + ', números):\n- fin: fecha de cierre del trimestre (AAAA-MM-DD)\n- ventas (revenue)\n- ebit (operating income / resultado de explotación)\n- ebitda (opcional, si lo ves)\n' +
+      'Aparte, del último balance: deuda_neta (deuda financiera − caja) y acciones (diluidas, millones), si los ves.\n';
+    const formato = 'FORMATO:\n{"trimestres":[{"fin":"2026-09-30","ventas":0,"ebit":0,"ebitda":0},{"fin":"2026-06-30","ventas":0,"ebit":0,"ebitda":0}],"por_fuente":{"StockAnalysis":[{"fin":"2026-09-30","ventas":0,"ebit":0}],"Yahoo":[{"fin":"2026-09-30","ventas":0,"ebit":0}]},"deuda_neta":0,"acciones":0,"guidance":"previsión de la dirección, si la dan","resumen":"2-4 frases: qué ha pasado y diferencias entre fuentes","fiabilidad":"alta|media|baja"}\n("trimestres" = el dato que consideres bueno; "por_fuente" = lo que da cada fuente por separado, para poder contrastarlas. Si difieren más de un 3 %, en "trimestres" pon el de la nota de resultados de la empresa o el de StockAnalysis y explícalo en "resumen".)\n';
+    const reglas = 'REGLAS: usa SOLO datos de las páginas indicadas (no tu memoria, no estimes, no inventes). Si un dato no aparece pon null. Números sin texto ni símbolos, con punto decimal. Responde SOLO con el JSON, sin texto antes ni después.';
+    const sup = (esc1 ? 'Mi valoración suponía: ventas +' + r1(esc1.g * 100) + ' % anual y margen EBIT ' + r1(esc1.m * 100) + ' % (solo para tu contexto).\n' : '');
+    if (modo === 'pegar') return cab + sup + '\nDebajo de este mensaje te pego el TEXTO COPIADO de las páginas de resultados trimestrales de StockAnalysis y/o Yahoo Finance. No necesitas navegar ni buscar nada.\n\n' + datos + '\n' + formato + '\n' + reglas + '\n\n=== TEXTO COPIADO DE LAS PÁGINAS (pégalo aquí debajo) ===\n';
+    const E = (U.enlacesDatos ? U.enlacesDatos(s0, true) : []);
+    return cab + sup + '\nPASO 1. Abre estas páginas (resultados trimestrales):\n' + E.map(x => '- ' + x.n + ': ' + x.u).join('\n') + '\nSi no puedes abrir páginas web, responde SOLO {"error":"sin_navegacion"} y nada más (no respondas de memoria). Si alguna no carga, usa las demás o la nota de resultados de la web de relación con inversores.\n\nPASO 2. Copia los trimestres.\n\n' + datos + '\n' + formato + '\n' + reglas;
   }
+  /* Suma de los 4 últimos trimestres consecutivos (la hace la app) */
+  function sumar4(trims, num) {
+    const T = (trims || []).map(t => ({ fin: t && t.fin, ventas: num(t && t.ventas), ebit: num(t && t.ebit), ebitda: num(t && t.ebitda) })).filter(t => /^\d{4}-\d\d-\d\d$/.test(t.fin || '') && t.ventas != null).sort((a, b) => b.fin.localeCompare(a.fin));
+    if (T.length < 4) return null; const q = T.slice(0, 4);
+    for (let i = 0; i < 3; i++) { const d = (Date.parse(q[i].fin) - Date.parse(q[i + 1].fin)) / 864e5; if (d < 60 || d > 125) return { error: 'Los trimestres no son consecutivos (' + q[i + 1].fin + ' → ' + q[i].fin + '): pide a la IA los 4 últimos seguidos.' }; }
+    const sum = k => (q.every(t => t[k] != null) ? q.reduce((a, t) => a + t[k], 0) : null);
+    return { fin: q[0].fin, ventas: sum('ventas'), ebit: sum('ebit'), ebitda: sum('ebitda'), trimestres: q };
+  }
+  const NORM = k => String(k).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9_]/g, '');
   function parseIA(txt, r) {
     const m = /\{[\s\S]*\}/.exec(txt || ''); if (!m) throw new Error('No encuentro el JSON en lo que has pegado.');
-    let j; try { j = JSON.parse(m[0]); } catch (e) { throw new Error('El JSON no es válido (' + e.message + ').'); }
-    const f = D().fichas[r.tk], h = f.hist, n = h.ventas.length - 1, v0 = h.ventas[n], eb0 = h.ebit[n] - (isN((h.extra || [])[n]) ? h.extra[n] : 0), num = x => (isN(x) ? x : typeof x === 'string' && x.trim() !== '' && isFinite(Number(x.replace(',', '.'))) ? Number(x.replace(',', '.')) : null);
-    const ventas = num(j.ventas_12m); let ebit = num(j.ebit_12m); const ebitda = num(j.ebitda_12m), da0 = (h.da || [])[n], avisos = [];
+    let j0; try { j0 = JSON.parse(m[0]); } catch (e) { throw new Error('El JSON no es válido (' + e.message + '). Pídele a la IA que lo repita «solo con el JSON, sin texto».'); }
+    if (/sin_navegacion/.test(String(j0.error || ''))) throw new Error('Esa IA no puede abrir páginas web. Cambia a «Mi IA no puede abrir páginas»: abre los enlaces, copia el texto de las páginas y pégaselo a la IA debajo del texto.');
+    const j = {}; Object.keys(j0).forEach(k => { const n = NORM(k); j[{ trimestres: 'trimestres', quarters: 'trimestres', porfuente: 'por_fuente', por_fuente: 'por_fuente', deudaneta: 'deuda_neta', deuda_neta: 'deuda_neta' }[n] || k] = j0[k]; });
+    const f = D().fichas[r.tk], h = f.hist, n = h.ventas.length - 1, v0 = h.ventas[n], eb0 = h.ebit[n] - (isN((h.extra || [])[n]) ? h.extra[n] : 0), num = x => (isN(x) ? x : typeof x === 'string' && x.trim() !== '' && isFinite(Number(x.replace(/\s/g, '').replace(',', '.'))) ? Number(x.replace(/\s/g, '').replace(',', '.')) : null);
+    const avisos = []; let ventas, ebit, fin, ebitda = null, tri = null;
+    if (Array.isArray(j.trimestres)) {   // formato nuevo: la app suma
+      tri = sumar4(j.trimestres, num); if (!tri) throw new Error('Necesito al menos 4 trimestres con fecha de cierre y ventas' + (j.resumen ? ' (la IA dice: «' + String(j.resumen).slice(0, 140) + '»)' : '') + '. Si esa IA no navega, usa «Mi IA no puede abrir páginas».'); if (tri.error) throw new Error(tri.error);
+      ventas = tri.ventas; ebit = tri.ebit; ebitda = tri.ebitda; fin = tri.fin;
+    } else { ventas = num(j.ventas_12m); ebit = num(j.ebit_12m); ebitda = num(j.ebitda_12m); fin = j.fin; }   // formato antiguo: la IA ya suma
+    if (ventas == null) throw new Error('La IA no ha encontrado las cifras' + (j.resumen ? ' (dice: «' + String(j.resumen).slice(0, 160) + '»)' : '') + '. Si esa IA no navega, usa «Mi IA no puede abrir páginas» y pega tú el texto.');
+    if (!/^\d{4}-\d\d-\d\d$/.test(fin || '')) throw new Error('Falta la fecha de cierre del trimestre ("fin": AAAA-MM-DD).');
+    const da0 = (h.da || [])[n];
     if (ebit == null && ebitda != null && isN(da0)) { ebit = ebitda - da0; avisos.push('La fuente no da el EBIT: lo estimo como EBITDA de 12 meses − la amortización del año base (' + nf(da0, 0) + ' M). Es una aproximación.'); }
-    if (ventas == null) throw new Error('La IA no ha encontrado las cifras' + (j.resumen ? ' (dice: «' + String(j.resumen).slice(0, 160) + '»)' : '') + '. Suele pasar si no tiene la búsqueda web activada: actívala o usa otra IA con búsqueda y repite.');
-    if (!/^\d{4}-\d\d-\d\d$/.test(j.fin || '')) throw new Error('Falta la fecha de cierre del trimestre ("fin": AAAA-MM-DD).');
     const dv = ventas / v0 - 1, de = ebit != null && eb0 > 0 ? ebit / eb0 - 1 : null;
     if (ventas / v0 > 3 || ventas / v0 < 0.33) avisos.push('Las ventas de 12 meses son ' + nf(ventas / v0, 1) + ' veces las de tu año base: revisa unidades (millones) y divisa.');
     if (ebit == null) avisos.push('Sin EBIT de 12 meses: solo se compara con las ventas.');
-    const ct = Array.isArray(j.contraste) ? j.contraste : [];
-    [['ventas_12m', 'ventas', ventas], ['ebit_12m', 'EBIT', ebit]].forEach(([k, nom, val]) => { const vs = ct.map(x => ({ fuente: x && x.fuente, valores: [num(x && x[k])] })).filter(x => x.valores[0] != null);
+    if (tri) avisos.push('Trimestres sumados por la app: ' + tri.trimestres.map(t => t.fin).reverse().join(', ') + '.');
+    // contraste entre fuentes
+    const pf = j.por_fuente && typeof j.por_fuente === 'object' ? j.por_fuente : null, fuentes = [];
+    if (pf && tri) Object.keys(pf).forEach(nm => { const sx = sumar4((Array.isArray(pf[nm]) ? pf[nm] : []).filter(t => tri.trimestres.some(q => q.fin === (t && t.fin))), num); if (sx && !sx.error) fuentes.push({ fuente: nm, ventas: sx.ventas, ebit: sx.ebit }); });
+    const ct = !pf && Array.isArray(j.contraste) ? j.contraste.map(x => ({ fuente: x && x.fuente, ventas: num(x && x.ventas_12m), ebit: num(x && x.ebit_12m) })) : fuentes;
+    [['ventas', 'ventas', ventas], ['ebit', 'EBIT', ebit]].forEach(([k, nom, val]) => { const vs = ct.filter(x => x[k] != null).map(x => ({ fuente: x.fuente, valores: [x[k]] }));
       if (val == null) return; if (vs.length < 2) { avisos.push('Sin contraste: ' + nom + ' de 12 meses viene de ' + (vs.length ? 'una sola fuente (' + (vs[0].fuente || '?') + ')' : 'una fuente sin detallar') + '. Compruébalo en otra.'); return; }
-      const r = L.contrastar(vs, [val], 0.03); if (r.discrepancias.length) { const x = r.discrepancias[0]; avisos.push('Las fuentes no coinciden en ' + nom + ': ' + x.min.f + ' ' + x.min.v + ' vs ' + x.max.f + ' ' + x.max.v + ' (' + Math.round(x.dif * 100) + ' %). Mira cuál es la buena antes de decidir.'); } });
-
-    return { doce: { fin: j.fin, dv, de, ventas, ebit, ni: num(j.ni_12m), deuda_neta: num(j.deuda_neta) == null ? undefined : num(j.deuda_neta), acciones: num(j.acciones) == null ? undefined : num(j.acciones), anio_base: f.anio_base, fuente: 'IA' },
-      ia: { resumen: String(j.resumen || ''), guidance: String(j.guidance || ''), fuentes: Array.isArray(j.fuentes) ? j.fuentes.map(String) : [], fiabilidad: String(j.fiabilidad || ''), periodo: String(j.periodo || ''), fecha: hoy() }, avisos };
+      const rc = L.contrastar(vs, [val], 0.03); if (rc.discrepancias.length) { const x = rc.discrepancias[0]; avisos.push('Las fuentes no coinciden en ' + nom + ': ' + x.min.f + ' ' + nf(x.min.v, 0) + ' vs ' + x.max.f + ' ' + nf(x.max.v, 0) + ' (' + Math.round(x.dif * 100) + ' %). Mira cuál es la buena antes de decidir.'); } });
+    return { doce: { fin, dv, de, ventas, ebit, ni: num(j.ni_12m), deuda_neta: num(j.deuda_neta) == null ? undefined : num(j.deuda_neta), acciones: num(j.acciones) == null ? undefined : num(j.acciones), anio_base: f.anio_base, fuente: 'IA' },
+      ia: { resumen: String(j.resumen || ''), guidance: String(j.guidance || ''), fuentes: Array.isArray(j.fuentes) ? j.fuentes.map(String) : pf ? Object.keys(pf) : [], fiabilidad: String(j.fiabilidad || ''), periodo: String(j.periodo || ''), fecha: hoy() }, avisos };
   }
 
   function dialogoIA(r, vuelta) {
-    U.dlg('<h2>Cifras de 12 meses con una IA</h2><p class="small mut">1) Copia el texto y pégalo en una IA con búsqueda web (Claude, ChatGPT, Gemini…). 2) Pega aquí su respuesta (el JSON). Las cifras quedan marcadas «IA, sin verificar»: si la fiabilidad es baja, contrasta con la presentación de resultados.</p>' +
-      '<textarea id="ia-p" rows="7" readonly>' + esc(promptIA(r)) + '</textarea><div class="acts"><button class="btn sec" id="ia-copy">Copiar texto</button></div>' +
-      '<label for="ia-r">Respuesta de la IA</label><textarea id="ia-r" rows="6" placeholder="Pega aquí el JSON"></textarea><div id="ia-err" class="alert bad" style="display:none"></div>' +
+    const sym0 = U.simboloYahoo ? U.simboloYahoo(r.tk) : r.tk; U.cargarSimb && U.cargarSimb();
+    U.dlg('<h2>Cifras de 12 meses con una IA</h2><p class="small mut">Vale con cualquier IA (Claude, ChatGPT, Gemini…). La IA solo copia los últimos trimestres y la app hace la suma. Las cifras quedan marcadas «IA, sin verificar».</p>' +
+      '<div class="f2">' + U.campo('ia-sym', 'Símbolo en Yahoo (ej. VID.MC)', sym0) + '<div><label for="ia-modo">Mi IA…</label><select id="ia-modo"><option value="pegar">no puede abrir páginas (pego yo el texto)</option><option value="nav">puede abrir páginas web</option></select></div></div>' +
+      '<div id="ia-ayuda" class="small" style="margin:6px 0"></div><textarea id="ia-p" rows="7" readonly></textarea><div class="acts"><button class="btn sec" id="ia-copy">Copiar texto</button></div>' +
+      '<label for="ia-r">Respuesta de la IA (el JSON)</label><textarea id="ia-r" rows="6" placeholder="Pega aquí el JSON"></textarea><div id="ia-err" class="alert bad" style="display:none"></div>' +
       '<div class="acts"><button class="btn sec" id="ia-vuelve">Volver</button><button class="btn" id="ia-ok">Usar estas cifras</button></div>', dd => {
+      const pintar = () => { const modo = dd.querySelector('#ia-modo').value, sym = dd.querySelector('#ia-sym').value.trim() || sym0; dd.querySelector('#ia-p').value = promptIA(r, modo, sym);
+        dd.querySelector('#ia-ayuda').innerHTML = modo === 'pegar' ? '<b>Cómo hacerlo:</b> 1) abre estos enlaces, en cada uno Ctrl+A y Ctrl+C, y pega el texto debajo del mensaje en tu IA; 2) copia el texto de abajo y pégalo al principio; 3) pega aquí su respuesta.<br>' + (U.enlacesDatos ? U.enlacesDatos(sym, true).map(x => '<a href="' + esc(x.u) + '" target="_blank" rel="noopener">' + esc(x.n) + '</a>').join(' · ') : '') : '<b>Cómo hacerlo:</b> copia el texto de abajo, pégalo en tu IA (con navegación activada) y pega aquí su respuesta. Si dice que no puede abrir páginas, cambia a la otra opción.'; };
+      dd.querySelector('#ia-modo').onchange = pintar; dd.querySelector('#ia-sym').oninput = pintar; pintar();
       dd.querySelector('#ia-copy').onclick = () => { const t = dd.querySelector('#ia-p'); t.select(); try { navigator.clipboard.writeText(t.value); } catch (err) { document.execCommand && document.execCommand('copy'); } U.toast('Texto copiado'); };
       dd.querySelector('#ia-vuelve').onclick = () => vuelta();
       dd.querySelector('#ia-ok').onclick = () => {

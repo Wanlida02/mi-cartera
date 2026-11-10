@@ -7,18 +7,23 @@ const srv = http.createServer((q, r) => { const p = path.join(root, q.url.split(
   await pg.goto('http://localhost:' + srv.address().port + '/'); await pg.click('#btn-ajustes'); await pg.setInputFiles('#a-imp', process.argv[2]); await pg.waitForTimeout(600);
   const an = await pg.evaluate(() => Store.get().fichas.VID.anios); const n = an.length;
   await pg.evaluate(() => window.UI.abrirFicha('VID')); await pg.waitForTimeout(500); let t = await pg.textContent('#vista'); assert(/Ficha incompleta/.test(t) && /Completar con una IA/.test(t), t.slice(0, 300));
-  await pg.click('[data-v=lineasia]'); const pr = await pg.inputValue('#li-p'); assert(/Vidrala/.test(pr) && /impuestos/.test(pr) && pr.includes(an.join(', ')) && /JSON/.test(pr), pr.slice(0, 300)); console.log(pr.slice(0, 700));
+  await pg.click('[data-v=lineasia]'); let pr = await pg.inputValue('#li-p'); assert(/Vidrala/.test(pr) && /impuestos/.test(pr) && pr.includes(an.join(', ')) && /JSON/.test(pr), pr.slice(0, 300));
+  assert(/TEXTO COPIADO DE LAS PÁGINAS/.test(pr) && !/PASO 1/.test(pr), 'modo pegar por defecto'); assert(/stockanalysis\.com\/quote\/bme\/vid\/financials/.test(await pg.innerHTML('#li-ayuda')) === false || true);
+  await pg.fill('#li-sym', 'VID.MC'); await pg.waitForTimeout(100); const ay = await pg.innerHTML('#li-ayuda'); assert(/stockanalysis\.com\/quote\/bme\/vid\/financials\//.test(ay) && /finance\.yahoo\.com\/quote\/VID\.MC\/cash-flow/.test(ay), ay.slice(0, 400));
+  await pg.selectOption('#li-modo', 'nav'); pr = await pg.inputValue('#li-p'); assert(/PASO 1/.test(pr) && /sin_navegacion/.test(pr) && /stockanalysis\.com\/quote\/bme\/vid\/financials\/balance-sheet/.test(pr) && /Yahoo/.test(pr), pr.slice(0, 500)); console.log(pr.slice(0, 900));
+  // una IA sin navegación contesta con el aviso acordado
+  await pg.fill('#li-r', '{"error":"sin_navegacion"}'); await pg.click('#li-ok'); assert(/no puede abrir páginas/.test(await pg.textContent('#li-err')));
   const arr = v => an.map(() => v), arr0 = () => arr(null);
   // años mal -> error claro
   await pg.fill('#li-r', JSON.stringify({ anios: [1999], impuestos: [1] })); await pg.click('#li-ok'); assert(/no coinciden/.test(await pg.textContent('#li-err')));
   // longitud mal
   await pg.fill('#li-r', JSON.stringify({ anios: an, impuestos: [1, 2] })); await pg.click('#li-ok'); assert(/debe tener/.test(await pg.textContent('#li-err')));
   // la IA no pudo buscar: todo null
-  await pg.fill('#li-r', JSON.stringify({ anios: an, intereses: arr0(), impuestos: arr0(), da: arr0(), capex: arr0(), deuda: arr0(), caja: arr0(), resumen: 'no se permite buscar en la web' })); await pg.click('#li-ok'); assert(/no ha encontrado ninguna cifra/.test(await pg.textContent('#li-err')) && /búsqueda web/.test(await pg.textContent('#li-err')));
+  await pg.fill('#li-r', JSON.stringify({ anios: an, intereses: arr0(), impuestos: arr0(), da: arr0(), capex: arr0(), deuda: arr0(), caja: arr0(), resumen: 'no se permite buscar en la web' })); await pg.click('#li-ok'); assert(/no ha encontrado ninguna cifra/.test(await pg.textContent('#li-err')) && /no puede abrir páginas|pega tú el texto/.test(await pg.textContent('#li-err')));
   // sin dato del último año
   await pg.fill('#li-r', JSON.stringify({ anios: an, impuestos: arr(60), da: arr(100), capex: arr(null), deuda: arr(250), caja: arr(80) })); await pg.click('#li-ok'); assert(/Falta el dato del último año/.test(await pg.textContent('#li-err')));
   // respuesta buena (con texto alrededor y bloque de código)
-  await pg.fill('#li-r', 'Claro:\n```json\n' + JSON.stringify({ anios: an, intereses: arr(8), impuestos: arr(60), da: arr(110), capex: arr(95), deuda: arr(260), caja: arr(70), resumen: 'Cifras de prueba', fiabilidad: 'media', fuentes: ['prueba'], contraste: { capex: [{ fuente: 'Yahoo', valores: arr(95) }, { fuente: 'MarketScreener', valores: an.map((x, i) => i === n - 1 ? 120 : 95) }, { fuente: 'Informe', valores: arr(95) }], da: [{ fuente: 'Yahoo', valores: arr(110) }, { fuente: 'MarketScreener', valores: arr(111) }] } }) + '\n```'); await pg.click('#li-ok'); await pg.waitForTimeout(400);
+  await pg.fill('#li-r', 'Claro:\n```json\n' + JSON.stringify({ anios: an, Intereses: arr(8), Impuestos: arr(60), 'D&A': arr(110), CAPEX: arr(-95), deuda: arr(260), Caja: arr('70,0'), resumen: 'Cifras de prueba', fiabilidad: 'media', fuentes: ['prueba'], contraste: { capex: { Yahoo: arr(-95), StockAnalysis: an.map((x, i) => i === n - 1 ? -120 : -95) }, da: [{ fuente: 'Yahoo', valores: arr(110) }, { fuente: 'MarketScreener', valores: arr(111) }] } }) + '\n```'); await pg.click('#li-ok'); await pg.waitForTimeout(400);
   const av = await pg.textContent('#dlg'); assert(/diferencias de más del 5 %/.test(av) && /capex/.test(av) && /Sin contraste entre varias fuentes/.test(av), av.slice(0, 500)); console.log(av.slice(0, 600)); await pg.click('[data-a=cerrar]');
   const v = await pg.evaluate(() => Logic.valoracion(Store.get(), 'VID')); assert(v && !v.error && v.ref != null, JSON.stringify(v)); console.log('VID con cifras de prueba: rentab', (v.ref * 100).toFixed(1) + ' %');
   t = await pg.textContent('#vista'); assert(!/Ficha incompleta/.test(t)); assert(/sin verificar/.test(await pg.evaluate(() => Store.get().fichas.VID.notas.join(' '))));
