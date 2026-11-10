@@ -68,6 +68,48 @@
     U.guardar({ ok: true, msg: 'Añadido ' + y + ' a ' + tk + ' desde la SEC' });
   }
 
+
+  /* ───── Completar con una IA las líneas que faltan de una ficha borrador (intereses, impuestos, amortización, capex, deuda, caja) ───── */
+  const LINEAS_IA = ['intereses', 'impuestos', 'da', 'capex', 'deuda', 'caja'];
+  function promptLineas(tk) {
+    const f = D().fichas[tk], h = f.hist, an = f.anios || [], r1 = x => (isN(x) ? Math.round(x * 10) / 10 : null), fila = k => JSON.stringify((h[k] || []).map(r1));
+    return 'Necesito completar las cuentas de ' + (f.nombre || tk) + ' (ticker ' + tk + ', divisa ' + (f.divisa || '') + ') para los años ' + an.join(', ') + '. Busca en internet los informes anuales (cuentas consolidadas) y contrástalos con páginas financieras de prestigio (Yahoo Finance, MarketScreener, Investing.com, Morningstar, TIKR, la web de relación con inversores…). Si un dato no aparece o las fuentes no coinciden, pon null y dilo en "resumen"; NO inventes ni estimes.\n\n' +
+      'YA TENGO (millones de ' + (f.divisa || '') + ', un valor por año en el mismo orden): ventas ' + fila('ventas') + ' · EBIT ' + fila('ebit') + ' · beneficio neto ' + fila('ni_reportado') + '.\n\n' +
+      'NECESITO, en millones de ' + (f.divisa || 'la misma divisa') + ', VALORES POSITIVOS, un valor por cada año [' + an.join(', ') + '] en ese orden:\n' +
+      '- intereses: gasto financiero neto (intereses pagados − ingresos financieros).\n- impuestos: gasto por impuesto sobre beneficios de la cuenta de resultados.\n- da: amortizaciones y depreciaciones totales (incluye derechos de uso si los hay).\n- capex: inversión bruta en inmovilizado material e intangible (flujo de caja de inversión), sin adquisiciones de empresas.\n- deuda: deuda financiera bruta a cierre (corto + largo plazo), SIN pasivos por arrendamientos.\n- caja: efectivo y equivalentes + inversiones financieras temporales a cierre.\n' +
+      '- opcionales: "leases_deuda" (pasivos por arrendamientos a cierre) y "minoritarios" (resultado atribuible a minoritarios), si existen.\n\n' +
+      'DEVUELVE SOLO ESTE JSON (sin texto antes ni después):\n{"anios":[' + an.join(',') + '],"intereses":[],"impuestos":[],"da":[],"capex":[],"deuda":[],"caja":[],"leases_deuda":[],"minoritarios":[],"resumen":"qué no encontraste o dudas","fiabilidad":"alta|media|baja","fuentes":["url o nombre de cada fuente"]}';
+  }
+  function aplicarLineas(tk, txt) {
+    const f = D().fichas[tk], an = (f.anios || []).map(Number), n = an.length, m = /\{[\s\S]*\}/.exec(txt || ''); if (!m) throw new Error('No encuentro el JSON en lo que has pegado.');
+    let j; try { j = JSON.parse(m[0]); } catch (e) { throw new Error('El JSON no es válido (' + e.message + ').'); }
+    const num = x => (isN(x) ? x : typeof x === 'string' && x.trim() !== '' && isFinite(Number(x.replace(',', '.'))) ? Number(x.replace(',', '.')) : null), nuevo = {}, av = [];
+    if (Array.isArray(j.anios) && j.anios.length && (j.anios.length !== n || j.anios.some((a, i) => Number(a) !== an[i]))) throw new Error('Los años no coinciden con los de la ficha (' + an.join(', ') + '). Pídele a la IA que use exactamente esos años y en ese orden.');
+    LINEAS_IA.concat(['leases_deuda', 'minoritarios']).forEach(k => { const a = j[k]; if (a == null) return; if (!Array.isArray(a) || a.length !== n) throw new Error('«' + k + '» debe tener ' + n + ' valores (uno por año), pone ' + (Array.isArray(a) ? a.length : 'otra cosa') + '.'); nuevo[k] = a.map(num); });
+    const ult = k => nuevo[k] && isN(nuevo[k][n - 1]);
+    const faltan = ['impuestos', 'da', 'capex', 'deuda', 'caja'].filter(k => !(f.hist[k] && isN((f.hist[k] || [])[n - 1])) && !ult(k));
+    if (faltan.length) throw new Error('Falta el dato del último año (' + an[n - 1] + ') de: ' + faltan.join(', ') + '. Sin eso no se puede valorar; prueba con otra fuente o ponlo a mano.');
+    if (!nuevo.intereses && !(f.hist.intereses && f.hist.intereses.some(isN))) { nuevo.intereses = Array(n).fill(null); av.push('Sin intereses: se toman como 0 (si la empresa tiene deuda importante, ponlos a mano).'); }
+    const v0 = f.hist.ventas[n - 1];
+    if (isN(v0) && v0 > 0) ['capex', 'da'].forEach(k => { const x = nuevo[k] && nuevo[k][n - 1]; if (isN(x) && x / v0 > 0.4) av.push('«' + k + '» del último año es ' + Math.round(x / v0 * 100) + ' % de las ventas: comprueba unidades y signo.'); });
+    Object.keys(nuevo).forEach(k => { f.hist[k] = nuevo[k]; });
+    ['minoritarios', 'otros', 'leases', 'leases_deuda'].forEach(k => { if (!Array.isArray(f.hist[k])) f.hist[k] = Array(n).fill(0); });
+    ['equity', 'goodwill'].forEach(k => { if (!Array.isArray(f.hist[k])) f.hist[k] = Array(n).fill(null); });
+    f.notas = (f.notas || []).concat(['Líneas completadas por IA desde webs de datos el ' + hoy() + ' (sin verificar con el informe anual): ' + Object.keys(nuevo).join(', ') + '.' + (j.resumen ? ' ' + String(j.resumen) : '') + (Array.isArray(j.fuentes) && j.fuentes.length ? ' Fuentes: ' + j.fuentes.map(String).join(' · ') + '.' : '')]);
+    f.fecha_datos = hoy(); return { av, fiab: String(j.fiabilidad || '') };
+  }
+  function lineasIA(tk, aviso) {
+    const f = D().fichas[tk]; if (!f) return;
+    U.dlg('<h2>Completar ' + esc(tk) + ' con una IA</h2><p class="small mut">1) Copia el texto y pégalo en una IA con búsqueda web (Claude, ChatGPT, Gemini…). 2) Pega aquí su respuesta (el JSON). Las cifras quedan anotadas como «sin verificar»: contrástalas con el informe anual antes de decidir nada.</p>' +
+      '<textarea id="li-p" rows="7" readonly>' + esc(promptLineas(tk)) + '</textarea><div class="acts"><button class="btn sec" id="li-copy">Copiar texto</button></div>' +
+      '<label for="li-r">Respuesta de la IA</label><textarea id="li-r" rows="6" placeholder="Pega aquí el JSON"></textarea><div id="li-err" class="alert bad" style="display:none"></div>' + (aviso ? '<div class="alert warn">' + esc(aviso) + '</div>' : '') +
+      '<div class="acts"><button class="btn sec" data-a="cerrar">Cancelar</button><button class="btn" id="li-ok">Usar estas cifras</button></div>', dd => {
+      dd.querySelector('#li-copy').onclick = () => { const t = dd.querySelector('#li-p'); t.select(); try { navigator.clipboard.writeText(t.value); } catch (e) { document.execCommand && document.execCommand('copy'); } U.toast('Texto copiado'); };
+      dd.querySelector('#li-ok').onclick = () => { try { const o = aplicarLineas(tk, dd.querySelector('#li-r').value); U.guardar({ ok: true, msg: 'Ficha completada' + (o.av.length ? ' · ' + o.av[0] : '') }); } catch (e) { const b = dd.querySelector('#li-err'); b.style.display = ''; b.textContent = e.message; } };
+    });
+  }
+  U._lineasIA = { promptLineas, aplicarLineas };
+
   /* ───── Lista ───── */
   function vistaLista() {
     const d = D(), a = d.ajustes, q = L.norm(filtro), ks = Object.keys(d.fichas).filter(k => !q || L.norm(k + ' ' + (d.fichas[k].nombre || '')).includes(q));
@@ -102,7 +144,7 @@
     try { ESC.forEach(s => { sc[s] = escDe(f, s); R = R || {}; R[s] = V.proyectar(f, sc[s]); }); fi = V.fiabilidad(f, hoy()); act = V.actuales(f); }
     catch (e) {
       const falta = L.lineasFaltantes(f); cargarSEC(); const sd0 = secDe(sel, f);
-      return h + '<h2 style="margin:12px 0 4px">' + esc(sel) + ' — ' + esc(f.nombre || '') + '</h2><div class="alert warn" style="margin-top:10px">' + (falta.length ? '<b>Ficha incompleta.</b> Es un borrador y le faltan: ' + esc(falta.join(', ')) + '. Con esas líneas el motor no puede valorar la empresa.' : 'No se pudo calcular: ' + esc(e.message)) + (sd0 && sd0.completar ? '<br>La SEC tiene las cuentas completas de ' + esc(sel) + ': <button class="btn sm" data-v="nuevoej">Completar con los datos de la SEC</button>' : falta.length ? '<br>Complétalas en «Revisar datos» (intereses, impuestos, amortización, capex, deuda y caja de cada año; las tienes en el informe anual) o pídelas a una IA.' : '') + '</div><div class="tools"><button class="btn sec sm" data-v="datos">Revisar datos</button></div>' + acciones(f);
+      return h + '<h2 style="margin:12px 0 4px">' + esc(sel) + ' — ' + esc(f.nombre || '') + '</h2><div class="alert warn" style="margin-top:10px">' + (falta.length ? '<b>Ficha incompleta.</b> Es un borrador y le faltan: ' + esc(falta.join(', ')) + '. Con esas líneas el motor no puede valorar la empresa.' : 'No se pudo calcular: ' + esc(e.message)) + (sd0 && sd0.completar ? '<br>La SEC tiene las cuentas completas de ' + esc(sel) + ': <button class="btn sm" data-v="nuevoej">Completar con los datos de la SEC</button>' : falta.length ? '<br>Pídeselas a una IA con búsqueda web (te preparo el texto) o complétalas a mano en «Revisar datos»: <button class="btn sm" data-v="lineasia">Completar con una IA</button>' : '') + '</div><div class="tools"><button class="btn sec sm" data-v="datos">Revisar datos</button></div>' + acciones(f);
     }
     const cons = R.conservador, ref5 = cons.cagr[5].ref, pe = V.precioEntrada(f, cons, o / 100), pt = V.precioEntrada(f, cons, m / 100);
     cargarSEC(); const sd = secDe(sel, f);
@@ -224,6 +266,7 @@
     else if (a === 'precio') precioDlg();
     else if (a === 'datos') datosDlg();
     else if (a === 'nuevoej') nuevoEjercicio(sel);
+    else if (a === 'lineasia') lineasIA(sel);
     else if (a === 'reset') { delete d.fichas[sel].escenarios; Store.save(); restore(() => {}); U.toast('Supuestos restablecidos'); }
     else if (a === 'estado') { const f = d.fichas[sel], e0 = estadoDe(sel); if (e0 === 'cartera') U.toast('Está en tu cartera: se gestiona en la pestaña Cartera'); else { if (e0 === 'candidata') delete f.estado; else f.estado = 'candidata'; Store.save(); restore(() => {}); } }
     else if (a === 'copiar') { const t2 = JSON.stringify(d.fichas[sel], null, 1); (navigator.clipboard ? navigator.clipboard.writeText(t2) : Promise.reject()).then(() => U.toast('Ficha copiada'), () => U.toast('No se pudo copiar')); }
