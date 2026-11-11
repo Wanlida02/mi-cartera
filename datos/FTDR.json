@@ -1,0 +1,297 @@
+{
+ "ticker": "FTDR",
+ "nombre": "Frontdoor, Inc.",
+ "cik": "0001727263",
+ "divisa": "USD",
+ "generado": "2026-11-11T16:10:08.809Z",
+ "fuente": "SEC EDGAR (XBRL, 10-K)",
+ "anios": [
+  2016,
+  2017,
+  2018,
+  2019,
+  2020,
+  2021,
+  2022,
+  2023,
+  2024,
+  2025
+ ],
+ "hist": {
+  "ventas": [
+   1020,
+   1157,
+   1258,
+   1365,
+   1474,
+   1602,
+   1662,
+   1780,
+   1843,
+   2093
+  ],
+  "ebit": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "da": [
+   null,
+   17,
+   21,
+   24,
+   34,
+   35,
+   34,
+   37,
+   39,
+   89
+  ],
+  "intereses": [
+   null,
+   1,
+   23,
+   62,
+   57,
+   39,
+   31,
+   40,
+   40,
+   79
+  ],
+  "impuestos": [
+   71,
+   60,
+   42,
+   51,
+   37,
+   39,
+   22,
+   57,
+   74,
+   84
+  ],
+  "minoritarios": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "otros": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "acciones": [
+   84.5,
+   84.5,
+   84.7,
+   84.9,
+   85.5,
+   85.5,
+   82,
+   80.9,
+   78,
+   74.5
+  ],
+  "capex": [
+   11,
+   15,
+   27,
+   22,
+   32,
+   31,
+   40,
+   32,
+   39,
+   26
+  ],
+  "leases": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "caja": [
+   168,
+   307,
+   305,
+   435,
+   597,
+   262,
+   292,
+   325,
+   436,
+   566
+  ],
+  "deuda": [
+   null,
+   9,
+   984,
+   980,
+   975,
+   625,
+   609,
+   594,
+   1199,
+   1173
+  ],
+  "leases_deuda": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "goodwill": [
+   471,
+   476,
+   476,
+   501,
+   512,
+   512,
+   503,
+   503,
+   967,
+   959
+  ],
+  "equity": [
+   560,
+   661,
+   -344,
+   -179,
+   -61,
+   2,
+   61,
+   136,
+   239,
+   242
+  ],
+  "ni_reportado": [
+   124,
+   160,
+   125,
+   153,
+   112,
+   128,
+   71,
+   171,
+   235,
+   255
+  ],
+  "fco": [
+   155,
+   194,
+   189,
+   200,
+   207,
+   185,
+   142,
+   202,
+   270,
+   416
+  ],
+  "sbc": [
+   4,
+   4,
+   4,
+   9,
+   17,
+   25,
+   22,
+   26,
+   26,
+   34
+  ],
+  "dividendos": [
+   87,
+   63,
+   137,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "recompras": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   103,
+   59,
+   121,
+   161,
+   283
+  ],
+  "bpa": [
+   1.47,
+   1.9,
+   1.47,
+   1.8,
+   1.31,
+   1.5,
+   0.87,
+   2.12,
+   3.01,
+   3.42
+  ]
+ },
+ "ttm": {
+  "fin": "2026-09-30",
+  "ventas": 2184,
+  "ni_reportado": 284,
+  "da": 83
+ },
+ "ultimo_ejercicio": {
+  "anio": 2025,
+  "fin": "2025-12-31"
+ },
+ "precio": {
+  "precio": 96.64,
+  "divisa": "USD",
+  "fecha": "2026-11-11"
+ },
+ "notas": [
+  "Datos automáticos de la SEC (XBRL de los 10-K). Revísalos contra el informe anual antes de decidir: pueden faltar líneas o haber reexpresiones.",
+  "Caja = efectivo + inversiones a corto plazo; deuda = deuda financiera (sin arrendamientos). Intereses = gasto bruto (no netos de ingresos). Minoritarios, otros y arrendamientos van a 0 o sin dato: complétalos si importan.",
+  "Líneas sin datos en la SEC: ebit."
+ ],
+ "faltan": [
+  "ebit"
+ ]
+}
