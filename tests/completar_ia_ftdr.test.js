@@ -27,5 +27,8 @@ const srv = http.createServer((q, r) => { const p = path.join(root, q.url.split(
   await pg.click('#ia-ok'); await pg.waitForTimeout(300);
   r = await pg.evaluate(() => { const f = Store.get().fichas.FTDR; return { an: f && f.anios, base: f && f.anio_base, ebit: f && f.hist.ebit }; });
   assert.deepEqual(r.an, [2020, 2021, 2022, 2023, 2024, 2025, 2026], JSON.stringify(r)); assert.equal(r.base, 2026); assert.equal(r.ebit[6], 410);
+  // releer el índice (Drive lo sustituye entero) no borra lo que aportó la IA: está aparte y se superpone
+  const m = await pg.evaluate(() => { const d = Store.get(), o = d.informes; d.informes = JSON.parse(JSON.stringify(o)); d.informes.empresas[0].datos.anios = [2020, 2021, 2022, 2023, 2024, 2025]; const e = Logic.informes(d).lista.find(x => x.carpeta === 'Frontdoor'); return { an: e.datos.anios, ebit: e.datos.metricas['Beneficio operativo (EBIT)'], v: e.datos.metricas['Ventas'] }; });
+  assert.deepEqual(m.an, [2020, 2021, 2022, 2023, 2024, 2025, 2026]); assert.equal(m.ebit[6], 410); assert.equal(m.v[0], 1600);
   assert.deepEqual(errs, []); console.log('completar_ia_ftdr ok'); await b.close(); srv.close();
 })().catch(e => { console.error('FALLO', e.message); process.exit(1); });

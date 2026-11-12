@@ -308,21 +308,19 @@
         try { o0 = JSON.parse(txt.slice(i, j + 1)); } catch (err) { return U.avisoDlg('No encuentro un JSON válido en la respuesta. Pide a la IA «solo el JSON» y vuelve a pegarlo.'); }
         if (o0.error === 'sin_navegacion') return U.avisoDlg('Tu IA dice que no puede abrir páginas. Cambia a «no navega», copia el texto de las páginas y pégalo con el mensaje.');
         const o = {}; Object.keys(o0).forEach(k => { const c = METR_IA.find(m => NORM_IA(m) === NORM_IA(k)) || ALIAS_IA[NORM_IA(k)]; if (c) o[c] = o0[k]; });
-        const nuevo = Object.assign({}, dt, { divisa: div, anios, metricas: {} }), ia = [], cambios = [];
-        Object.keys(M).forEach(k => { nuevo.metricas[k] = (M[k] || []).slice(); while (nuevo.metricas[k].length < n) nuevo.metricas[k].push(null); });
+        const fills = {}, ia = [], cambios = [], hay = (k, p) => NUM_IA(serie(k)[p]);
         METR_IA.forEach(k => {
           const a0 = o[k]; if (!Array.isArray(a0)) return; const a = a0.length === n ? a0 : a0.length === base.length ? a0.concat(extra ? [null] : []) : null; if (!a) return;
-          const cur = nuevo.metricas[k] || (nuevo.metricas[k] = anios.map(() => null)); let puesto = false;
-          anios.forEach((y, p) => { if (!NUM_IA(a[p])) return; if (NUM_IA(cur[p])) { if (cur[p] !== 0 && Math.abs(a[p] - cur[p]) / Math.abs(cur[p]) > 0.05) cambios.push(k + ' ' + y + ': tú ' + cur[p] + ' · IA ' + a[p]); } else { cur[p] = a[p]; puesto = true; } });
-          if (puesto) ia.push(k);
+          anios.forEach((y, p) => { if (!NUM_IA(a[p])) return; const cur = serie(k)[p]; if (NUM_IA(cur)) { if (cur !== 0 && Math.abs(a[p] - cur) / Math.abs(cur) > 0.05) cambios.push(k + ' ' + y + ': tú ' + cur + ' · IA ' + a[p]); } else (fills[k] = fills[k] || {})[y] = a[p]; });
         });
-        if (extra && !CORE_IA.every(k => NUM_IA((nuevo.metricas[k] || [])[n - 1]))) {   // el ejercicio nuevo no está completo: se descarta
-          nuevo.anios = base; Object.keys(nuevo.metricas).forEach(k => { nuevo.metricas[k] = nuevo.metricas[k].slice(0, base.length); });
-          const sob = ia.filter(k => !base.some((y, p) => NUM_IA(nuevo.metricas[k][p]) && !NUM_IA(M[k] && M[k][p]))); sob.forEach(k => ia.splice(ia.indexOf(k), 1));
-        } else if (extra) e.ultimo_anio = extra;
+        if (extra && !CORE_IA.every(k => hay(k, n - 1) || NUM_IA((fills[k] || {})[extra]))) Object.keys(fills).forEach(k => { delete fills[k][extra]; });   // el ejercicio nuevo no está completo: se descarta
+        Object.keys(fills).forEach(k => { if (Object.keys(fills[k]).length) ia.push(k); else delete fills[k]; });
         if (!ia.length) return U.avisoDlg('La respuesta no trae ninguna cifra nueva utilizable' + (extra ? ' (si traía solo ' + extra + ' incompleto, se descarta: hacen falta ventas, EBIT, beneficio neto y BPA).' : '.'));
-        nuevo.ia = (dt.ia || []).concat(ia); const orig = ((D().informes || {}).empresas || []).find(x => x.carpeta === e.carpeta); e.datos = nuevo; if (orig) orig.datos = nuevo;
-        const f = DatosWeb.aFichaInformes(e, hoy()); if (!f) return U.avisoDlg('Aún faltan: ' + DatosWeb.faltanInformes(e).join(', ') + '. Se han guardado las cifras recibidas; pide el resto a la IA o complétalas a mano.') || Store.save();
+        /* Las cifras de IA se guardan APARTE (informes_manual) y se superponen al CSV de la carpeta: sobreviven a releer el índice y, cuando el CSV traiga el dato oficial, este manda. */
+        const dd0 = D(); dd0.informes_manual = dd0.informes_manual || {}; const man = dd0.informes_manual[e.carpeta] = dd0.informes_manual[e.carpeta] || { divisa: div, metricas: {} };
+        Object.keys(fills).forEach(k => { man.metricas[k] = Object.assign(man.metricas[k] || {}, fills[k]); }); man.actualizado = hoy();
+        Store.save(); const e2 = (L.informes(dd0).lista || []).find(x => x.carpeta === e.carpeta) || e;
+        const f = DatosWeb.aFichaInformes(e2, hoy()); if (!f) return U.avisoDlg('Aún faltan: ' + DatosWeb.faltanInformes(e2).join(', ') + '. Se han guardado las cifras recibidas; pide el resto a la IA o complétalas a mano.');
         f.notas.push('Cifras completadas por IA desde webs de datos (sin verificar): ' + ia.join(', ') + '.'); if (cambios.length) f.notas.push('La IA discrepa de tus informes (no cambiado): ' + cambios.join('; ') + '.');
         const tras = [o0.fuentes, o0.discrepancias].filter(x => typeof x === 'string' && x).join(' · ') || txt.slice(j + 1).trim().replace(/```/g, '').slice(0, 800); if (tras) f.notas.push('Fuentes y discrepancias según la IA: ' + String(tras).slice(0, 800)); f.fuentes.push('IA (sin verificar)'); ia.forEach(k => { const m = { 'Ventas': 'ventas', 'Beneficio operativo (EBIT)': 'ebit', 'Beneficio neto': 'ni_reportado', 'BPA diluido': 'bpa' }[k]; if (m) f.conf[m] = 'E'; });
         const d = D(), tk = e.tk; if (!tk) return U.avisoDlg('Esta empresa no tiene ticker: vincúlala primero.');

@@ -284,8 +284,17 @@ const Logic = (function () {
 
   /* ───── Informes anuales: cruza el índice (indice_informes.json) con cartera y watchlist ───── */
   const baseTk = t => (t || '').toUpperCase().split('.')[0];
+  /* Cifras puestas a mano o por IA (d.informes_manual[carpeta] = {divisa, metricas:{métrica:{año:valor}}}) superpuestas al CSV: el CSV manda donde tiene dato */
+  function mezclarManual(dt, man) {
+    if (!man || !man.metricas) return dt;
+    const base = dt || {}, ba = (base.anios || []).map(Number), set = new Set(ba);
+    Object.keys(man.metricas).forEach(k => Object.keys(man.metricas[k]).forEach(y => set.add(Number(y))));
+    const an = Array.from(set).sort((a, b) => a - b), met = {}, ks = new Set(Object.keys(base.metricas || {}).concat(Object.keys(man.metricas)));
+    ks.forEach(k => { met[k] = an.map(y => { const i = ba.indexOf(y), v = i >= 0 ? ((base.metricas || {})[k] || [])[i] : null; if (isN(v)) return v; const m = man.metricas[k] && man.metricas[k][y]; return isN(m) ? m : null; }); });
+    return Object.assign({}, base, { divisa: base.divisa || man.divisa, anios: an, metricas: met, ia: Object.keys(man.metricas) });
+  }
   function informes(d, hoy) {
-    const idx = d.informes, anioHoy = Number((hoy || today()).slice(0, 4));
+    const man = d.informes_manual || {}, idx = d.informes && Array.isArray(d.informes.empresas) ? Object.assign({}, d.informes, { empresas: d.informes.empresas.map(e => (man[e.carpeta] ? Object.assign({}, e, { datos: mezclarManual(e.datos, man[e.carpeta]) }) : e)) }) : d.informes, anioHoy = Number((hoy || today()).slice(0, 4));
     if (!idx || !Array.isArray(idx.empresas)) return null;
     const enCartera = new Set(d.posiciones.map(p => tickerDe(d, p)).filter(Boolean));
     const lista = [], usados = new Set();
@@ -359,6 +368,6 @@ const Logic = (function () {
   }
 
   return { isN, today, clone, nuevoDatos, normalizar, norm, coreName, sameCompany, findExisting, tickerDe, fxPorEur, aEur, precioPos, costeEur, mercadoEur, valorEur, variacion, diasDesde,
-    compra, venta, editar, eliminar, borrarMov, reverseMov, precioManual, precioFicha, valoracion, contrastar, lineasFaltantes, revision, precioRef, pesos, dashboard, informes, V };
+    compra, venta, editar, eliminar, borrarMov, reverseMov, precioManual, precioFicha, valoracion, mezclarManual, contrastar, lineasFaltantes, revision, precioRef, pesos, dashboard, informes, V };
 })();
 if (typeof module !== 'undefined') module.exports = Logic;
