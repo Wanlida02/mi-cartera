@@ -3,7 +3,7 @@
  "nombre": "PERDOCEO EDUCATION CORP",
  "cik": "0001046568",
  "divisa": "USD",
- "generado": "2026-11-12T20:43:20.567Z",
+ "generado": "2026-11-12T20:47:42.186Z",
  "fuente": "SEC EDGAR (XBRL, 10-K)",
  "anios": [
   2016,
@@ -286,8 +286,7 @@
  "notas": [
   "Datos automáticos de la SEC (XBRL de los 10-K). Revísalos contra el informe anual antes de decidir: pueden faltar líneas o haber reexpresiones.",
   "Caja = efectivo + inversiones a corto plazo; deuda = deuda financiera (sin arrendamientos). Intereses = gasto bruto (no netos de ingresos). Minoritarios, otros y arrendamientos van a 0 o sin dato: complétalos si importan.",
-  "Deuda = 0: la SEC no registra deuda financiera y los intereses son menos del 5 % del EBIT. Confírmalo en el balance del informe anual.",
-  "Sin precio automático (fetch failed)."
+  "Deuda = 0: la SEC no registra deuda financiera y los intereses son menos del 5 % del EBIT. Confírmalo en el balance del informe anual."
  ],
  "faltan": []
 }

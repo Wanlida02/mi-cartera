@@ -3,7 +3,7 @@
  "nombre": "STERLING INFRASTRUCTURE, INC.",
  "cik": "0000874238",
  "divisa": "USD",
- "generado": "2026-11-09T19:48:47.044Z",
+ "generado": "2026-11-12T20:47:40.966Z",
  "fuente": "SEC EDGAR (XBRL, 10-K)",
  "anios": [
   2016,
@@ -282,11 +282,7 @@
   "anio": 2025,
   "fin": "2025-12-31"
  },
- "precio": {
-  "precio": 291.02,
-  "divisa": "USD",
-  "fecha": "2026-11-09"
- },
+ "precio": null,
  "notas": [
   "Datos automáticos de la SEC (XBRL de los 10-K). Revísalos contra el informe anual antes de decidir: pueden faltar líneas o haber reexpresiones.",
   "Caja = efectivo + inversiones a corto plazo; deuda = deuda financiera (sin arrendamientos). Intereses = gasto bruto (no netos de ingresos). Minoritarios, otros y arrendamientos van a 0 o sin dato: complétalos si importan.",

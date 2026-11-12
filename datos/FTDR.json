@@ -3,7 +3,7 @@
  "nombre": "Frontdoor, Inc.",
  "cik": "0001727263",
  "divisa": "USD",
- "generado": "2026-11-11T16:10:08.809Z",
+ "generado": "2026-11-12T20:47:41.520Z",
  "fuente": "SEC EDGAR (XBRL, 10-K)",
  "anios": [
   2016,
@@ -281,11 +281,7 @@
   "anio": 2025,
   "fin": "2025-12-31"
  },
- "precio": {
-  "precio": 96.64,
-  "divisa": "USD",
-  "fecha": "2026-11-11"
- },
+ "precio": null,
  "notas": [
   "Datos automáticos de la SEC (XBRL de los 10-K). Revísalos contra el informe anual antes de decidir: pueden faltar líneas o haber reexpresiones.",
   "Caja = efectivo + inversiones a corto plazo; deuda = deuda financiera (sin arrendamientos). Intereses = gasto bruto (no netos de ingresos). Minoritarios, otros y arrendamientos van a 0 o sin dato: complétalos si importan.",

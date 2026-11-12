@@ -1,9 +1,9 @@
 {
  "ticker": "MCD",
- "nombre": "McDONALD’S CORPORATION",
+ "nombre": "MCDONALDS CORP",
  "cik": "0000063908",
  "divisa": "USD",
- "generado": "2026-11-09T09:49:21.300Z",
+ "generado": "2026-11-12T20:47:34.098Z",
  "fuente": "SEC EDGAR (XBRL, 10-K)",
  "anios": [
   2016,

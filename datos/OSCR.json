@@ -3,7 +3,7 @@
  "nombre": "Oscar Health, Inc.",
  "cik": "0001568651",
  "divisa": "USD",
- "generado": "2026-11-06T16:14:47.598Z",
+ "generado": "2026-11-12T20:47:40.017Z",
  "fuente": "SEC EDGAR (XBRL, 10-K)",
  "anios": [
   2019,
@@ -205,11 +205,18 @@
    -1.69
   ]
  },
- "precio": {
-  "precio": 30.66,
-  "divisa": "USD",
-  "fecha": "2026-11-06"
+ "ttm": {
+  "fin": "2026-09-30",
+  "ventas": 17471.947,
+  "ebit": 936.991,
+  "ni_reportado": 855.474,
+  "da": 27.472
  },
+ "ultimo_ejercicio": {
+  "anio": 2025,
+  "fin": "2025-12-31"
+ },
+ "precio": null,
  "notas": [
   "Datos automáticos de la SEC (XBRL de los 10-K). Revísalos contra el informe anual antes de decidir: pueden faltar líneas o haber reexpresiones.",
   "Caja = efectivo + inversiones a corto plazo; deuda = deuda financiera (sin arrendamientos). Intereses = gasto bruto (no netos de ingresos). Minoritarios, otros y arrendamientos van a 0 o sin dato: complétalos si importan.",
