@@ -23,7 +23,7 @@
   function cargarSEC() { if (SECR || secCarga) return; secCarga = true; fetch('datos/resumen.json', { cache: 'no-cache' }).then(r => (r.ok ? r.json() : null)).then(j => { SECR = (j && j.empresas) || {}; U.render(); }).catch(() => { SECR = {}; }); }
   /* Para una ficha: ejercicio nuevo publicado y factor de 12 meses (EBIT 12 meses / EBIT del mismo ejercicio en la SEC) */
   function secSEC(tk, f) {
-    const e = SECR && SECR[tk]; if (!e || e.error || !f || f.divisa !== 'USD') return null;
+    const e = SECR && SECR[tk]; if (!e || e.error || !f || f.divisa !== 'USD' || V.isFin(f)) return null;   // los bancos tienen otras líneas: no se mezclan con los datos de empresa de la SEC
     const out = { nombre: e.nombre };
     if (L.lineasFaltantes(f).length && !(f.tipo === 'reit')) out.completar = true;
     if (e.ultimo_ejercicio && e.ultimo_ejercicio.anio > f.anio_base) out.nuevo = e.ultimo_ejercicio.anio;
@@ -50,6 +50,7 @@
   /* Ejercicio nuevo desde datos/TICKER.json (SEC): se añaden los años que faltan a la ficha (o se sustituye si está muy desfasada) */
   async function nuevoEjercicio(tk) {
     const d = D(), f = d.fichas[tk]; let j;
+    if (V.isFin(f)) return U.toast('Los bancos y financieras no se actualizan automáticamente desde la SEC: edita los datos a mano');
     try { const r = await fetch('datos/' + tk.replace(/[^A-Z0-9]/g, '_') + '.json', { cache: 'no-cache' }); j = r.ok ? await r.json() : null; } catch (e) { j = null; }
     if (!j || !j.anios) return U.toast('No encuentro los datos de la SEC de ' + tk);
     const nuevos = j.anios.filter(a => a > f.anio_base), inc = L.lineasFaltantes(f).length > 0;
@@ -175,8 +176,10 @@
     if (!V.soportado(f)) return h + '<div class="alert warn" style="margin-top:10px">Este tipo de empresa (REIT) no está soportado por el método de valoración.</div>' + acciones(f);
     if (!isN(f.precio)) return h + '<h2 style="margin:12px 0 4px">' + esc(sel) + ' — ' + esc(f.nombre || '') + '</h2><div class="alert warn" style="margin-top:10px">La ficha no tiene precio. Ponlo y revisa los datos para ver la valoración.</div><div class="tools"><button class="btn" data-v="precio">Poner precio</button></div>' + acciones(f);
     let R, fi, act; const sc = {};
-    try { ESC.forEach(s => { sc[s] = escDe(f, s); R = R || {}; R[s] = V.proyectar(f, sc[s]); }); fi = V.fiabilidad(f, hoy()); act = V.actuales(f); }
+    try { if (f._borrador && !fin && f.tipo !== 'reit' && L.lineasFaltantes(f).some(x => x !== 'intereses')) throw new Error('ficha incompleta');   // un borrador sin deuda/caja/… no se valora: saldría inflado
+      ESC.forEach(s => { sc[s] = escDe(f, s); R = R || {}; R[s] = V.proyectar(f, sc[s]); }); fi = V.fiabilidad(f, hoy()); act = V.actuales(f); }
     catch (e) {
+      if (!(e && e.message === 'ficha incompleta')) console.warn('Valoración ' + sel + ':', e && e.stack || e);
       const falta = L.lineasFaltantes(f); cargarSEC(); const sd0 = secDe(sel, f);
       return h + '<h2 style="margin:12px 0 4px">' + esc(sel) + ' — ' + esc(f.nombre || '') + '</h2><div class="alert warn" style="margin-top:10px">' + (falta.length ? '<b>Ficha incompleta.</b> Es un borrador y le faltan: ' + esc(falta.join(', ')) + '. Con esas líneas el motor no puede valorar la empresa.' : 'No se pudo calcular: ' + esc(e.message)) + (sd0 && sd0.completar ? '<br>La SEC tiene las cuentas completas de ' + esc(sel) + ': <button class="btn sm" data-v="nuevoej">Completar con los datos de la SEC</button>' : falta.length ? '<br>Pídeselas a una IA con búsqueda web (te preparo el texto) o complétalas a mano en «Revisar datos»: <button class="btn sm" data-v="lineasia">Completar con una IA</button>' : '') + '</div>' + (U.enlaces ? U.enlaces(sel, 'val') : '') + '<div class="tools"><button class="btn sec sm" data-v="datos">Revisar datos</button></div>' + acciones(f);
     }
@@ -203,7 +206,6 @@
       (vm && !vm.sinBeneficio ? ' <b>¿Chollo ahora?</b> Con las cifras ' + (vm.doce ? 'de los últimos 12 meses (hasta ' + esc(vm.doce.fin) + ')' : 'del último año') + ' a sus múltiplos de siempre valdría ' + nf(vm.valor, 2) + ': cotiza ' + nf(Math.abs(vm.descuento) * 100, 0) + ' % ' + (vm.descuento >= 0 ? 'por debajo' : 'por encima') + '. Lectura a corto plazo: supone que esas cifras se mantienen y el múltiplo vuelve a su media.' +
         (vm.raro ? ' <span class="c-y">Ojo: su múltiplo de siempre es ' + nf(vm.ratioHist, 1) + ' veces el de hoy' + (vm.raro === 'alto' ? ' (años de rampa o de euforia en la media): la lectura exagera el chollo.' : ' (años más baratos en la media): la lectura exagera lo cara.') + '</span>' : '') : '') + '</p>' +
       (sd && sd.doce ? '<p class="small' + (Math.abs(sd.doce.de) > 0.25 ? ' c-y' : ' mut') + '" style="margin:6px 0 0"><b>Últimos 12 meses</b> (' + esc(sd.doce.fuente === 'SEC' ? 'SEC' : 'IA, sin verificar') + ', hasta ' + esc(sd.doce.fin) + '): ventas ' + nf(sd.doce.ventas, 0) + ' M' + (isN(sd.doce.dv) ? ' (' + (sd.doce.dv >= 0 ? '+' : '') + nf(sd.doce.dv * 100, 0) + ' %)' : '') + ', EBIT ' + (isN(sd.doce.ebit) && isN(sd.doce.de) ? nf(sd.doce.ebit, 0) + ' M (' + (sd.doce.de >= 0 ? '+' : '') + nf(sd.doce.de * 100, 0) + ' %)' : 'n/d') + ' frente a ' + sd.doce.anio + '.' + (Math.abs(sd.doce.de) > 0.25 ? ' El negocio se ha movido mucho desde el año base: el objetivo a 5 años parte de cifras desfasadas.' : '') + '</p>' : '') +
-      (sd && sd.completar && !sd.nuevo ? '<div class="alert warn" style="margin-top:8px">Esta ficha es un borrador (faltan ' + esc(L.lineasFaltantes(f).join(', ')) + ') y por eso no se puede valorar. La SEC tiene las cuentas completas de ' + esc(sel) + ': <button class="btn sm" data-v="nuevoej">Completar con los datos de la SEC</button></div>' : '') +
       (sd && sd.nuevo ? '<div class="alert warn" style="margin-top:8px">La SEC ya tiene el ejercicio ' + sd.nuevo + ' y esta ficha llega a ' + f.anio_base + '. <button class="btn sm" data-v="nuevoej">' + (sd.nuevo - f.anio_base > 1 || f.anio_base < 2020 ? 'Sustituir por los datos de la SEC' : 'Añadir ' + sd.nuevo + ' desde la SEC') + '</button></div>' : '') + '</div>' +
       '<div class="tools"><button class="btn sm" data-v="precio">Precio</button><button class="btn sec sm" data-v="datos">Editar datos</button><button class="btn sec sm" data-v="reset">Restablecer supuestos</button></div>';
     // escenarios
@@ -231,7 +233,7 @@
     h += sec('real', 'Control de realismo', al.length ? al.length + ' aviso(s)' : 'sin avisos', '<ul class="al crl">' + (al.length ? al.map(x => '<li class="cr s-' + x.n + '"><span class="bdg">' + ({ g: '✓', y: '!', r: '✕' }[x.n] || '!') + '</span><div>' + esc(x.txt) + '</div></li>').join('') : '<li class="cr s-g"><span class="bdg">✓</span><div>Los supuestos están dentro de lo que la empresa ha hecho.</div></li>') + extra + '</ul>');
     // fiabilidad
     h += sec('dat', 'Fiabilidad de los datos', fi.puntuacion + ' % · ' + fi.nivel, '<ul class="crl">' + (fi.avisos.length ? fi.avisos.map(x => '<li class="cr s-' + x.nivel + '"><span class="bdg">' + ({ g: '✓', y: '!', r: '✕' }[x.nivel] || '!') + '</span><div>' + esc(x.txt) + '</div></li>').join('') : '<li class="cr s-g"><span class="bdg">✓</span><div>Sin avisos.</div></li>') + '</ul>' +
-      (f.fecha_datos ? '<p class="small mut">Datos de ' + esc(f.fecha_datos) + (f.fuentes && f.fuentes.length ? ' · ' + esc(f.fuentes.join(', ')) : '') + '</p>' : '') + (Array.isArray(f.notas) && f.notas.length ? '<details><summary class="small">Notas de la ficha (' + f.notas.length + ')</summary><ul class="small">' + f.notas.map(n => '<li>' + esc(n) + '</li>').join('') + '</ul></details>' : ''));
+      (f.fecha_datos ? '<p class="small mut">Datos de ' + esc(f.fecha_datos) + (f.fuentes && f.fuentes.length ? ' · ' + esc(f.fuentes.map(x => (x && typeof x === 'object' ? (x.campo ? x.campo + ': ' : '') + String(x.fuente || '').split(':')[0].split(' (')[0] : String(x))).filter((x, i, a) => a.indexOf(x) === i).join(' · ')) : '') + '</p>' : '') + (Array.isArray(f.notas) && f.notas.length ? '<details><summary class="small">Notas de la ficha (' + f.notas.length + ')</summary><ul class="small">' + f.notas.map(n => '<li>' + esc(n) + '</li>').join('') + '</ul></details>' : ''));
     return h + (U.historialResultados ? U.historialResultados(sel) : '') + acciones(f);
   }
   const acciones = f => '<div class="tools" style="margin-top:12px"><button class="btn sec sm" data-v="estado">' + (estadoDe(sel) === 'cartera' ? 'Está en cartera' : estadoDe(sel) === 'candidata' ? 'Pasar a watchlist' : 'Marcar candidata') + '</button><button class="btn sec sm" data-v="copiar">Copiar ficha (JSON)</button><button class="btn sec sm" data-v="borrar">Eliminar ficha</button></div>';

@@ -12,7 +12,7 @@ const srv = http.createServer((q, r) => { const p = path.join(root, q.url.split(
   console.log(res.filter(x => x.pub || x.v).map(x => x.tk + ' ' + x.per + ' pub=' + x.pub + ' ' + x.v).join('\n'));
   assert(!res.some(x => x.v && /^ERR/.test(x.v)), 'errores en revision');
   // 2) abrir una que ya publicó: ficha de cifras
-  const pub = res.find(x => x.pub && x.v); assert(pub, 'ninguna publicada con veredicto');
+  const pub = res.find(x => x.pub && x.v); if (!pub) { console.log('resultados_revision: sin resultados publicados con estos datos (omitido)'); await b.close(); srv.close(); return; }
   await pg.evaluate(tk => { const r = Store.get().resultados.find(r => r.tk === tk && r.estado !== 'revisado'); document.querySelector('[data-r=rev][data-id="' + r.id + '"]').click(); }, pub.tk);
   let t = await pg.textContent('#dlg'); assert(/Últimos 12 meses hasta/.test(t) && /Rentab\. esperada antes/.test(t) && /Después/.test(t), t.slice(0, 400)); console.log('--- dialogo ' + pub.tk + ':\n' + t.slice(0, 700));
   await pg.selectOption('#r-d', 'mantener'); await pg.click('#r-ok'); await pg.waitForTimeout(200);

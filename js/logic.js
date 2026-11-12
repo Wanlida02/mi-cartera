@@ -221,7 +221,7 @@ const Logic = (function () {
     const f0 = d.fichas[tk]; if (!f0) return null;
     hoy = hoy || today();
     if (!V.soportado(f0)) return { tk, nombre: f0.nombre, noSoportado: true };
-    { const falta = f0._borrador ? lineasFaltantes(f0) : []; if (falta.length) return { tk, nombre: f0.nombre || tk, error: 'ficha incompleta: faltan ' + falta.join(', '), incompleta: falta }; }   // un borrador sin deuda/caja/… no se valora (saldría inflada)
+    { const falta = f0._borrador ? lineasFaltantes(f0).filter(x => x !== 'intereses') : []; if (falta.length) return { tk, nombre: f0.nombre || tk, error: 'ficha incompleta: faltan ' + falta.join(', '), incompleta: falta }; }   // un borrador sin deuda/caja/… no se valora (saldría inflada)
     try {
       const pf = precioFicha(d, tk), f = Object.assign({}, f0, { precio: pf.precio });
       if (!(pf.precio > 0)) return { tk, nombre: f0.nombre || tk, divisa: f0.divisa, error: 'sin precio de cotización (revisa el símbolo en simbolos.json y actualiza precios)', sinPrecio: true };
@@ -249,6 +249,7 @@ const Logic = (function () {
   const UMBRAL_DESV = 0.10, UMBRAL_REF = 0.015;
   function revision(d, tk, doce, hoy) {
     const f0 = d.fichas[tk]; if (!f0 || !doce || !V.soportado(f0) || !isN(doce.dv)) return null;
+    if (f0._borrador && !V.isFin(f0) && lineasFaltantes(f0).some(x => x !== 'intereses')) return { error: 'ficha incompleta: faltan ' + lineasFaltantes(f0).join(', '), incompleta: true };   // sin deuda/caja/… saldría inflada
     try {
       const pf = precioFicha(d, tk), f = Object.assign({}, f0, { precio: pf.precio });
       const esc = Object.assign({}, V.defaults(f).conservador, (f.escenarios || {}).conservador || {});

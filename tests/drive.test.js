@@ -1,6 +1,6 @@
 /* Prueba de sincronización con un Google Drive simulado: dos dispositivos (móvil y PC) comparten un archivo. */
 const { chromium } = require('playwright'), http = require('http'), fs = require('fs'), path = require('path'), assert = require('assert');
-const root = path.join(__dirname, '..'), datos = fs.readFileSync(process.argv[2], 'utf8');
+const root = path.join(__dirname, '..'), datos = fs.readFileSync(process.argv[2], 'utf8'), N = JSON.parse(datos).posiciones.length;   // posiciones del fichero que se importa
 const mime = { html: 'text/html', js: 'text/javascript', css: 'text/css', json: 'application/json', webmanifest: 'application/json', png: 'image/png', svg: 'image/svg+xml' };
 const srv = http.createServer((q, r) => { const p = path.join(root, q.url.split('?')[0].replace(/\/$/, '/index.html')); fs.readFile(p, (e, b) => { if (e) { r.writeHead(404); r.end(); } else { r.writeHead(200, { 'content-type': mime[p.split('.').pop()] || 'text/plain' }); r.end(b); } }); }).listen(0);
 const STUB = `window.google={accounts:{oauth2:{initTokenClient:c=>({requestAccessToken:()=>setTimeout(()=>c.callback({access_token:'tok',expires_in:3600}),10)}),revoke:(t,f)=>f&&f()}}};`;
@@ -29,16 +29,16 @@ const espera = ms => new Promise(r => setTimeout(r, ms));
   // 1) el móvil importa y conecta → se crea el archivo
   await movil.evaluate(t => { Store.importar(t); }, datos); await movil.reload();
   await movil.click('#btn-ajustes'); await movil.click('#dr-on'); await espera(600);
-  assert(file, 'se creó el archivo en Drive'); assert.equal(JSON.parse(file).posiciones.length, 33);
+  assert(file, 'se creó el archivo en Drive'); assert.equal(JSON.parse(file).posiciones.length, N);
   console.log('1 ok · estado móvil:', await movil.getAttribute('#btn-sync', 'class'));
   // 2) el PC conecta vacío → baja los datos
   await pc.click('#btn-ajustes'); await pc.click('#dr-on'); await espera(800);
-  assert.equal(await pc.evaluate(() => Store.get().posiciones.length), 33); console.log('2 ok · PC recibe 33 posiciones');
+  assert.equal(await pc.evaluate(() => Store.get().posiciones.length), N); console.log('2 ok · PC recibe ' + N + ' posiciones');
   // 3) el móvil registra una compra → sube; el PC al sincronizar la ve
   await movil.evaluate(() => { Logic.compra(Store.get(), { empresa: 'Prueba SA', broker: 'XTB', cantidad: 3, precio: 10, moneda: 'EUR' }); Store.save(); });
-  await espera(3500); assert.equal(JSON.parse(file).posiciones.length, 34); console.log('3 ok · compra del móvil subida');
+  await espera(3500); assert.equal(JSON.parse(file).posiciones.length, N + 1); console.log('3 ok · compra del móvil subida');
   await pc.click('#btn-ajustes'); await pc.click('#dr-now'); await espera(800);
-  assert.equal(await pc.evaluate(() => Store.get().posiciones.length), 34); console.log('3b ok · PC la recibe');
+  assert.equal(await pc.evaluate(() => Store.get().posiciones.length), N + 1); console.log('3b ok · PC la recibe');
   // 4) conflicto: los dos cambian a la vez → el segundo en subir debe preguntar, no pisar
   await pc.evaluate(() => { Logic.compra(Store.get(), { empresa: 'Solo PC', broker: 'XTB', cantidad: 1, precio: 5, moneda: 'EUR' }); Store.save(); });
   await espera(3500);   // el PC sube primero; el móvil aún no lo sabe
@@ -51,7 +51,7 @@ const espera = ms => new Promise(r => setTimeout(r, ms));
   // 5) precios automáticos no cuentan como edición
   const u0 = await pc.evaluate(() => Store.get().updatedAt); await pc.evaluate(() => Store.cargarPreciosAuto()); assert.equal(await pc.evaluate(() => Store.get().updatedAt), u0); console.log('5 ok');
   // 6) el índice de informes subido desde el PC (script) llega a la app sin tocar nada
-  inf = JSON.stringify({ version: 1, generado: '2026-10-27T17:00:00', empresas: [{ nombre: 'Linde', carpeta: 'x', ticker: 'LIN', documentos: [], datos: null }] });
+  inf = JSON.stringify({ version: 1, generado: '2030-01-01T17:00:00', empresas: [{ nombre: 'Linde', carpeta: 'x', ticker: 'LIN', documentos: [], datos: null }] });
   const u1 = await pc.evaluate(() => Store.get().updatedAt); await pc.click('#btn-ajustes'); await pc.click('#dr-now'); await espera(900);
   assert.equal(await pc.evaluate(() => Store.get().informes && Store.get().informes.empresas[0].nombre), 'Linde'); assert.equal(await pc.evaluate(() => Store.get().updatedAt), u1, 'no cuenta como edición'); console.log('6 ok');
   console.log(log.length, 'llamadas a Drive simuladas'); await b.close(); srv.close();

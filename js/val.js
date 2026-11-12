@@ -33,7 +33,7 @@ const Val = (function () {
   /* ---- Supuestos por defecto a partir del histórico (M14: conservador, "como mucho lo de los últimos años") ---- */
   /* Una ficha puede venir sin algunas líneas (p. ej. borradores de informes): se rellenan con nulos para que nada falle */
   function asegurar(f) {
-    const h = f.hist, n = (h.ventas || []).length;
+    const h = Object.assign({}, f.hist), n = (h.ventas || []).length;   // copia: no se toca la ficha (si no, lineasFaltantes dejaría de detectar las líneas ausentes)
     ['leases', 'leases_deuda', 'goodwill', 'equity', 'minoritarios', 'otros', 'impuestos', 'intereses', 'da', 'capex', 'caja', 'deuda', 'acciones', 'ebit', 'ebitda'].forEach(k => { if (!Array.isArray(h[k])) h[k] = Array(n).fill(null); });
     return h;
   }
