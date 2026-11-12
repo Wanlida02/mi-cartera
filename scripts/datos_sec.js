@@ -106,6 +106,12 @@ function construir(cf) {
     acciones: col('acciones'), capex: col('capex'), leases: anios.map(() => null), caja: suma('caja', 'inv_cp'), deuda: suma('deuda_lp', 'deuda_cp'), leases_deuda: anios.map(() => null),
     goodwill: col('goodwill'), equity: col('equity'), ni_reportado: col('ni_reportado'), fco: col('fco'), sbc: col('sbc'), dividendos: col('dividendos'), recompras: col('recompras'), bpa: col('bpa')
   };
+  /* Empresa sin deuda financiera: la SEC no trae ninguna etiqueta de deuda y los intereses son insignificantes (<5 % del EBIT los 3 últimos años con datos) → deuda 0 (se avisa en las notas) */
+  let sinDeuda = false;
+  if (hist.deuda.every(x => x == null)) {
+    const ult3 = anios.map((a, i) => i).slice(-3), peq = ult3.every(i => isN(hist.ebit[i]) && hist.ebit[i] > 0 && (hist.intereses[i] == null || hist.intereses[i] < 0.05 * hist.ebit[i]));
+    if (peq) { hist.deuda = anios.map(() => 0); sinDeuda = true; }
+  }
   /* Splits: las cifras antiguas por acción pueden no estar reexpresadas. Si las acciones saltan (>1,8x o <0,55x) entre dos años, se descartan acciones y BPA anteriores al salto */
   const avisosSplit = [];
   for (let i = anios.length - 1; i > 0; i--) {
@@ -120,6 +126,7 @@ function construir(cf) {
   const notas = ['Datos automáticos de la SEC (XBRL de los 10-K). Revísalos contra el informe anual antes de decidir: pueden faltar líneas o haber reexpresiones.',
     'Caja = efectivo + inversiones a corto plazo; deuda = deuda financiera (sin arrendamientos). Intereses = gasto bruto (no netos de ingresos). Minoritarios, otros y arrendamientos van a 0 o sin dato: complétalos si importan.'];
   avisosSplit.forEach(x => notas.push(x));
+  if (sinDeuda) notas.push('Deuda = 0: la SEC no registra deuda financiera y los intereses son menos del 5 % del EBIT. Confírmalo en el balance del informe anual.');
   if (faltan.length) notas.push('Líneas sin datos en la SEC: ' + faltan.join(', ') + '.');
   const t12 = {}; ['ventas', 'ebit', 'ni_reportado', 'da'].forEach(k => { const x = ttm(gaap, LINEAS[k]); if (x) t12[k] = x; });
   const finT = t12.ventas ? t12.ventas.fin : t12.ebit ? t12.ebit.fin : null;

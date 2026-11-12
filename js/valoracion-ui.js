@@ -70,6 +70,43 @@
   }
 
 
+
+  /* ───── Contrastar una ficha (de informes) con los datos de la SEC: dos fuentes que coinciden = línea verificada («A»); si difieren se enseña y eliges ───── */
+  const CRITL = [['ventas', 'Ventas'], ['ebit', 'EBIT'], ['da', 'Amortización'], ['impuestos', 'Impuestos'], ['acciones', 'Acciones (M)'], ['capex', 'Capex'], ['caja', 'Caja'], ['deuda', 'Deuda']];
+  async function contrasteSEC(tk) {
+    const d = D(), f = d.fichas[tk]; let j;
+    try { const r = await fetch('datos/' + tk.replace(/[^A-Z0-9]/g, '_') + '.json', { cache: 'no-cache' }); j = r.ok ? await r.json() : null; } catch (e) { j = null; }
+    if (!j || !j.anios || !j.hist) return U.toast('No hay datos de la SEC para ' + tk + ' (solo empresas de EE. UU.; el flujo semanal los genera)');
+    const an = (f.anios || []).map(Number), filas = [];
+    CRITL.forEach(([k, nom]) => {
+      const h = f.hist[k] || [], pares = [];
+      an.forEach((a, i) => { const x = h[i], y = (j.hist[k] || [])[j.anios.indexOf(a)]; if (isN(x) && isN(y)) pares.push({ a, x, y }); });
+      const ult = j.anios.length - 1, yS = (j.hist[k] || [])[ult], u3 = pares.slice(-3);
+      const dif = u3.map(p => Math.abs(p.x - p.y) / Math.max(Math.abs(p.x), Math.abs(p.y), 1e-9));
+      const fichaUlt = h[an.length - 1], sec = j.hist[k] && j.hist[k][j.anios.indexOf(an[an.length - 1])];
+      let est, conf = (f.conf || {})[k];
+      if (!isN(fichaUlt) && isN(sec)) est = 'falta'; else if (!isN(sec)) est = 'sin'; else if (u3.length >= 2 && dif.every(x => x <= 0.03)) est = 'coincide'; else if (u3.length) est = 'difiere'; else est = 'sin';
+      filas.push({ k, nom, est, informe: fichaUlt, sec, conf, an: an[an.length - 1], max: dif.length ? Math.max.apply(null, dif) : null, sube: k === 'caja' && est === 'difiere' && isN(sec) && isN(fichaUlt) && sec > fichaUlt });
+    });
+    const T = { coincide: ['ok', 'coinciden → verificada'], falta: ['warn', 'falta en tu ficha → usar la SEC'], difiere: ['bad', 'difieren'], sin: ['', 'sin dato en la SEC'] };
+    U.dlg('<h2>Contrastar ' + esc(tk) + ' con la SEC</h2><p class="small mut">Compara tu ficha (de los informes) con las cuentas de la SEC de los últimos años. Si coinciden, la línea pasa a «verificada» y sube la fiabilidad. Marca las que quieras sustituir por el dato de la SEC.</p><p class="small mut">Aviso: si los informes de esta empresa también se leyeron del XBRL de la SEC, coincidir confirma que se leyeron bien, pero no es una fuente independiente.</p>' +
+      '<div class="tw"><table class="tbl"><thead><tr><th></th><th>Línea</th><th>Ficha ' + an[an.length - 1] + '</th><th>SEC</th><th>Resultado</th></tr></thead><tbody>' +
+      filas.map(r => '<tr><td>' + (r.est === 'falta' || r.est === 'difiere' ? '<input type="checkbox" data-sub="' + r.k + '"' + (r.est === 'falta' || r.sube ? ' checked' : '') + '>' : '') + '</td><td>' + esc(r.nom) + '</td><td>' + (isN(r.informe) ? nf(r.informe, 1) : '—') + '</td><td>' + (isN(r.sec) ? nf(r.sec, 1) : '—') + '</td><td class="c-' + ({ coincide: 'g', falta: 'y', difiere: 'r' }[r.est] || '') + '">' + T[r.est][1] + (r.est === 'difiere' && r.max != null ? ' (hasta ' + nf(r.max * 100, 0) + ' %)' : '') + (r.sube ? ' · la SEC incluye inversiones a corto plazo' : '') + '</td></tr>').join('') + '</tbody></table></div>' +
+      '<p class="small mut">Ojo con «Caja»: la SEC suma efectivo + inversiones a corto plazo, que es la definición que usa el motor; si difiere mucho de la ficha, suele ser que el informe solo trae el efectivo.</p>' +
+      '<div class="acts"><button class="btn sec" data-a="cerrar">Cancelar</button><button class="btn" id="cs-ok">Aplicar</button></div>', dd => {
+        dd.querySelector('#cs-ok').onclick = () => {
+          const g = clone(f); g.conf = g.conf || {}; const ver = [], sub = [];
+          filas.forEach(r => {
+            const marcado = dd.querySelector('[data-sub="' + r.k + '"]'), usar = marcado && marcado.checked;
+            if (usar) { g.hist[r.k] = an.map((a, i) => { const y = (j.hist[r.k] || [])[j.anios.indexOf(a)]; return isN(y) ? y : (g.hist[r.k] || [])[i] != null ? g.hist[r.k][i] : null; }); g.conf[r.k] = 'P'; sub.push(r.nom); }
+            else if (r.est === 'coincide') { g.conf[r.k] = 'A'; ver.push(r.nom); }
+          });
+          g.notas = (g.notas || []).concat(['Contraste con la SEC el ' + hoy() + ': verificadas por coincidir con la SEC: ' + (ver.join(', ') || 'ninguna') + '. Sustituidas por el dato de la SEC: ' + (sub.join(', ') || 'ninguna') + '.']);
+          if (!L.lineasFaltantes(g).length) delete g._borrador;
+          D().fichas[tk] = g; U.guardar({ ok: true, msg: 'Contraste aplicado: ' + ver.length + ' líneas verificadas' }); };
+      });
+  }
+
   /* ───── Completar con una IA las líneas que faltan de una ficha borrador (intereses, impuestos, amortización, capex, deuda, caja) ─────
      Dos modos para que valga con cualquier IA: «navegar» (la IA abre las páginas) y «pegar» (tú copias el texto de las páginas y se lo pegas: no necesita navegación). */
   const LINEAS_IA = ['intereses', 'impuestos', 'da', 'capex', 'deuda', 'caja'];
@@ -181,7 +218,7 @@
     catch (e) {
       if (!(e && e.message === 'ficha incompleta')) console.warn('Valoración ' + sel + ':', e && e.stack || e);
       const falta = L.lineasFaltantes(f); cargarSEC(); const sd0 = secDe(sel, f);
-      return h + '<h2 style="margin:12px 0 4px">' + esc(sel) + ' — ' + esc(f.nombre || '') + '</h2><div class="alert warn" style="margin-top:10px">' + (falta.length ? '<b>Ficha incompleta.</b> Es un borrador y le faltan: ' + esc(falta.join(', ')) + '. Con esas líneas el motor no puede valorar la empresa.' : 'No se pudo calcular: ' + esc(e.message)) + (sd0 && sd0.completar ? '<br>La SEC tiene las cuentas completas de ' + esc(sel) + ': <button class="btn sm" data-v="nuevoej">Completar con los datos de la SEC</button>' : falta.length ? '<br>Pídeselas a una IA con búsqueda web (te preparo el texto) o complétalas a mano en «Revisar datos»: <button class="btn sm" data-v="lineasia">Completar con una IA</button>' : '') + '</div>' + (U.enlaces ? U.enlaces(sel, 'val') : '') + '<div class="tools"><button class="btn sec sm" data-v="datos">Revisar datos</button></div>' + acciones(f);
+      return h + '<h2 style="margin:12px 0 4px">' + esc(sel) + ' — ' + esc(f.nombre || '') + '</h2><div class="alert warn" style="margin-top:10px">' + (falta.length ? '<b>Ficha incompleta.</b> Es un borrador y le faltan: ' + esc(falta.join(', ')) + '. Con esas líneas el motor no puede valorar la empresa.' : 'No se pudo calcular: ' + esc(e.message)) + (sd0 && sd0.completar ? '<br>La SEC tiene las cuentas completas de ' + esc(sel) + ': <button class="btn sm" data-v="nuevoej">Completar con los datos de la SEC</button>' : falta.length ? '<br>Pídeselas a una IA con búsqueda web (te preparo el texto) o complétalas a mano en «Revisar datos»: <button class="btn sm" data-v="lineasia">Completar con una IA</button>' + (f.divisa === 'USD' ? ' <button class="btn sm" data-v="contraste">Completar con la SEC</button>' : '') : '') + '</div>' + (U.enlaces ? U.enlaces(sel, 'val') : '') + '<div class="tools"><button class="btn sec sm" data-v="datos">Revisar datos</button></div>' + acciones(f);
     }
     const cons = R.conservador, ref5 = cons.cagr[5].ref, pe = V.precioEntrada(f, cons, o / 100), pt = V.precioEntrada(f, cons, m / 100);
     cargarSEC(); const sd = secDe(sel, f);
@@ -207,7 +244,7 @@
         (vm.raro ? ' <span class="c-y">Ojo: su múltiplo de siempre es ' + nf(vm.ratioHist, 1) + ' veces el de hoy' + (vm.raro === 'alto' ? ' (años de rampa o de euforia en la media): la lectura exagera el chollo.' : ' (años más baratos en la media): la lectura exagera lo cara.') + '</span>' : '') : '') + '</p>' +
       (sd && sd.doce ? '<p class="small' + (Math.abs(sd.doce.de) > 0.25 ? ' c-y' : ' mut') + '" style="margin:6px 0 0"><b>Últimos 12 meses</b> (' + esc(sd.doce.fuente === 'SEC' ? 'SEC' : 'IA, sin verificar') + ', hasta ' + esc(sd.doce.fin) + '): ventas ' + nf(sd.doce.ventas, 0) + ' M' + (isN(sd.doce.dv) ? ' (' + (sd.doce.dv >= 0 ? '+' : '') + nf(sd.doce.dv * 100, 0) + ' %)' : '') + ', EBIT ' + (isN(sd.doce.ebit) && isN(sd.doce.de) ? nf(sd.doce.ebit, 0) + ' M (' + (sd.doce.de >= 0 ? '+' : '') + nf(sd.doce.de * 100, 0) + ' %)' : 'n/d') + ' frente a ' + sd.doce.anio + '.' + (Math.abs(sd.doce.de) > 0.25 ? ' El negocio se ha movido mucho desde el año base: el objetivo a 5 años parte de cifras desfasadas.' : '') + '</p>' : '') +
       (sd && sd.nuevo ? '<div class="alert warn" style="margin-top:8px">La SEC ya tiene el ejercicio ' + sd.nuevo + ' y esta ficha llega a ' + f.anio_base + '. <button class="btn sm" data-v="nuevoej">' + (sd.nuevo - f.anio_base > 1 || f.anio_base < 2020 ? 'Sustituir por los datos de la SEC' : 'Añadir ' + sd.nuevo + ' desde la SEC') + '</button></div>' : '') + '</div>' +
-      '<div class="tools"><button class="btn sm" data-v="precio">Precio</button><button class="btn sec sm" data-v="datos">Editar datos</button><button class="btn sec sm" data-v="reset">Restablecer supuestos</button></div>';
+      '<div class="tools"><button class="btn sm" data-v="precio">Precio</button><button class="btn sec sm" data-v="datos">Editar datos</button>' + (f.divisa === 'USD' && !fin ? '<button class="btn sec sm" data-v="contraste">Contrastar con la SEC</button>' : '') + '<button class="btn sec sm" data-v="reset">Restablecer supuestos</button></div>';
     // escenarios
     const P = fin ? [['rote', 'ROTE (%)', 100, .5], ['pdiv', 'Dividendos (% beneficio)', 100, 2.5], ['prec', 'Recompras (% beneficio)', 100, 2.5], ['per', 'PER', 1, .5], ['ptbv', 'P/TBV', 1, .1], ['ke', 'Coste del capital (%)', 100, .5], ['gt', 'Crecimiento largo plazo (%)', 100, .5]] :
       [['g', 'Crecimiento ventas (%/año)', 100, .5], ...(mo ? [['m0', 'Margen EBIT inicial (%)', 100, .5], ['m', 'Margen EBIT objetivo año 5 (%)', 100, .5]] : [['m', 'Margen EBIT (%)', 100, .5]]), ['t', 'Tipo impositivo (%)', 100, .5], ['acc', 'Variación acciones (%/año)', 100, .25], ['per', 'PER', 1, .5], ['pfcf', 'P/FCF', 1, .5], ['ev_ebitda', 'EV/EBITDA', 1, .5], ['ev_ebit', 'EV/EBIT', 1, .5]];
@@ -323,6 +360,7 @@
     else if (a === 'datos') datosDlg();
     else if (a === 'nuevoej') nuevoEjercicio(sel);
     else if (a === 'lineasia') lineasIA(sel);
+    else if (a === 'contraste') contrasteSEC(sel);
     else if (a === 'reset') { delete d.fichas[sel].escenarios; Store.save(); restore(() => {}); U.toast('Supuestos restablecidos'); }
     else if (a === 'estado') { const f = d.fichas[sel], e0 = estadoDe(sel); if (e0 === 'cartera') U.toast('Está en tu cartera: se gestiona en la pestaña Cartera'); else { if (e0 === 'candidata') delete f.estado; else f.estado = 'candidata'; Store.save(); restore(() => {}); } }
     else if (a === 'copiar') { const t2 = JSON.stringify(d.fichas[sel], null, 1); (navigator.clipboard ? navigator.clipboard.writeText(t2) : Promise.reject()).then(() => U.toast('Ficha copiada'), () => U.toast('No se pudo copiar')); }
