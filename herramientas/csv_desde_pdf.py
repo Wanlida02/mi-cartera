@@ -265,8 +265,11 @@ def actualizar(carpeta: Path, anio: int | None = None, simular: bool = False) ->
             break
         print(f"{nombre} {y}: leyendo {pdfs[y].name}…")
         ok, no, prev_fill = extraer(texto_pdf(pdfs[y]), filas, anios, y)
-        if not ok:
-            print("  No he podido verificar ninguna cifra; no escribo nada. Usa «Completar con IA» en la app.")
+        basicas = ("Ventas", "Beneficio operativo (EBIT)", "Beneficio neto")
+        if not all(k in ok for k in basicas):   # una columna a medias confundiría más que ayudar
+            print(f"  Solo he podido verificar {len(ok)} cifras y faltan ventas, EBIT o beneficio neto; no escribo nada. Usa «Completar con IA» en la app.")
+            if no:
+                print("  Sin verificar: " + "; ".join(no[:6]))
             break
         # nueva columna antes de «Concepto XBRL»
         pos = len(anios) + 1
