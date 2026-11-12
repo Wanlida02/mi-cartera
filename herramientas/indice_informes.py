@@ -37,7 +37,11 @@ SUFIJO = " annual report"
 EXT_DOC = {".pdf", ".htm", ".xhtml"}
 # Cifras que se resumen en la app (el CSV completo sigue en tu carpeta)
 METRICAS = ["Ventas", "Beneficio operativo (EBIT)", "Beneficio neto", "FCF (FCO − Capex)", "Margen operativo %",
-            "Margen FCF %", "ROE %", "Deuda neta / EBITDA", "BPA diluido", "FCF / acción"]
+            "Margen FCF %", "ROE %", "Deuda neta / EBITDA", "BPA diluido", "FCF / acción",
+            # líneas que la app usa para montar la ficha de valoración (intereses, impuestos, D&A, capex, deuda, caja…)
+            "Gastos financieros (brutos)", "Impuesto sobre beneficios", "Beneficio antes de impuestos", "Amortizaciones (D&A)", "Flujo de caja operativo", "Capex",
+            "Remuneración en acciones (SBC)", "Dividendos pagados", "Recompras", "Caja y equivalentes", "Deuda corto plazo", "Deuda largo plazo",
+            "Deuda financiera total", "Arrendamientos (pasivo)", "Fondo de comercio", "Patrimonio neto (dominante)", "Activo total"]
 ANIOS_RESUMEN = 6
 
 

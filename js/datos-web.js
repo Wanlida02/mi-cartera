@@ -61,14 +61,25 @@ const DatosWeb = (function () {
   }
   function aFichaInformes(e, hoy) {
     const dt = e && e.datos, m = dt && dt.metricas; if (!m || !Array.isArray(dt.anios) || dt.anios.length < 2) return null;
-    const an = dt.anios.map(Number), n = an.length, num = v => (typeof v === 'number' && isFinite(v) ? v : null), ser = k => (m[k] || []).slice(0, n).map(num);
+    const an = dt.anios.map(Number), n = an.length, num = v => (typeof v === 'number' && isFinite(v) ? v : null), ser = k => { const a = (m[k] || []).slice(0, n).map(num); while (a.length < n) a.push(null); return a; };
     const V = ser('Ventas'), E = ser('Beneficio operativo (EBIT)'), NI = ser('Beneficio neto'), B = ser('BPA diluido');
     if (!V.some(x => x != null) || !E.some(x => x != null) || !NI.some(x => x != null) || !B.some(x => x != null)) return null;
     while (V.length < n) V.push(null);
     const A = NI.map((x, i) => (x != null && B[i] != null && B[i] > 0 ? Math.round(x / B[i] * 10) / 10 : null));
     const last = k => { const s = ser(k); for (let i = s.length - 1; i >= 0; i--) if (s[i] != null) return s[i]; return null; };
     const f = { ticker: e.tk, nombre: e.nombre || e.tk, divisa: dt.divisa || 'EUR', anio_base: an[n - 1], anios: an, leases_ok: true, hist: { ventas: V, ebit: E, ni_reportado: NI, acciones: A, bpa: B }, conf: { ventas: 'P', ebit: 'P', ni_reportado: 'P', acciones: 'E', bpa: 'P' },
-      fuentes: ['Cifras clave de los informes anuales (' + (e.csv || 'CSV') + ')'], notas: ['Ficha borrador creada desde el resumen de tus informes (' + n + ' años). Acciones estimadas como beneficio neto / BPA diluido. Faltan deuda, caja, patrimonio, amortizaciones, capex y dividendos: complétalos desde el informe.'], fecha_datos: (e.generado || '').slice(0, 10) || hoy, _borrador: true, extra_cribado: {} };
+      fuentes: ['Cifras clave de los informes anuales (' + (e.csv || 'CSV') + ')'], notas: ['Ficha borrador creada desde el resumen de tus informes (' + n + ' años). Acciones estimadas como beneficio neto / BPA diluido. Lo que el CSV no trae (si falta algo) se completa con IA o desde el informe.'], fecha_datos: (e.generado || '').slice(0, 10) || hoy, _borrador: true, extra_cribado: {} };
+    /* El resto de líneas del CSV (antes se ignoraban): solo entran si traen dato en el último año; lo que no esté se pedirá a la IA / PDF */
+    const lineas = { intereses: 'Gastos financieros (brutos)', da: 'Amortizaciones (D&A)', capex: 'Capex', caja: 'Caja y equivalentes', leases_deuda: 'Arrendamientos (pasivo)', goodwill: 'Fondo de comercio', equity: 'Patrimonio neto (dominante)', fco: 'Flujo de caja operativo', sbc: 'Remuneración en acciones (SBC)', dividendos: 'Dividendos pagados', recompras: 'Recompras', impuestos: 'Impuesto sobre beneficios' };
+    const conUlt = a => a.length && a[a.length - 1] != null, puestas = [];
+    Object.keys(lineas).forEach(k => { const a = ser(lineas[k]); if (conUlt(a)) { f.hist[k] = a; f.conf[k] = 'P'; puestas.push(k); } });
+    let dd = ser('Deuda financiera total'); if (!conUlt(dd)) { const c = ser('Deuda corto plazo'), l = ser('Deuda largo plazo'); dd = l.map((x, i) => (x != null ? x + (c[i] || 0) : null)); }
+    if (conUlt(dd)) { f.hist.deuda = dd; f.conf.deuda = 'P'; puestas.push('deuda'); }
+    if (!f.hist.impuestos && f.hist.intereses && E[n - 1] != null && NI[n - 1] != null) {   // sin línea de impuestos en el CSV: se estima por diferencia (EBIT − intereses − beneficio neto) y se marca como estimación
+      const imp = E.map((x, i) => { const bai = x != null && f.hist.intereses[i] != null ? x - f.hist.intereses[i] : null; if (bai == null || NI[i] == null || bai <= 0) return null; const t = bai - NI[i]; return t >= 0 && t <= 0.5 * bai ? Math.round(t * 10) / 10 : null; });
+      if (conUlt(imp)) { f.hist.impuestos = imp; f.conf.impuestos = 'E'; f.notas.push('Impuestos ESTIMADOS por diferencia (EBIT − intereses − beneficio neto): el CSV no trae la línea de impuestos. Revísalos con el informe.'); }
+    }
+    if (puestas.length) f.notas.push('Líneas tomadas del CSV de informes: ' + puestas.join(', ') + '.');
     const dne = last('Deuda neta / EBITDA'), fps = last('FCF / acción'), roe = last('ROE %');
     if (dne != null) f.extra_cribado.deuda_neta_ebitda = dne;
     if (fps != null) f.extra_cribado.fcf_por_accion = fps;
