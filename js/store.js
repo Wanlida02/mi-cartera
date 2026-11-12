@@ -49,7 +49,7 @@ const Store = (function () {
       Object.keys(j.precios || {}).forEach(tk => {
         const nuevo = j.precios[tk], ant = data.precios[tk];
         if (!nuevo || !(nuevo.precio > 0)) return;
-        if (!ant || (nuevo.fecha_precio || '') > (ant.fecha_precio || '') || ((nuevo.fecha_precio || '') === (ant.fecha_precio || '') && ant.fuente !== 'manual')) { data.precios[tk] = nuevo; n++; }
+        if (!ant || (ant.simbolo && nuevo.simbolo && ant.simbolo !== nuevo.simbolo) || (nuevo.fecha_precio || '') > (ant.fecha_precio || '') || ((nuevo.fecha_precio || '') === (ant.fecha_precio || '') && ant.fuente !== 'manual')) { data.precios[tk] = nuevo; n++; }
       });
       const fl = data.ajustes.fx;   // divisas: gana la fecha más reciente; un ajuste manual de hoy se respeta hasta mañana
       if (j.fx && j.fx.fecha && (j.fx.fecha > (fl.fecha || '') || (j.fx.fecha === fl.fecha && !fl.manual))) { data.ajustes.fx = Object.assign({}, fl, j.fx, { manual: false }); n++; }

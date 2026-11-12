@@ -170,7 +170,8 @@ async function principal() {
         hechos++;
       } catch (e) {
         fallos.push({ ticker: t.clave, motivo: e.message.slice(0, 300) });
-        if (precios[t.clave]) precios[t.clave].obsoleto = true;           // se conserva el último precio bueno
+        if (precios[t.clave] && precios[t.clave].simbolo && !t.cand.includes(precios[t.clave].simbolo)) delete precios[t.clave];   // el símbolo cambió: ese precio era de OTRO valor (p. ej. DAN = Dana, no Danieli)
+        else if (precios[t.clave]) precios[t.clave].obsoleto = true;      // se conserva el último precio bueno
       }
       await esperar(150);
     }
