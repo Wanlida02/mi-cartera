@@ -242,5 +242,11 @@
   U.clicks.push(e => { const t = e.target.closest('[data-r]'); if (!t) return false; if (t.dataset.r === 'nuevo') nuevo(t.dataset.k);
     else if (t.dataset.r === 'cal' && CAL) { const c = CAL.fechas[t.dataset.k]; if (c) { anotar(t.dataset.k, c); U.guardar({ ok: true, msg: 'Fecha anotada' }); } }
     else if (t.dataset.r === 'calall' && CAL) { const cf = new Set(D().resultados.filter(r => r.estado !== 'revisado').map(r => r.tk)); sugeridas(seguidas(), cf).forEach(([k, c]) => anotar(k, c)); U.guardar({ ok: true, msg: 'Fechas anotadas' }); } else if (t.dataset.r === 'rev') revisar(t.dataset.id); else return false; return true; });
+  /* Desde Informes: abre la revisión de un trimestre (usa el pendiente de ese periodo o crea uno) */
+  U.revisarTrimestre = function (tk, periodo) {
+    const d = D(); let r = d.resultados.find(x => x.tk === tk && x.periodo === periodo && x.estado === 'pendiente');
+    if (!r) { r = nuevoReg(tk, { fecha: null, periodo, confirmada: true }); d.resultados.push(r); Store.save(); }
+    U.render(); revisar(r.id);
+  };
   U._resultados = { publico, doceDe, promptIA, parseIA, revDe };
 })();

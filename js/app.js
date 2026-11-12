@@ -194,7 +194,7 @@
   }
 
   /* ───── Ajustes ───── */
-  const APP_VERSION = '34 · completar informes con IA';
+  const APP_VERSION = '35 · trimestrales en informes';
   function ajustes() {
     const d = Store.get(), A = d.ajustes, cp = Store.ultimaCopia();
     dlg('<h2>Ajustes</h2><p class="small mut">Versión de la app: ' + APP_VERSION + '</p><h3>Umbrales del Inicio (rentabilidad anual esperada a 5 años)</h3><div class="f2">' + campo('a-b', 'Barata ≥ %', A.umbral_barata, 'number') + campo('a-c', 'Cara ≤ %', A.umbral_cara, 'number') + '</div>' +
@@ -249,7 +249,7 @@
     if (I.avisos.length) h += '<div class="alert warn"><b>Avisos del índice (' + I.avisos.length + ')</b><br>' + I.avisos.map(x => esc(x)).join('<br>') + '</div>';
     h += '<div class="card">' + (filas.length ? filas.map(({ e, i }) => {
       const pill = e.estado === 'cartera' ? 'ok' : e.estado === 'watchlist' ? 'warn' : '';
-      return '<div class="row click" data-inf="' + i + '"><div class="main"><div class="name">' + esc(e.nombre) + '</div><div class="meta">' + esc(e.tk || '') + ' · ' + e.documentos.length + ' informes · último ' + esc(e.ultimo_anio || '—') + (e.datos && e.datos.anios ? ' · con cifras' : '') + '</div></div>' +
+      return '<div class="row click" data-inf="' + i + '"><div class="main"><div class="name">' + esc(e.nombre) + '</div><div class="meta">' + esc(e.tk || '') + ' · ' + e.documentos.length + ' informes · último ' + esc(e.ultimo_anio || '—') + ((e.trimestrales || []).length ? ' · trimestral ' + esc(e.trimestrales[e.trimestrales.length - 1].periodo) : '') + (e.datos && e.datos.anios ? ' · con cifras' : '') + '</div></div>' +
         '<div class="num"><span class="pill ' + pill + '">' + ESTADO_TXT[e.estado] + '</span>' + (e.desactualizado ? '<div class="meta down">falta el último</div>' : '') + '</div></div>';
     }).join('') : '<div class="empty">Sin coincidencias.</div>') + '</div>';
     const libres = I.lista.filter(e => e.estado === 'otra');
@@ -263,18 +263,20 @@
   function detalleInforme(i) {
     const e = infLista[i]; if (!e) return;
     const dt = e.datos && e.datos.metricas && e.datos.anios ? e.datos : null;
-    const f = (v, m) => v == null ? '—' : nf(v, /%|\/|BPA/.test(m) ? 2 : 0);
+    const f = (v, m) => v == null ? '—' : nf(v, /%|\/|BPA/.test(m) ? 2 : 0), tr = (e.trimestrales || []).slice().reverse();
     dlg('<h2>' + esc(e.nombre) + '</h2><p class="mut small">' + esc(e.tk || '') + (e.ident ? ' · ' + esc(e.ident) : '') + '</p>' +
       '<h3>Informes anuales</h3><div>' + e.documentos.slice().reverse().map(x =>
         '<div class="row"><div class="main"><div class="name">' + esc(x.anio) + ' · ' + esc(x.tipo || '') + (x.idioma ? ' (' + esc(x.idioma) + ')' : '') + '</div><div class="meta">' + esc(x.archivo || 'solo enlace') + (x.kb ? ' · ' + nf(x.kb / 1024, 1) + ' MB' : '') + '</div></div>' +
         (x.url ? '<a class="btn sec sm" href="' + esc(x.url) + '" target="_blank" rel="noopener">Abrir original</a>' : '') + '</div>').join('') + '</div>' +
       '<p class="small mut">Los PDF están en tu PC: carpeta «' + esc(e.carpeta) + '».</p>' +
+      (tr.length ? '<h3 style="margin-top:12px">Resultados trimestrales</h3><div>' + tr.map((x, n) => '<div class="row"><div class="main"><div class="name">' + esc(x.periodo) + '</div><div class="meta">' + esc(x.archivo) + (x.kb ? ' · ' + nf(x.kb / 1024, 1) + ' MB' : '') + '</div></div>' + (e.tk ? '<button class="btn sm" data-trim="' + esc(x.periodo) + '">Revisar vs. valoración</button>' : '') + '</div>').join('') + '</div><p class="small mut">«Revisar» abre la revisión de ese trimestre (pestaña Resultados): compara el ritmo de los últimos 12 meses con lo que esperaba tu valoración.</p>' : (e.tk ? '<p class="small mut">Sin resultados trimestrales en la carpeta. Si dejas uno (p. ej. <code>presentation-3Q-2026.pdf</code>) y vuelves a ejecutar indice_informes.py, aparecerá aquí.</p>' : '')) +
       (dt ? '<h3 style="margin-top:12px">Cifras clave (' + esc(dt.divisa || '') + ' millones)</h3><div style="overflow:auto"><table style="border-collapse:collapse;font-size:13px;width:100%"><tr><th></th>' + dt.anios.map(a => '<th style="text-align:right;padding:3px 6px">' + a + '</th>').join('') + '</tr>' +
         Object.keys(dt.metricas).map(m => '<tr><td style="padding:3px 6px 3px 0;white-space:nowrap">' + esc(m) + '</td>' + dt.metricas[m].map(v => '<td style="text-align:right;padding:3px 6px">' + f(v, m) + '</td>').join('') + '</tr>').join('') + '</table></div>' +
         '<p class="small mut">Detalle completo en ' + esc(e.csv || 'el CSV') + '.</p>' : '') +
       '<div class="acts"><button class="btn sec" data-a="cerrar">Cerrar</button>' + (e.tk ? '<button class="btn sec" id="inf-ia">Completar con IA</button>' : '') + (dt && e.tk ? '<button class="btn" id="inf-ficha">Crear ficha y cribado con estas cifras</button>' : '') + '</div>', dd => {
         const b = dd.querySelector('#inf-ficha'); if (b) b.onclick = () => { if (UI.fichaDeInformes(e)) cerrar(); };
         const c = dd.querySelector('#inf-ia'); if (c) c.onclick = () => { cerrar(); UI.completarIA(e); };
+        dd.querySelectorAll('[data-trim]').forEach(b => { b.onclick = () => { const p = b.dataset.trim; cerrar(); UI.revisarTrimestre(e.tk, p); }; });
       });
   }
   function cargarIndiceInformes(file) {

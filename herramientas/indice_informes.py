@@ -5,6 +5,9 @@ indice_informes.py — Genera indice_informes.json a partir de la carpeta de val
 
 Solo lee lo que ya dejó informes_anuales.py en cada carpeta "<Empresa> annual report":
     <Empresa>_10K_<AÑO>.pdf, <Empresa>_AR_<AÑO>.pdf, <Empresa>_ESEF_<AÑO>.pdf
+    Resultados trimestrales/semestrales que dejes a mano en la carpeta (p. ej. presentation-3Q-2026.pdf, Q3_2026_results.pdf,
+    9M_2026.pdf): se reconocen por Q1-4/T1-4/9M/H1/interim/results/presentation en el nombre, se indexan como «trimestrales»
+    y NO cuentan como informe anual.
     <Empresa>_datos.csv       (cifras clave por ejercicio)
     <Empresa>_fuentes.md      (enlace a cada documento original)
 
@@ -82,14 +85,46 @@ def leer_fuentes(ruta: Path) -> tuple[dict, str | None, str | None]:
     return por_anio, ticker, ident
 
 
+# Documentos que NO son el informe anual: presentaciones y resultados trimestrales/semestrales (p. ej. «presentation-3Q-months-2026-revenues.pdf»)
+RE_ANUAL = re.compile(r"annual|10-?k|20-?f|40-?f|esef|\bar\b|informe[_ -]?anual|memoria", re.I)
+RE_TRIM = re.compile(r"(?<![a-z0-9])(?:[1-4]q|q[1-4]|[1-4]t|t[1-4]|h[12]|[12]h|[369]m|[369]-?months?|nine-?months?|interim|quarter\w*|trimest\w*|semest\w*|half-?year|results|presentation|earnings)(?![a-z])", re.I)
+
+
+def periodo_trim(stem: str):
+    """Devuelve (etiqueta, año) de un documento trimestral, p. ej. ('T3 2026', 2026); None si no parece trimestral."""
+    if RE_ANUAL.search(stem) or not RE_TRIM.search(stem):
+        return None
+    ys = re.findall(r"(?<!\d)((?:19|20)\d{2})(?!\d)", stem)
+    anio = int(max(ys)) if ys else None
+    low = stem.lower()
+    m = re.search(r"(?<![a-z0-9])(?:([1-4])q|q([1-4])|([1-4])t|t([1-4]))(?![a-z])", low)
+    if m:
+        etq = "T" + next(g for g in m.groups() if g)
+    elif re.search(r"(?<![a-z0-9])(?:9m|9-?months?|nine-?months?)", low):
+        etq = "9M"
+    elif re.search(r"(?<![a-z0-9])(?:h1|1h|6m|6-?months?|half-?year|semest\w*)", low):
+        etq = "S1"
+    elif re.search(r"(?<![a-z0-9])(?:h2|2h)", low):
+        etq = "S2"
+    else:
+        etq = "Trim."
+    return (etq + (" " + str(anio) if anio else ""), anio)
+
+
 def indexar_empresa(carpeta: Path, avisos: list | None = None) -> dict | None:
     avisos = avisos if avisos is not None else []
     nombre = carpeta.name[: -len(SUFIJO)].strip()
     docs = {}
+    trims = []
     for p in sorted(carpeta.iterdir()):
         # <Nombre>_<TIPO>_<AÑO>[_idioma]  o, sin tipo (descargado a mano), <Nombre>_<AÑO>[_idioma]
         m = re.fullmatch(rf"{re.escape(nombre)}_(?:(10K|20F|40F|AR|ESEF)_)?(\d{{4}})(?:_([a-z]{{2}}))?", p.stem)
         if p.suffix.lower() not in EXT_DOC:
+            continue
+        pt = None if m else periodo_trim(p.stem)
+        if pt:  # trimestral / semestral: no cuenta como informe anual
+            trims.append({"periodo": pt[0], "anio": pt[1], "archivo": p.name, "tipo": "TRIM", "kb": round(p.stat().st_size / 1024),
+                          "modificado": dt.datetime.fromtimestamp(p.stat().st_mtime).strftime("%Y-%m-%d")})
             continue
         if m:
             tipo, anio, idioma = m.group(1) or "AR", int(m.group(2)), m.group(3)
@@ -116,12 +151,13 @@ def indexar_empresa(carpeta: Path, avisos: list | None = None) -> dict | None:
             datos = leer_csv(csv_f)
         except Exception as e:  # CSV raro: se indexa igualmente el resto
             datos = {"error": str(e)}
-    if not docs and not datos:
+    if not docs and not datos and not trims:
         avisos.append(f"{carpeta.name}: no se ha reconocido ningún informe (¿PDF sin año en el nombre?) y no tiene _datos.csv; no aparece en la app")
         return None
     anios = sorted(docs)
     return {"nombre": nombre, "carpeta": carpeta.name, "ticker": ticker, "ident": ident,
             "ultimo_anio": anios[-1] if anios else None, "documentos": [docs[a] for a in anios],
+            "trimestrales": sorted(trims, key=lambda t: (t["anio"] or 0, t["periodo"])),
             "datos": datos, "csv": csv_f.name if csv_f else None,
             "modificado": dt.datetime.fromtimestamp(max(p.stat().st_mtime for p in carpeta.iterdir())).strftime("%Y-%m-%d")}
 
@@ -156,7 +192,8 @@ def main():
         import subir_drive
         subir_drive.subir(salida)
     for e in empresas:
-        print(f"  {e['nombre']:<22} {len(e['documentos'])} informes · último {e['ultimo_anio']}" + ("  · con cifras" if e["datos"] else ""))
+        tr = e.get("trimestrales") or []
+        print(f"  {e['nombre']:<22} {len(e['documentos'])} informes · último {e['ultimo_anio']}" + ("  · con cifras" if e["datos"] else "") + (f"  · trimestral: {tr[-1]['periodo']}" if tr else ""))
 
 
 if __name__ == "__main__":
