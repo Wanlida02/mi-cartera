@@ -176,7 +176,7 @@
     try { ESC.forEach(s => { sc[s] = escDe(f, s); R = R || {}; R[s] = V.proyectar(f, sc[s]); }); fi = V.fiabilidad(f, hoy()); act = V.actuales(f); }
     catch (e) {
       const falta = L.lineasFaltantes(f); cargarSEC(); const sd0 = secDe(sel, f);
-      return h + '<h2 style="margin:12px 0 4px">' + esc(sel) + ' — ' + esc(f.nombre || '') + '</h2><div class="alert warn" style="margin-top:10px">' + (falta.length ? '<b>Ficha incompleta.</b> Es un borrador y le faltan: ' + esc(falta.join(', ')) + '. Con esas líneas el motor no puede valorar la empresa.' : 'No se pudo calcular: ' + esc(e.message)) + (sd0 && sd0.completar ? '<br>La SEC tiene las cuentas completas de ' + esc(sel) + ': <button class="btn sm" data-v="nuevoej">Completar con los datos de la SEC</button>' : falta.length ? '<br>Pídeselas a una IA con búsqueda web (te preparo el texto) o complétalas a mano en «Revisar datos»: <button class="btn sm" data-v="lineasia">Completar con una IA</button>' : '') + '</div><div class="tools"><button class="btn sec sm" data-v="datos">Revisar datos</button></div>' + acciones(f);
+      return h + '<h2 style="margin:12px 0 4px">' + esc(sel) + ' — ' + esc(f.nombre || '') + '</h2><div class="alert warn" style="margin-top:10px">' + (falta.length ? '<b>Ficha incompleta.</b> Es un borrador y le faltan: ' + esc(falta.join(', ')) + '. Con esas líneas el motor no puede valorar la empresa.' : 'No se pudo calcular: ' + esc(e.message)) + (sd0 && sd0.completar ? '<br>La SEC tiene las cuentas completas de ' + esc(sel) + ': <button class="btn sm" data-v="nuevoej">Completar con los datos de la SEC</button>' : falta.length ? '<br>Pídeselas a una IA con búsqueda web (te preparo el texto) o complétalas a mano en «Revisar datos»: <button class="btn sm" data-v="lineasia">Completar con una IA</button>' : '') + '</div>' + (U.enlaces ? U.enlaces(sel, 'val') : '') + '<div class="tools"><button class="btn sec sm" data-v="datos">Revisar datos</button></div>' + acciones(f);
     }
     const cons = R.conservador, ref5 = cons.cagr[5].ref, pe = V.precioEntrada(f, cons, o / 100), pt = V.precioEntrada(f, cons, m / 100);
     cargarSEC(); const sd = secDe(sel, f);
@@ -184,14 +184,15 @@
     let t = 'r', title = 'Cara frente a su valor', sub;
     if (ref5 >= o / 100) { t = 'g'; title = 'Compra: supera tu objetivo'; sub = 'Rentabilidad anual esperada a 5 años: ' + pc(ref5) + ' (objetivo ' + nf(o, 0) + ' %).'; }
     else if (ref5 >= m / 100) { t = 'y'; title = 'Watchlist: buena empresa, precio justo'; sub = 'Rentabilidad esperada ' + pc(ref5) + ': sobre tu mínimo (' + nf(m, 0) + ' %) pero bajo el objetivo. Compra por debajo de ' + nf(pe, 2) + '.'; }
+    else if (!isN(ref5)) { t = 'y'; title = 'No valorable con estos supuestos'; sub = 'En el escenario conservador el valor teórico a 5 años no es positivo (pérdidas o EBIT negativo), así que no hay rentabilidad calculable. Revisa los márgenes o descarta la empresa: una valoración value necesita beneficios.'; }
     else sub = 'Rentabilidad esperada ' + pc(ref5) + ', bajo tu mínimo del ' + nf(m, 0) + ' %. Si la tienes, candidata a vender por sobrevaloración.';
     if (fi.graves) sub += ' Provisional: hay avisos graves en los datos.';
     if (fi.nivel !== 'profunda') sub += ' Valoración rápida: ' + (fi.nP + fi.nE) + ' de ' + (fi.nA + fi.nP + fi.nE) + ' líneas críticas sin contrastar con el informe anual.';
     if (mo) sub += ' Depende de una hipótesis de margen futuro.';
     const dp = L.diasDesde(f.fecha_precio, hoy());
-    h += '<div class="card" style="margin-top:10px;border-left:6px solid var(--' + { g: 'ok', y: 'warn', r: 'bad' }[t] + ')"><div class="meta">' + esc(sel) + ' — ' + esc(f.nombre || '') + ' · ' + estadoDe(sel) + '</div><h2 style="font-size:21px;margin:4px 0">' + title + '</h2><p style="margin:0 0 8px">' + sub + '</p>' +
+    h += '<div class="card" style="margin-top:10px;border-left:6px solid var(--' + { g: 'ok', y: 'warn', r: 'bad' }[t] + ')"><div class="meta">' + esc(sel) + ' — ' + esc(f.nombre || '') + ' · ' + estadoDe(sel) + '</div><h2 style="font-size:21px;margin:4px 0">' + title + '</h2><p style="margin:0 0 8px">' + sub + '</p>' + (U.enlaces ? U.enlaces(sel, 'val') : '') +
       '<p class="small mut" style="margin:0 0 8px">En el pesimista: ' + pc(R.pesimista.cagr[5].ref) + ' anual · en el optimista: ' + pc(R.optimista.cagr[5].ref) + '</p>' +
-      '<div class="kpis"><div class="kpi"><span>Precio actual</span><b>' + nf(f.precio, 2) + '</b><span>' + esc(f.divisa) + (dp != null ? ' · hace ' + dp + ' d' : '') + '</span></div><div class="kpi"><span>Objetivo a 5 años</span><b>' + nf(cons.po[5].ref, 2) + '</b></div>' +
+      '<div class="kpis"><div class="kpi"><span>Precio actual</span><b>' + nf(f.precio, 2) + '</b><span>' + esc(f.divisa) + (dp != null ? ' · hace ' + dp + ' d' : '') + '</span></div><div class="kpi"><span>Objetivo a 5 años</span><b>' + (cons.po[5].ref > 0 ? nf(cons.po[5].ref, 2) : '—') + '</b></div>' +
       '<div class="kpi"><span>Entrada para ' + nf(o, 0) + ' %</span><b>' + (pe ? nf(pe, 2) : '—') + '</b></div><div class="kpi"><span>Máximo para ' + nf(m, 0) + ' %</span><b>' + (pt ? nf(pt, 2) : '—') + '</b></div>' +
       (vm && vm.sinBeneficio ? '<div class="kpi"><span>¿Chollo ahora?</span><b>—</b><span class="c-r">EBIT de 12 meses negativo</span></div>' : '') +
       (vm && !vm.sinBeneficio ? '<div class="kpi"><span>A su múltiplo de siempre</span><b>' + nf(vm.valor, 2) + '</b><span class="c-' + VMT[vm.nivel][0] + '">' + VMT[vm.nivel][1] + ' (' + (vm.descuento >= 0 ? '−' : '+') + nf(Math.abs(vm.descuento) * 100, 0) + ' %)' + (vm.doce ? ' · 12 meses' : '') + '</span></div>' : '') + '</div>' +
@@ -292,11 +293,11 @@
     const msg = h => U.dlg('<h2>Releer informes</h2><p class="small">' + h + '</p><div class="acts"><button class="btn" data-a="cerrar">Vale</button></div>');
     const d = D(); let via = 'índice ya cargado en la app';
     if (Drive.estado().conectado) { U.toast('Leyendo el índice de informes en Drive…'); const r = await Drive.releerInformes(); if (r.msg) return msg('No he podido leer Drive: ' + r.msg); via = 'Drive (' + r.n + ' empresas, generado ' + String(r.generado || '?').slice(0, 16).replace('T', ' ') + ')'; }
-    const I = Store.get().informes, emp = (I && I.empresas) || [];
+    const I = Store.get().informes, emp = (I && I.empresas) || [], enlazadas = (Logic.informes(d, hoy()) || { lista: [] }).lista;
     if (!emp.length) return msg('No hay índice de informes. En tu PC ejecuta python herramientas/indice_informes.py --drive (o carga el archivo en Ajustes) y vuelve a pulsar.');
     const rehechas = [], nuevas = [], sinDatos = [];
     Object.keys(d.fichas).forEach(k => {
-      const f = d.fichas[k], e = emp.find(x => (x.tk || '').toUpperCase() === k.toUpperCase()); if (!e) return;
+      const f = d.fichas[k], e = enlazadas.find(x => (x.tk || '').toUpperCase() === k.toUpperCase()); if (!e) return;
       const an = ((e.datos || {}).anios || []).map(Number), ult = an.length ? Math.max.apply(null, an) : null;
       if (f._borrador) { const n = DatosWeb.aFichaInformes(e, hoy()); if (n) { n.precio = f.precio; n.precio_fecha = f.precio_fecha; d.fichas[k] = n; rehechas.push(k + ' (hasta ' + ult + ')'); } else sinDatos.push(k); }
       else if (ult && Number(f.anio_base) < ult) nuevas.push(k + ': ficha ' + f.anio_base + ' → informes ' + ult);

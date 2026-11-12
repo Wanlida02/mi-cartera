@@ -135,7 +135,7 @@ const Val = (function () {
       q.anio = f.anio_base + k;
       rows.push(q); p = q;
     }
-    const c = (po, n) => (po > 0 && precio > 0 ? Math.pow(po / precio, 1 / n) - 1 + y : -1 + y);
+    const c = (po, n) => (po > 0 && precio > 0 ? Math.pow(po / precio, 1 / n) - 1 + y : null);   // valor ≤ 0 (pérdidas) o sin precio: no hay rentabilidad calculable, no «−100 %»
     const res = { rows, cagr: {}, po: {}, nd0 };
     [3, 5].forEach(n => {
       const q = rows[n - 1];
@@ -246,7 +246,8 @@ const Val = (function () {
   const CRIT = ['ventas', 'ebit', 'da', 'impuestos', 'acciones', 'capex', 'caja', 'deuda'];
   const OPC = ['intereses', 'minoritarios'];
   function fiabilidad(f, hoy) {
-    const h = f.hist, n = h.ventas.length, av = [], conf = f.conf || {};
+    const n = f.hist.ventas.length, h = Object.assign({}, f.hist), av = [], conf = f.conf || {};
+    ['leases', 'leases_deuda', 'goodwill', 'equity', 'minoritarios', 'otros', 'impuestos', 'intereses', 'da', 'capex', 'caja', 'deuda', 'acciones'].forEach(k => { if (!Array.isArray(h[k])) h[k] = Array(n).fill(null); });   // ficha borrador sin alguna línea: avisa, no revienta
     const add = (nivel, campo, txt) => av.push({ nivel, campo, txt });
     const i = n - 1;
     CRIT.forEach(k => { if (!isN(last(h[k]))) add('r', k, `Falta el dato de ${k} del último ejercicio.`); });
@@ -327,7 +328,7 @@ const Val = (function () {
           po: { per: ni * sc.per / accN, ptbv: tbvN * mEf / accN } });
         tbv = tbvN; acc = accN;
       }
-      const c = (po, n) => (po > 0 && precio > 0 ? Math.pow(po / precio, 1 / n) - 1 + y : -1 + y);
+      const c = (po, n) => (po > 0 && precio > 0 ? Math.pow(po / precio, 1 / n) - 1 + y : null);   // valor ≤ 0 (pérdidas) o sin precio: no hay rentabilidad calculable, no «−100 %»
       const res = { rows, cagr: {}, po: {} };
       [3, 5].forEach(n => {
         const q = rows[n - 1], ref = (q.po.per + q.po.ptbv) / 2, bajo = Math.min(q.po.per, q.po.ptbv);

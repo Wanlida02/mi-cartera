@@ -29,7 +29,7 @@
     const peso = v.peso != null ? ' · ' + nf(v.peso * 100, 1) + '% cartera' : '';
     const aviso = v.graves ? ' <span class="pill warn" title="' + esc((v.avisos || []).join(' | ')) + '">datos dudosos</span>' : '';
     const viejo = v.diasPrecio != null && v.diasPrecio > Store.get().ajustes.dias_precio_viejo ? ' <span class="pill">precio de hace ' + v.diasPrecio + ' d</span>' : '';
-    return '<div class="row"><div class="main"><div class="name">' + esc(v.nombre) + '</div><div class="meta">' + esc(v.tk) + peso + '</div>' +
+    return '<div class="row click" data-go="val" data-tk="' + esc(v.tk) + '"><div class="main"><div class="name">' + esc(v.nombre) + '</div><div class="meta">' + esc(v.tk) + peso + '</div>' +
       '<div class="meta">Precio ' + money(v.precio, v.divisa) + ' · entrada ' + money(v.entrada, v.divisa) + '</div>' + (aviso || viejo ? '<div class="chips">' + aviso + viejo + '</div>' : '') + '</div>' +
       '<div class="num">' + extra + '</div></div>';
   }
@@ -47,6 +47,7 @@
     if (R.preciosViejos) h += '<div class="alert warn">' + R.preciosViejos + ' posición(es) con precio de hace más de ' + d.ajustes.dias_precio_viejo + ' días.</div>';
     if (UI.cargarSEC) UI.cargarSEC();
     if (UI.avisosResultados) h += UI.avisosResultados();
+    if (UI.calidadDatos) h += UI.calidadDatos();
     const A = d.ajustes;
     h += '<div class="sec-t"><h2>Muy baratas <span class="mut small">≥ ' + A.umbral_barata + '% anual</span></h2></div><div class="card">' +
       (D.baratas.length ? D.baratas.map(v => filaVal(v, '<span class="pill ok">' + nf(v.ref * 100, 1) + '%</span>')).join('') : '<div class="empty">Ninguna posición supera el umbral.</div>') + '</div>';
@@ -183,7 +184,7 @@
   }
   function detalle(i) {
     const d = Store.get(), p = d.posiciones[i], pp = L.precioPos(d, p), tk = L.tickerDe(d, p), v = tk && d.fichas[tk] ? L.valoracion(d, tk) : null;
-    dlg('<h2>' + esc(p.empresa) + '</h2><p class="mut small">' + esc(p.ticker || tk || 'sin ticker') + ' · ' + esc(p.broker || '') + ' · ' + esc(p.sector || '') + '</p>' +
+    dlg('<h2>' + esc(p.empresa) + '</h2><p class="mut small">' + esc(p.ticker || tk || 'sin ticker') + ' · ' + esc(p.broker || '') + ' · ' + esc(p.sector || '') + '</p>' + (UI.enlaces ? UI.enlaces(tk, 'pos') : '') +
       '<div class="kpis" style="grid-template-columns:1fr 1fr"><div class="kpi"><span>Acciones</span><b>' + nf(p.cantidad, 4) + '</b></div><div class="kpi"><span>Precio medio</span><b>' + money(p.precio_medio_compra, p.moneda) + '</b></div>' +
       '<div class="kpi"><span>Precio actual</span><b>' + money(pp && pp.precio, p.moneda) + '</b></div><div class="kpi"><span>Rentab. esperada</span><b>' + (v && v.ref != null ? nf(v.ref * 100, 1) + '%' : '—') + '</b></div></div>' +
       (v && v.entrada != null ? '<p class="small">Precio de entrada ' + money(v.entrada, v.divisa) + ' · máximo ' + money(v.max, v.divisa) + '</p>' : '') +
@@ -194,7 +195,7 @@
   }
 
   /* ───── Ajustes ───── */
-  const APP_VERSION = '37 · fichas completas desde informes';
+  const APP_VERSION = '38 · enlaces entre pestañas y datos por completar';
   function ajustes() {
     const d = Store.get(), A = d.ajustes, cp = Store.ultimaCopia();
     dlg('<h2>Ajustes</h2><p class="small mut">Versión de la app: ' + APP_VERSION + '</p><h3>Umbrales del Inicio (rentabilidad anual esperada a 5 años)</h3><div class="f2">' + campo('a-b', 'Barata ≥ %', A.umbral_barata, 'number') + campo('a-c', 'Cara ≤ %', A.umbral_cara, 'number') + '</div>' +
@@ -264,7 +265,7 @@
     const e = infLista[i]; if (!e) return;
     const dt = e.datos && e.datos.metricas && e.datos.anios ? e.datos : null;
     const f = (v, m) => v == null ? '—' : nf(v, /%|\/|BPA/.test(m) ? 2 : 0), tr = (e.trimestrales || []).slice().reverse();
-    dlg('<h2>' + esc(e.nombre) + '</h2><p class="mut small">' + esc(e.tk || '') + (e.ident ? ' · ' + esc(e.ident) : '') + '</p>' +
+    dlg('<h2>' + esc(e.nombre) + '</h2><p class="mut small">' + esc(e.tk || '') + (e.ident ? ' · ' + esc(e.ident) : '') + '</p>' + (UI.enlaces ? UI.enlaces(e.tk, 'inf') : '') +
       '<h3>Informes anuales</h3><div>' + e.documentos.slice().reverse().map(x =>
         '<div class="row"><div class="main"><div class="name">' + esc(x.anio) + ' · ' + esc(x.tipo || '') + (x.idioma ? ' (' + esc(x.idioma) + ')' : '') + '</div><div class="meta">' + esc(x.archivo || 'solo enlace') + (x.kb ? ' · ' + nf(x.kb / 1024, 1) + ' MB' : '') + '</div></div>' +
         (x.url ? '<a class="btn sec sm" href="' + esc(x.url) + '" target="_blank" rel="noopener">Abrir original</a>' : '') + '</div>').join('') + '</div>' +
@@ -364,7 +365,9 @@
   $('#btn-ajustes').onclick = ajustes;
   $('#btn-sync').onclick = () => { const e = Drive.estado(); if (!e.conectado) ajustes(); else if (e.estado === 'conflicto' || e.estado === 'reconectar' || e.estado === 'error') Drive.ahora(); else toast(textoDrive()); };
 
-  Object.assign(UI, { lineaPrecios: () => lineaPrecios(), dlg, cerrar, toast, esc, nf, pct, money, eur, guardar, render, campo, val, cls, irA: t => { tab = t; render(); window.scrollTo(0, 0); } });
+  Object.assign(UI, { lineaPrecios: () => lineaPrecios(), dlg, cerrar, toast, esc, nf, pct, money, eur, guardar, render, campo, val, cls, irA: t => { tab = t; render(); window.scrollTo(0, 0); },
+    abrirPosicion: tk => { const d = Store.get(), i = d.posiciones.findIndex(p => L.tickerDe(d, p) === tk); if (i < 0) return; tab = 'cartera'; render(); window.scrollTo(0, 0); detalle(i); },
+    abrirInforme: tk => { const I = L.informes(Store.get()), i = I ? I.lista.findIndex(e => (e.tk || '').toUpperCase() === String(tk).toUpperCase()) : -1; tab = 'informes'; render(); window.scrollTo(0, 0); if (i >= 0) detalleInforme(i); } });
   Store.load(); render();
   Drive.init({ onEstado: pintaSync, onDatos: () => { render(); toast('Datos actualizados desde Drive'); Store.cargarPreciosAuto().then(n => n && render()); }, preguntar: preguntarConflicto });
   if (Store.aviso()) toast(Store.aviso());

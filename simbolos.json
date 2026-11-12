@@ -203,17 +203,12 @@
     },
     "VID": {
       "y": [
-        "VID"
+        "VID.MC"
       ]
     },
     "OSCR": {
       "y": [
         "OSCR"
-      ]
-    },
-    "COLLEGIUM PHARMACEUTICAL": {
-      "y": [
-        "COLLEGIUM PHARMACEUTICAL"
       ]
     },
     "BELFA": {
@@ -228,7 +223,7 @@
     },
     "DAN": {
       "y": [
-        "DAN"
+        "DAN.MI"
       ]
     },
     "ATYM": {
@@ -236,14 +231,19 @@
         "ATYM"
       ]
     },
-    "SOL SPA": {
+    "BIT:SOL": {
       "y": [
-        "SOL SPA"
+        "SOL.MI"
       ]
     },
-    "NEURONES": {
+    "NRO": {
       "y": [
-        "NEURONES"
+        "NRO.PA"
+      ]
+    },
+    "FTDR": {
+      "y": [
+        "FTDR"
       ]
     }
   },

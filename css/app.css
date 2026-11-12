@@ -80,3 +80,12 @@ textarea{width:100%;font:inherit;border:1px solid var(--line,#ccd);border-radius
 .tbl{border-collapse:collapse;width:100%;font-size:13px}.tbl th,.tbl td{padding:5px 6px;text-align:right;border-top:1px solid var(--line)}.tbl th:first-child,.tbl td:first-child{text-align:left}
 .tbl input{width:100%;min-width:64px;padding:5px;min-height:32px;text-align:right}
 .c-g{color:var(--ok);font-weight:700}.c-y{color:var(--warn);font-weight:700}.c-r{color:var(--bad);font-weight:700}
+
+/* Enlaces cruzados entre pestañas */
+.links{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0 6px}
+.links .lk{background:var(--chip);color:var(--pri);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;min-height:32px}
+.links .lk:hover,.links .lk:focus-visible{border-color:var(--pri)}
+.row.click:hover{background:var(--chip)}
+.row.click:focus-visible{outline:2px solid var(--pri);outline-offset:-2px}
+/* Pestañas: caben las seis en móvil sin desplazar */
+@media(max-width:520px){.tabs{padding:0 2px}.tabs button{flex:1 1 0;padding:12px 1px 9px;font-size:11.5px;min-width:0;letter-spacing:-.01em}}

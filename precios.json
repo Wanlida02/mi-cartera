@@ -185,16 +185,6 @@
    "fuente": "cnbc",
    "actualizado": "2026-11-12T12:21:43.237Z"
   },
-  "DAN": {
-   "ticker": "DAN",
-   "precio": 23.19,
-   "divisa": "USD",
-   "fecha_precio": "2026-11-11",
-   "hora": "2026-11-11T00:00:00.000Z",
-   "simbolo": "DAN",
-   "fuente": "cnbc",
-   "actualizado": "2026-11-12T12:21:43.237Z"
-  },
   "ESEA": {
    "ticker": "ESEA",
    "precio": 66.2,

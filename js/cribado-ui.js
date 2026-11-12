@@ -55,6 +55,7 @@
   /* ───── Lista de precios de las candidatas ───── */
   function catVer(k) { let R; try { R = evaluar(k); } catch (e) { return 'otras'; } const v = (R && R.veredicto) || ''; return /^Pasa/.test(v) ? 'pasa' : /^Vigilar/.test(v) ? 'vigilar' : /^Descartar/.test(v) ? 'descartar' : 'otras'; }
   let SIMB = null, simbCarga = false;
+  U.abrirCribado = tk => { if (!((D().cribado || {})[tk])) return; sel = tk; U.irA('cribado'); };
   U.simbolos = () => SIMB; U.cargarSimb = () => cargarSimb();
   function cargarSimb() { if (SIMB || simbCarga) return; simbCarga = true; DatosWeb.leerArchivo('simbolos.json').then(j => { SIMB = (j && j.simbolos) || {}; simbCarga = false; U.render(); }).catch(() => { simbCarga = false; }); }
   /* Descartadas fuera de cartera y fuera de watchlist → pausa; pasa/vigilar fuera de cartera → activas */
@@ -168,7 +169,7 @@
     const chips = [c.pais_sede, c.sector_cartera, R.tier ? TIER[R.tier] + (R.cap != null ? ' · ' + nf(R.cap, 0) + ' M€' : '') : null, c.divisa_cotizacion].filter(Boolean).map(x => '<span class="pill">' + esc(x) + '</span>').join(' ');
     const px = R.px ? nf(R.px.precio, 2) + ' ' + esc(c.divisa_cotizacion || d.fichas[sel] && d.fichas[sel].divisa || '') + ' · ' + esc(R.px.fuente) : 'sin precio';
     let h = '<button class="btn sec sm" data-c="volver">← Cribado</button>' +
-      '<div class="card" style="margin-top:10px;border-left:6px solid var(--' + ({ g: 'ok', y: 'warn', r: 'bad', n: 'mut' }[R.tono]) + ')"><div class="meta">' + esc(sel) + (c.nombre ? ' — ' + esc(c.nombre) : '') + '</div>' +
+      '<div class="card" style="margin-top:10px;border-left:6px solid var(--' + ({ g: 'ok', y: 'warn', r: 'bad', n: 'mut' }[R.tono]) + ')"><div class="meta">' + esc(sel) + (c.nombre ? ' — ' + esc(c.nombre) : '') + '</div>' + (U.enlaces ? U.enlaces(sel, 'cri') : '') +
       '<h2 style="font-size:22px;margin:4px 0">' + esc(R.veredicto) + (R.provisional ? ' (provisional)' : '') + '</h2><p style="margin:0 0 8px">' + esc(R.sub) + '</p><div class="chips">' + chips + '</div>' +
       '<div style="margin-top:10px"><div class="small" style="display:flex;justify-content:space-between"><span>Calidad (A, B, C' + (R.S.length ? ', S' : '') + ')</span><b>' + (R.calidad == null ? '—' : nf(R.calidad, 0) + ' %') + '</b></div>' + barH(cc, calif.filter(x => x.estado !== 'n').length) +
       '<div class="small" style="display:flex;justify-content:space-between;margin-top:8px"><span>Múltiplo (D1, D3)</span><b>' + (R.precioPct == null ? '—' : nf(R.precioPct, 0) + ' %') + '</b></div>' + barH(cd, cd.g + cd.y + cd.r) + '</div>' +

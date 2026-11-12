@@ -10,6 +10,7 @@
   const VER = { linea: ['ok', 'En línea'], mejor: ['ok', 'Mejor de lo esperado'], peor: ['bad', 'Peor de lo esperado'], mixto: ['warn', 'Mixto: revisa'] };
   const isN = v => typeof v === 'number' && isFinite(v);
   const pc = v => (v == null ? '—' : (v > 0 ? '+' : '') + nf(v * 100, 1) + ' %'), pc0 = v => (v == null ? '—' : nf(v * 100, 1) + ' %');
+  U.abrirResultados = tk => { U.irA('resultados'); };
   const enCartera = tk => D().posiciones.some(p => L.tickerDe(D(), p) === tk);
   const nombre = tk => (D().fichas[tk] || {}).nombre || tk;
   const trimestre = f => { const t = new Date(f || hoy()); let q = Math.floor(t.getUTCMonth() / 3), y = t.getUTCFullYear(); if (--q < 0) { q = 3; y--; } return 'T' + (q + 1) + ' ' + y; };   // se publica el trimestre anterior
@@ -215,7 +216,7 @@
     }
     if (avisosExtra && avisosExtra.length) cuerpo += avisosExtra.map(a => '<div class="alert warn">' + esc(a) + '</div>').join('');
     const nuevoEj = U.secDe && (U.secDe(r.tk, f) || {}).nuevo;
-    U.dlg('<h2>' + esc(nombre(r.tk)) + ' · ' + esc(r.periodo || '') + '</h2><p class="small mut" style="margin:0">' + (cartera ? 'En cartera' : 'Watchlist') + (pub ? ' · <b>ya ha publicado</b> (SEC)' : '') + '</p>' + cuerpo +
+    U.dlg('<h2>' + esc(nombre(r.tk)) + ' · ' + esc(r.periodo || '') + '</h2><p class="small mut" style="margin:0">' + (cartera ? 'En cartera' : 'Watchlist') + (pub ? ' · <b>ya ha publicado</b> (SEC)' : '') + '</p>' + (U.enlaces ? U.enlaces(r.tk, 'res') : '') + cuerpo +
       (nuevoEj ? '<div class="alert warn" style="margin-top:8px">La SEC ya tiene el ejercicio ' + nuevoEj + ' completo y la ficha llega a ' + f.anio_base + ': actualízala en Valoración («Añadir ' + nuevoEj + ' desde la SEC»).</div>' : '') +
       '<div class="acts" style="margin-top:8px"><button class="btn sec" id="r-ia">' + (r.doce ? 'Cambiar cifras (IA)' : 'Cifras con una IA') + '</button><button class="btn sec" id="r-val">Abrir valoración</button></div>' +
       '<div class="f2">' + U.campo('r-fe', 'Fecha', r.fecha || '', 'date') + U.campo('r-pe', 'Periodo', r.periodo || '') + '</div>' +

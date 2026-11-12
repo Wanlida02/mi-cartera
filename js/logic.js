@@ -221,8 +221,12 @@ const Logic = (function () {
     const f0 = d.fichas[tk]; if (!f0) return null;
     hoy = hoy || today();
     if (!V.soportado(f0)) return { tk, nombre: f0.nombre, noSoportado: true };
+    { const falta = f0._borrador ? lineasFaltantes(f0) : []; if (falta.length) return { tk, nombre: f0.nombre || tk, error: 'ficha incompleta: faltan ' + falta.join(', '), incompleta: falta }; }   // un borrador sin deuda/caja/… no se valora (saldría inflada)
     try {
       const pf = precioFicha(d, tk), f = Object.assign({}, f0, { precio: pf.precio });
+      if (!(pf.precio > 0)) return { tk, nombre: f0.nombre || tk, divisa: f0.divisa, error: 'sin precio de cotización (revisa el símbolo en simbolos.json y actualiza precios)', sinPrecio: true };
+      const ac = ((f.hist || {}).acciones || []).slice(-1)[0];
+      if (!(ac > 0) && !V.isFin(f0)) return { tk, nombre: f0.nombre || tk, divisa: f0.divisa, error: 'falta el número de acciones del último ejercicio (edítalo en «Revisar datos»)', sinAcciones: true };
       const esc = Object.assign({}, V.defaults(f).conservador, (f.escenarios || {}).conservador || {});
       const res = V.proyectar(f, esc), ref = res.cagr[5].ref;
       const ent = V.precioEntrada(f, res, d.ajustes.objetivo / 100), max = V.precioEntrada(f, res, d.ajustes.minimo / 100);
@@ -304,7 +308,7 @@ const Logic = (function () {
       (coreName(e.nombre) && coreName(nombre) && (coreName(nombre) === coreName(e.nombre) || coreName(nombre).indexOf(coreName(e.nombre) + ' ') === 0))));
     const objetivos = [];
     Object.keys(d.fichas).forEach(tk => {
-      const f = d.fichas[tk], estado = enCartera.has(tk) ? 'cartera' : f.estado === 'watchlist' ? 'watchlist' : null;
+      const f = d.fichas[tk], estado = enCartera.has(tk) ? 'cartera' : f.estado === 'watchlist' ? 'watchlist' : f._borrador ? 'otra' : null;
       if (estado) objetivos.push({ tk, nombre: f.nombre || tk, estado });
     });
     d.posiciones.forEach(p => { const tk = tickerDe(d, p); if (!tk || !d.fichas[tk]) objetivos.push({ tk: tk || (p.ticker || ''), nombre: p.empresa, estado: 'cartera' }); });
