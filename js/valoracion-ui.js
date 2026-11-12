@@ -148,7 +148,7 @@
     cargarSEC();
     const filas = ks.map(k => ({ k, est: estadoDe(k), v: L.valoracion(d, k, hoy()) })).filter(x => x.v);
     const grupos = [['cartera', 'En cartera'], ['watchlist', 'Watchlist'], ['candidata', 'Candidatas']];
-    let h = (U.lineaPrecios ? U.lineaPrecios() : '') + '<div class="tools"><button class="btn" data-v="nueva">+ Nueva ficha</button><input id="v-q" type="search" placeholder="Buscar" value="' + esc(filtro) + '"></div>';
+    let h = (U.lineaPrecios ? U.lineaPrecios() : '') + '<div class="tools"><button class="btn" data-v="nueva">+ Nueva ficha</button><button class="btn sec" data-v="releer" title="Vuelve a leer el índice de informes y rehace las fichas borrador">↻ Releer informes</button><input id="v-q" type="search" placeholder="Buscar" value="' + esc(filtro) + '"></div>';
     grupos.forEach(([g, t]) => {
       const rows = filas.filter(x => x.est === g).sort((x, y) => (y.v.ref == null ? -9 : y.v.ref) - (x.v.ref == null ? -9 : x.v.ref));
       if (!rows.length) return;
@@ -287,11 +287,30 @@
     });
   }
 
+  /* Fuerza la relectura del índice de informes (Drive) y rehace las fichas borrador con él. Las fichas completas no se tocan: solo avisa si el informe trae un ejercicio más nuevo. */
+  async function releerInformes() {
+    const msg = h => U.dlg('<h2>Releer informes</h2><p class="small">' + h + '</p><div class="acts"><button class="btn" data-a="cerrar">Vale</button></div>');
+    const d = D(); let via = 'índice ya cargado en la app';
+    if (Drive.estado().conectado) { U.toast('Leyendo el índice de informes en Drive…'); const r = await Drive.releerInformes(); if (r.msg) return msg('No he podido leer Drive: ' + r.msg); via = 'Drive (' + r.n + ' empresas, generado ' + String(r.generado || '?').slice(0, 16).replace('T', ' ') + ')'; }
+    const I = Store.get().informes, emp = (I && I.empresas) || [];
+    if (!emp.length) return msg('No hay índice de informes. En tu PC ejecuta python herramientas/indice_informes.py --drive (o carga el archivo en Ajustes) y vuelve a pulsar.');
+    const rehechas = [], nuevas = [], sinDatos = [];
+    Object.keys(d.fichas).forEach(k => {
+      const f = d.fichas[k], e = emp.find(x => (x.tk || '').toUpperCase() === k.toUpperCase()); if (!e) return;
+      const an = ((e.datos || {}).anios || []).map(Number), ult = an.length ? Math.max.apply(null, an) : null;
+      if (f._borrador) { const n = DatosWeb.aFichaInformes(e, hoy()); if (n) { n.precio = f.precio; n.precio_fecha = f.precio_fecha; d.fichas[k] = n; rehechas.push(k + ' (hasta ' + ult + ')'); } else sinDatos.push(k); }
+      else if (ult && Number(f.anio_base) < ult) nuevas.push(k + ': ficha ' + f.anio_base + ' → informes ' + ult);
+    });
+    if (rehechas.length) { Store.save(); U.render(); }
+    msg('Leído desde ' + via + '.' + (rehechas.length ? '<br><br><b>Fichas borrador rehechas:</b> ' + esc(rehechas.join(', ')) : '<br><br>No había fichas borrador que rehacer.') + (nuevas.length ? '<br><br><b>Fichas completas con ejercicio más nuevo en los informes</b> (no las toco; actualízalas con «Nuevo ejercicio»): ' + esc(nuevas.join('; ')) : '') + (sinDatos.length ? '<br><br><b>Sin cifras suficientes en el CSV:</b> ' + esc(sinDatos.join(', ')) : ''));
+  }
+
   /* ───── Eventos ───── */
   const restore = fn => { const y = window.scrollY; fn(); U.render(); window.scrollTo(0, y); };
   U.clicks.push(e => {
     const t = e.target.closest('[data-v]'); if (!t) return false; const a = t.dataset.v, d = D();
     if (a === 'nueva') nuevaDlg();
+    else if (a === 'releer') releerInformes();
     else if (a === 'abrir') { sel = t.dataset.k; U.render(); window.scrollTo(0, 0); }
     else if (a === 'abrir-tk') U.abrirFicha(t.dataset.k);
     else if (a === 'volver') { sel = null; U.render(); }

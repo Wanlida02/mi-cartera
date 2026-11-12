@@ -53,12 +53,12 @@ const Drive = (function () {
 
   /* Índice de informes anuales: lo sube herramientas/indice_informes.py (con --drive) desde tu PC; aquí solo se lee.
      Se adopta si es más reciente que el que ya tienes. No cuenta como edición tuya (no dispara subidas). */
-  async function traerInformes() {
+  async function traerInformes(forzar) {
     try {
       const r = await api(API + '?q=' + encodeURIComponent("name='" + NAME_INF + "' and trashed=false") + '&fields=files(id,modifiedTime)&spaces=drive&pageSize=5');
       const f = ((await r.json()).files || []).sort((a, b) => (a.modifiedTime < b.modifiedTime ? 1 : -1))[0]; if (!f) return false;
       const o = await bajar(f.id), d = Store.get();
-      if (!o || !Array.isArray(o.empresas) || (d.informes && (d.informes.generado || '') >= (o.generado || ''))) return false;
+      if (!o || !Array.isArray(o.empresas) || (!forzar && d.informes && (d.informes.generado || '') >= (o.generado || ''))) return false;
       d.informes = o; Store.save(true); onDatos(); return true;
     } catch (e) { if (/sesión caducada/.test(e.message)) throw e; return false; }
   }
@@ -104,6 +104,7 @@ const Drive = (function () {
     conectar() { return sincronizar(true); },
     ahora() { return sincronizar(true); },
     desconectar() { try { localStorage.removeItem(MK); } catch (e) { } if (token && window.google) try { google.accounts.oauth2.revoke(token, () => { }); } catch (e) { } token = null; set('off'); },
+    async releerInformes() { try { await conseguirToken(true); } catch (e) { return { ok: false, msg: e.message }; } const ok = await traerInformes(true); const I = Store.get().informes; return { ok: !!ok, n: I && I.empresas ? I.empresas.length : 0, generado: I && I.generado }; },
     estado: () => ({ estado, detalle, conectado: !!meta().on })
   };
 })();
