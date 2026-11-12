@@ -8,6 +8,10 @@ Solo lee lo que ya dejó informes_anuales.py en cada carpeta "<Empresa> annual r
     Resultados trimestrales/semestrales que dejes a mano en la carpeta (p. ej. presentation-3Q-2026.pdf, Q3_2026_results.pdf,
     9M_2026.pdf): se reconocen por Q1-4/T1-4/9M/H1/interim/results/presentation en el nombre, se indexan como «trimestrales»
     y NO cuentan como informe anual.
+
+    Si hay un informe anual más nuevo que el último año del _datos.csv (porque lo bajaste a mano y la fuente automática aún no
+    tiene su XBRL), se extraen sus cifras al CSV con csv_desde_pdf.py (cada cifra se verifica contra el año comparativo del
+    informe; lo que no se puede verificar no se escribe). Desactívalo con --sin-pdf.
     <Empresa>_datos.csv       (cifras clave por ejercicio)
     <Empresa>_fuentes.md      (enlace a cada documento original)
 
@@ -166,13 +170,28 @@ def main():
     ap = argparse.ArgumentParser(description="Genera indice_informes.json para la app Mi Cartera.")
     ap.add_argument("--carpeta", type=Path, default=CARPETA_BASE, help="Carpeta de valoraciones")
     ap.add_argument("--salida", type=Path, help="Archivo de salida (por defecto, dentro de la carpeta)")
+    ap.add_argument("--sin-pdf", action="store_true", help="No intentar completar el CSV con cifras de los PDF más nuevos (csv_desde_pdf.py)")
     ap.add_argument("--drive", action="store_true", help="Sube también el índice a tu Google Drive (ver subir_drive.py)")
     a = ap.parse_args()
     empresas, avisos = [], []
+    csv_pdf = None
+    if not a.sin_pdf:  # si has bajado a mano un informe más nuevo que el último año del CSV, se extraen sus cifras (verificadas) al CSV
+        try:
+            sys.path.insert(0, str(Path(__file__).resolve().parent))
+            import csv_desde_pdf as csv_pdf
+        except Exception as e:
+            print(f"(No se puede completar el CSV desde los PDF: {e})")
     for c in sorted(a.carpeta.iterdir(), key=lambda x: x.name.lower()):
         if not c.is_dir() or c.name.startswith(("_", ".")):
             continue
         if c.name.endswith(SUFIJO):
+            if csv_pdf:
+                try:
+                    csv_pdf.actualizar(c)
+                except SystemExit as ex:      # p. ej. falta pypdf: se avisa y se sigue con el resto
+                    avisos.append(f"{c.name}: {ex}")
+                except Exception as ex:
+                    avisos.append(f"{c.name}: no se pudo completar el CSV desde el PDF ({ex})")
             e = indexar_empresa(c, avisos)
             if e:
                 empresas.append(e)
