@@ -278,16 +278,23 @@
   const CORE_IA = ['Ventas', 'Beneficio operativo (EBIT)', 'Beneficio neto', 'BPA diluido'];
   U.completarIA = function (e) {
     const dt = e.datos || {}, ult = Number(e.ultimo_anio) || (new Date().getFullYear() - 1), base = (dt.anios && dt.anios.length >= 2 ? dt.anios : [ult - 5, ult - 4, ult - 3, ult - 2, ult - 1, ult]).map(Number), div = dt.divisa || 'EUR';
-    const extra = base[base.length - 1] + 1 <= new Date().getFullYear() ? base[base.length - 1] + 1 : null, anios = extra ? base.concat(extra) : base, n = anios.length;
+    const sig = base[base.length - 1] + 1, hoyD = new Date(), publicable = sig <= hoyD.getFullYear() && (Number(e.ultimo_anio) >= sig || hoyD >= new Date(sig + 1, 2, 1)),   // el ejercicio siguiente solo puede existir si ya hay informe suyo o han pasado dos meses de su cierre (dic → marzo); si no, no se pide
+      extra = publicable ? sig : null, anios = extra ? base.concat(extra) : base, n = anios.length;
     const M = dt.metricas || {}, serie = k => anios.map((_, i) => (i < base.length && NUM_IA((M[k] || [])[i]) ? M[k][i] : null));
     const falta = {}; METR_IA.forEach(k => { const ys = anios.filter((y, i) => serie(k)[i] == null && y !== extra); if (ys.length) falta[k] = ys; });
     const tpl = METR_IA.filter(k => falta[k] || extra), plantilla = '{' + tpl.map(k => '"' + k + '":' + JSON.stringify(serie(k))).join(',') + ',"fuentes":"nombre y enlace de cada métrica","discrepancias":"entre fuentes, si las hay"}';
     const pend = Object.keys(falta).map(k => '- ' + k + ' (' + DEF_IA[k] + '): faltan los años ' + falta[k].join(', ')).join('\n');
+    if (!extra && !Object.keys(falta).length) {   // nada que pedir de las seis métricas: no se genera un mensaje vacío
+      const f0 = D().fichas[e.tk], fl = f0 ? L.lineasFaltantes(f0) : [];
+      return U.dlg('<h2>' + esc(e.nombre) + ': tus informes están al día</h2><p class="small">Las seis métricas de los ejercicios cerrados (' + base[0] + '–' + base[base.length - 1] + ') ya están en tus CSV, y el ejercicio ' + sig + ' aún no puede estar publicado (se pedirá a partir de marzo de ' + (sig + 1) + ', o antes si ya tienes su informe en la carpeta). No hay nada que preguntar a una IA aquí.</p>' +
+        (fl.length ? '<div class="alert warn">Pero la <b>ficha de valoración</b> es un borrador y le faltan: <b>' + esc(fl.join(', ')) + '</b>. Eso no se pide aquí: en Valoración pulsa «↻ Releer informes» (si tu CSV ya las trae, se rellenan solas) o «Completar con una IA».</div><div class="acts"><button class="btn sec" data-a="cerrar">Cerrar</button><button class="btn" id="ia-ir">Ir a la ficha</button></div>' : '<div class="acts"><button class="btn" data-a="cerrar">Vale</button></div>'),
+        dd => { const b = dd.querySelector('#ia-ir'); if (b) b.onclick = () => { U.cerrar(); U.abrirFicha(e.tk); }; });
+    }
     const sym0 = (U.simboloYahoo ? U.simboloYahoo(e.tk) : e.tk) || e.tk || '';
     const prompt = modo => {
       const sym = ((document.querySelector('#ia-sym') || {}).value || sym0).trim(), E = U.enlacesDatos ? U.enlacesDatos(sym) : [];
       const cab = 'Eres un analista financiero. Necesito cifras anuales de ' + (e.nombre || e.tk) + ' (símbolo ' + sym + ', divisa ' + div + ') que NO aparecen en mis informes.\n\nLO QUE FALTA:\n' + (pend || '- (de los años cerrados no falta nada)') +
-        (extra ? '\n\nEJERCICIO ' + extra + ': dime si la empresa YA HA PUBLICADO sus resultados anuales de ' + extra + ' (ejercicio completo, no trimestres sueltos). Si sí, rellena también las seis métricas de ' + extra + '; si no, deja ' + extra + ' en null en todas.' : '') +
+        (extra ? '\n\nEJERCICIO ' + extra + ': dime si la empresa YA HA PUBLICADO sus resultados anuales de ' + extra + ' (ejercicio completo, no trimestres sueltos). Si sí, rellena también las seis métricas de ' + extra + '; si no, deja ' + extra + ' en null en todas. IMPORTANTE: que ' + extra + ' no esté publicado NO es motivo para parar: rellena igualmente todo lo demás y responde siempre con el JSON.' : '') +
         '\n\nPRECARGO lo que ya tengo (ejercicios ' + anios.join(', ') + ', en ese orden). Rellena solo los null y NO cambies mis valores; si crees que alguno de los míos es incorrecto, no lo cambies: dilo en "discrepancias". Unidades: millones de ' + div + ' (BPA y FCF por acción en ' + div + ' por acción; deuda neta/EBITDA como ratio), ejercicio cerrado de cada año.\n\n';
       const formato = 'FORMATO (JSON, un valor por año y en ese orden; null si no lo encuentras):\n' + plantilla + '\n\nREGLAS: usa SOLO datos de las páginas, no tu memoria; no estimes ni inventes; contrasta con dos fuentes y si difieren más de un 3 % di cuál elegiste en "discrepancias". Responde SOLO con el JSON.';
       if (modo === 'pegar') return cab + 'Debajo te pego el TEXTO COPIADO de las páginas de StockAnalysis y/o Yahoo Finance (resultados, balance y flujos de caja). No necesitas navegar.\n\n' + formato + '\n\n=== TEXTO COPIADO (pégalo aquí debajo) ===\n';

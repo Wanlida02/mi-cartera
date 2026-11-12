@@ -195,7 +195,7 @@
   }
 
   /* ───── Ajustes ───── */
-  const APP_VERSION = '38 · enlaces entre pestañas y datos por completar';
+  const APP_VERSION = '39 · Completar con IA no pide el ejercicio sin publicar';
   function ajustes() {
     const d = Store.get(), A = d.ajustes, cp = Store.ultimaCopia();
     dlg('<h2>Ajustes</h2><p class="small mut">Versión de la app: ' + APP_VERSION + '</p><h3>Umbrales del Inicio (rentabilidad anual esperada a 5 años)</h3><div class="f2">' + campo('a-b', 'Barata ≥ %', A.umbral_barata, 'number') + campo('a-c', 'Cara ≤ %', A.umbral_cara, 'number') + '</div>' +
