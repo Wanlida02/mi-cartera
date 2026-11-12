@@ -31,8 +31,14 @@ const Val = (function () {
     return s0 >= 1 && h.ventas[s0 - 1] > 0 && isN(h.ventas[s0]) && h.ventas[s0] < 0.9 * h.ventas[s0 - 1] ? s0 - 1 : -1;
   }
   /* ---- Supuestos por defecto a partir del histórico (M14: conservador, "como mucho lo de los últimos años") ---- */
+  /* Una ficha puede venir sin algunas líneas (p. ej. borradores de informes): se rellenan con nulos para que nada falle */
+  function asegurar(f) {
+    const h = f.hist, n = (h.ventas || []).length;
+    ['leases', 'leases_deuda', 'goodwill', 'equity', 'minoritarios', 'otros', 'impuestos', 'intereses', 'da', 'capex', 'caja', 'deuda', 'acciones', 'ebit', 'ebitda'].forEach(k => { if (!Array.isArray(h[k])) h[k] = Array(n).fill(null); });
+    return h;
+  }
   function defaults(f) {
-    const h = f.hist, n = h.ventas.length;
+    const h = asegurar(f), n = h.ventas.length;
     const margen = h.ventas.map((v, i) => (isN(h.ebit[i]) && v > 0 ? ebitR(h, i) / v : null));
     const tasa = h.ventas.map((v, i) => { const pt = z(h.ebit[i]) - z(h.intereses[i]); return pt > 0 && isN(h.impuestos[i]) ? h.impuestos[i] / pt : null; });
     const g5 = cagr(h.ventas, 5), a3r = cagr(h.acciones, 3);
@@ -103,7 +109,7 @@ const Val = (function () {
   /* ---- Proyección de un escenario a 5 años (réplica de las 4 pestañas del Excel) ---- */
   function proyectar(f, sc, opts) {
     opts = opts || {};
-    const h = f.hist, i = h.ventas.length - 1;
+    const h = asegurar(f), i = h.ventas.length - 1;
     const precio = f.precio, y = f.dividend_yield || 0;
     const nd0 = z(last(h.deuda)) + z(last(h.leases_deuda)) - z(last(h.caja));
     const ndPath = opts.ndPath || (f.deuda_neta_proy && f.deuda_neta_proy.length ? f.deuda_neta_proy : null);
@@ -151,7 +157,7 @@ const Val = (function () {
 
   /* Señales de trampa de valor †: deterioro sostenido del negocio en los últimos años */
   function trampa(f) {
-    const h = f.hist, n = h.ventas.length, out = [];
+    const h = asegurar(f), n = h.ventas.length, out = [];
     const m = h.ventas.map((v, i) => (isN(h.ebit[i]) && v > 0 ? ebitR(h, i) / v : null));
     if (n >= 4 && [1, 2, 3].every(k => isN(m[n - k]) && isN(m[n - k - 1]) && m[n - k] < m[n - k - 1]) && m[n - 1] < 0.85 * m[n - 4]) out.push(`margen EBIT a la baja tres años seguidos (${(m[n - 4] * 100).toFixed(1)} % → ${(m[n - 1] * 100).toFixed(1)} %)`);
     if (n >= 3 && h.ventas[n - 1] < h.ventas[n - 2] && h.ventas[n - 2] < h.ventas[n - 3]) out.push('ventas a la baja dos años seguidos');
@@ -174,7 +180,7 @@ const Val = (function () {
 
   /* ---- DCF inverso: qué crecimiento anual del FCF (10 años) descuenta el precio actual ---- */
   function dcfInverso(f, tasa, gTerm) {
-    const h = f.hist, i = h.ventas.length - 1;
+    const h = asegurar(f), i = h.ventas.length - 1;
     const ni = z(ebitR(h, i)) - z(h.intereses[i]) - z(taxR(h, i)) - z(h.minoritarios[i]) + z(h.otros && h.otros[i]);
     const fcf0 = z(ebitR(h, i)) + z(h.da[i]) - z(h.capex[i]) - z(h.intereses[i]) - z(taxR(h, i)) - z(h.minoritarios[i]) - z(h.leases[i]);
     const base = fcf0 > 0 ? fcf0 : ni;
@@ -193,7 +199,7 @@ const Val = (function () {
 
   /* ---- Múltiplos actuales (a precio de mercado, sobre el último ejercicio) ---- */
   function actuales(f) {
-    const h = f.hist, i = h.ventas.length - 1, acc = last(h.acciones), cap = f.precio * acc;
+    const h = asegurar(f), i = h.ventas.length - 1, acc = last(h.acciones), cap = f.precio * acc;
     const nd = z(last(h.deuda)) + z(last(h.leases_deuda)) - z(last(h.caja));
     const eb = z(ebitR(h, i)), tx = z(taxR(h, i));   // recurrente (sin extraordinarios †)
     const ni = eb - z(h.intereses[i]) - tx - z(h.minoritarios[i]) + z(h.otros && h.otros[i]);
@@ -208,7 +214,7 @@ const Val = (function () {
 
   /* ---- Control de realismo: avisos sobre los supuestos ---- */
   function realismo(f, sc, nombre, act) {
-    const h = f.hist, out = [], mh = f.mult_hist || {};
+    const h = asegurar(f), out = [], mh = f.mult_hist || {};
     const margen = h.ventas.map((v, i) => (isN(h.ebit[i]) && v > 0 ? ebitR(h, i) / v : null)).filter(isN);
     const g5 = cagr(h.ventas, 5), mMax = Math.max.apply(null, margen), mMed = avg(margen);
     const add = (nivel, txt) => out.push({ nivel, txt });
