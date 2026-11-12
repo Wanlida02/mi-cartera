@@ -217,6 +217,28 @@ const Logic = (function () {
   /* Líneas que el motor necesita y la ficha no tiene (las fichas borrador creadas desde informes solo traen ventas, EBIT, beneficio neto y BPA) */
   const NOM_LINEA = { intereses: 'intereses', impuestos: 'impuestos', da: 'amortización', capex: 'capex', deuda: 'deuda', caja: 'caja' };
   function lineasFaltantes(f) { const h = (f && f.hist) || {}; return Object.keys(NOM_LINEA).filter(k => !Array.isArray(h[k])).map(k => NOM_LINEA[k]); }
+
+  /* ───── Cambiar el ticker de una ficha (p. ej. NRO → NRO.PA): se mueve en TODO lo que lo usa ───── */
+  const tickerValido = t => /^[A-Z0-9][A-Z0-9.:\-_ ]{0,24}$/.test(t || '');
+  /* Claves con las que buscar en ficheros públicos por ticker (calendario, SEC): el actual, el anterior y el base sin sufijo de bolsa */
+  function claves(d, tk) { const f = (d && d.fichas && d.fichas[tk]) || {}; return [tk, f.ticker_anterior, baseTk(tk)].filter((x, i, a) => x && a.indexOf(x) === i); }
+  function renombrarTicker(d, viejo, nuevo) {
+    nuevo = String(nuevo || '').trim().toUpperCase();
+    if (!d.fichas[viejo]) return { ok: false, error: 'No existe la ficha ' + viejo };
+    if (!nuevo || nuevo === viejo) return { ok: true, sinCambios: true };
+    if (!tickerValido(nuevo)) return { ok: false, error: 'Ticker no válido: usa letras, números, punto, guion o dos puntos (ej. NRO.PA)' };
+    if (d.fichas[nuevo] || (d.cribado || {})[nuevo]) return { ok: false, error: 'Ya existe una ficha o una entrada del cribado con el ticker ' + nuevo };
+    const c = {};
+    const f = d.fichas[viejo]; f.ticker_anterior = f.ticker_anterior || viejo; if (f.ticker != null) f.ticker = nuevo;
+    d.fichas[nuevo] = f; delete d.fichas[viejo]; c.ficha = 1;
+    ['', '@ficha'].forEach(suf => { if (d.precios && d.precios[viejo + suf]) { const p = d.precios[viejo + suf]; if (p.ticker) p.ticker = nuevo; d.precios[nuevo + suf] = p; delete d.precios[viejo + suf]; c.precios = (c.precios || 0) + 1; } });
+    if (d.cribado && d.cribado[viejo]) { const e = d.cribado[viejo]; if (e.ticker != null) e.ticker = nuevo; d.cribado[nuevo] = e; delete d.cribado[viejo]; c.cribado = 1; }
+    (d.posiciones || []).forEach(p => { if ((p.ticker || '').trim().toUpperCase() === viejo) { p.ticker = nuevo; c.posiciones = (c.posiciones || 0) + 1; } });
+    (d.resultados || []).forEach(r => { if (r.tk === viejo) { r.tk = nuevo; c.resultados = (c.resultados || 0) + 1; } });
+    const al = d.ajustes && d.ajustes.alias_informes; if (al && al[viejo] != null) { al[nuevo] = al[viejo]; delete al[viejo]; c.alias = 1; }
+    cache.clear && cache.clear();
+    return { ok: true, viejo, nuevo, cambios: c };
+  }
   function valoracion(d, tk, hoy) {
     const f0 = d.fichas[tk]; if (!f0) return null;
     hoy = hoy || today();
@@ -373,6 +395,6 @@ const Logic = (function () {
   }
 
   return { isN, today, clone, nuevoDatos, normalizar, norm, coreName, sameCompany, findExisting, tickerDe, fxPorEur, aEur, precioPos, costeEur, mercadoEur, valorEur, variacion, diasDesde,
-    compra, venta, editar, eliminar, borrarMov, reverseMov, precioManual, precioFicha, valoracion, mezclarManual, contrastar, lineasFaltantes, revision, precioRef, pesos, dashboard, informes, V };
+    compra, venta, editar, eliminar, borrarMov, reverseMov, precioManual, precioFicha, valoracion, renombrarTicker, tickerValido, claves, mezclarManual, contrastar, lineasFaltantes, revision, precioRef, pesos, dashboard, informes, V };
 })();
 if (typeof module !== 'undefined') module.exports = Logic;

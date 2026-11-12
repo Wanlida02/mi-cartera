@@ -250,6 +250,16 @@
       "y": [
         "PRDO"
       ]
+    },
+    "MIPS": {
+      "y": [
+        "MIPS.ST"
+      ]
+    },
+    "AVAV": {
+      "y": [
+        "AVAV"
+      ]
     }
   },
   "divisas": [

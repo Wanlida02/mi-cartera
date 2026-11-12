@@ -21,10 +21,11 @@
 
   let CAL = null, calCargando = false;
   async function cargarCal() { if (CAL || calCargando) return; calCargando = true; try { const r = await fetch('calendario_resultados.json', { cache: 'no-store' }); if (r.ok) { CAL = await r.json(); U.render && U.render(); } } catch (e) { /* sin calendario */ } calCargando = false; }
-  const sugeridas = (sin, conFecha) => CAL && CAL.fechas ? sin.filter(k => CAL.fechas[k] && !conFecha.has(k) && CAL.fechas[k].fecha >= hoy()).map(k => [k, CAL.fechas[k]]) : [];
+  const calDe = k => (CAL && CAL.fechas ? L.claves(D(), k).map(c => CAL.fechas[c]).find(Boolean) : null) || null;
+  const sugeridas = (sin, conFecha) => CAL && CAL.fechas ? sin.filter(k => calDe(k) && !conFecha.has(k) && calDe(k).fecha >= hoy()).map(k => [k, calDe(k)]) : [];
 
   /* Último trimestre que la SEC ya tiene de la empresa (solo EE. UU.) */
-  const secFin = tk => { const R = U.secRaw && U.secRaw(), e = R && R[tk]; return e && !e.error && e.ttm && e.ttm.fin ? e.ttm.fin : null; };
+  const secFin = tk => { const R = U.secRaw && U.secRaw(), e = R && L.claves(D(), tk).map(c => R[c]).find(Boolean); return e && !e.error && e.ttm && e.ttm.fin ? e.ttm.fin : null; };
   const nuevoReg = (tk, c, extra) => { const p = precioDe(tk); return Object.assign({ id: 'r' + Date.now().toString(36) + tk, tk, periodo: (c && c.periodo) || trimestre(c && c.fecha), fecha: c && c.fecha || null, estado: 'pendiente', estimada: c && c.confirmada === false ? true : undefined,
     precio_ref: p ? p.precio : undefined, precio_fecha: p ? hoy() : undefined, ref_fin: secFin(tk) || undefined }, extra || {}); };
   const anotar = (tk, c) => D().resultados.push(nuevoReg(tk, c));
@@ -241,7 +242,7 @@
     });
   }
   U.clicks.push(e => { const t = e.target.closest('[data-r]'); if (!t) return false; if (t.dataset.r === 'nuevo') nuevo(t.dataset.k);
-    else if (t.dataset.r === 'cal' && CAL) { const c = CAL.fechas[t.dataset.k]; if (c) { anotar(t.dataset.k, c); U.guardar({ ok: true, msg: 'Fecha anotada' }); } }
+    else if (t.dataset.r === 'cal' && CAL) { const c = calDe(t.dataset.k); if (c) { anotar(t.dataset.k, c); U.guardar({ ok: true, msg: 'Fecha anotada' }); } }
     else if (t.dataset.r === 'calall' && CAL) { const cf = new Set(D().resultados.filter(r => r.estado !== 'revisado').map(r => r.tk)); sugeridas(seguidas(), cf).forEach(([k, c]) => anotar(k, c)); U.guardar({ ok: true, msg: 'Fechas anotadas' }); } else if (t.dataset.r === 'rev') revisar(t.dataset.id); else return false; return true; });
   /* Desde Informes: abre la revisión de un trimestre (usa el pendiente de ese periodo o crea uno) */
   U.revisarTrimestre = function (tk, periodo) {

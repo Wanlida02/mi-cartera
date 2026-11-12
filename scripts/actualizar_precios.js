@@ -159,6 +159,9 @@ async function principal() {
     tareas.push({ clave: tk, tk, cand: c.y });
     if (c.ficha) tareas.push({ clave: tk + '@ficha', tk, cand: [c.ficha] });
   });
+  /* Precios de símbolos que ya no están en simbolos.json (p. ej. un ticker renombrado NRO → NRO.PA): se retiran para no dejar valores huérfanos */
+  const conocidas = new Set(); Object.keys(cfg.simbolos).forEach(tk => { conocidas.add(tk); conocidas.add(tk + '@ficha'); });
+  Object.keys(precios).forEach(k => { if (!conocidas.has(k)) delete precios[k]; });
   const cola = tareas.slice(); let hechos = 0;
   await Promise.all(Array.from({ length: 4 }, async () => {                // 4 en paralelo: rápido sin saturar a Yahoo
     while (cola.length) {

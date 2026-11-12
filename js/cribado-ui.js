@@ -55,6 +55,7 @@
   /* ───── Lista de precios de las candidatas ───── */
   function catVer(k) { let R; try { R = evaluar(k); } catch (e) { return 'otras'; } const v = (R && R.veredicto) || ''; return /^Pasa/.test(v) ? 'pasa' : /^Vigilar/.test(v) ? 'vigilar' : /^Descartar/.test(v) ? 'descartar' : 'otras'; }
   let SIMB = null, simbCarga = false;
+  U.tickerRenombrado = (viejo, nuevo) => { if (sel === viejo) sel = nuevo; };
   U.abrirCribado = tk => { if (!((D().cribado || {})[tk])) return; sel = tk; U.irA('cribado'); };
   U.simbolos = () => SIMB; U.cargarSimb = () => cargarSimb();
   function cargarSimb() { if (SIMB || simbCarga) return; simbCarga = true; DatosWeb.leerArchivo('simbolos.json').then(j => { SIMB = (j && j.simbolos) || {}; simbCarga = false; U.render(); }).catch(() => { simbCarga = false; }); }

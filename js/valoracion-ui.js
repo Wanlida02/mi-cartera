@@ -23,7 +23,7 @@
   function cargarSEC() { if (SECR || secCarga) return; secCarga = true; fetch('datos/resumen.json', { cache: 'no-cache' }).then(r => (r.ok ? r.json() : null)).then(j => { SECR = (j && j.empresas) || {}; U.render(); }).catch(() => { SECR = {}; }); }
   /* Para una ficha: ejercicio nuevo publicado y factor de 12 meses (EBIT 12 meses / EBIT del mismo ejercicio en la SEC) */
   function secSEC(tk, f) {
-    const e = SECR && SECR[tk]; if (!e || e.error || !f || f.divisa !== 'USD' || V.isFin(f)) return null;   // los bancos tienen otras líneas: no se mezclan con los datos de empresa de la SEC
+    const e = SECR && ((L.claves(D(), tk).map(c => SECR[c]).find(Boolean))); if (!e || e.error || !f || f.divisa !== 'USD' || V.isFin(f)) return null;   // los bancos tienen otras líneas: no se mezclan con los datos de empresa de la SEC
     const out = { nombre: e.nombre };
     if (L.lineasFaltantes(f).length && !(f.tipo === 'reit')) out.completar = true;
     if (e.ultimo_ejercicio && e.ultimo_ejercicio.anio > f.anio_base) out.nuevo = e.ultimo_ejercicio.anio;
@@ -51,7 +51,7 @@
   async function nuevoEjercicio(tk) {
     const d = D(), f = d.fichas[tk]; let j;
     if (V.isFin(f)) return U.toast('Los bancos y financieras no se actualizan automáticamente desde la SEC: edita los datos a mano');
-    try { const r = await fetch('datos/' + tk.replace(/[^A-Z0-9]/g, '_') + '.json', { cache: 'no-cache' }); j = r.ok ? await r.json() : null; } catch (e) { j = null; }
+    j = await datosSEC(tk);
     if (!j || !j.anios) return U.toast('No encuentro los datos de la SEC de ' + tk);
     const nuevos = j.anios.filter(a => a > f.anio_base), inc = L.lineasFaltantes(f).length > 0;
     if (!nuevos.length && !inc) return U.toast('No hay ejercicios nuevos');
@@ -71,11 +71,32 @@
 
 
 
+
+  /* El ticker cambió: la lista pública de símbolos de precios (simbolos.json) también tiene que cambiar para que los precios sigan llegando */
+  async function simboloRenombrado(viejo, nuevo) {
+    try {
+      const cfg = await DatosWeb.leerArchivo('simbolos.json'); if (!cfg || !cfg.simbolos) return;
+      const S = cfg.simbolos; if (S[nuevo]) return;
+      const e = S[viejo]; S[nuevo] = e ? Object.assign({}, e, { y: (e.y || []).map(x => (x === viejo ? nuevo : x)) }) : { y: [nuevo] }; if (!(S[nuevo].y || []).length) S[nuevo].y = [nuevo]; delete S[viejo];
+      const r = await DatosWeb.escribirArchivo('simbolos.json', JSON.stringify(cfg, null, 2) + '\n', 'Símbolos: ' + viejo + ' → ' + nuevo);
+      if (r.sinToken) return U.toast('Ticker cambiado. Para que lleguen los precios nuevos falta el token de GitHub (Cartera → Actualizar precios) y repetir el cambio en la lista de símbolos.');
+      if (!r.ok) return U.toast('Ticker cambiado, pero no pude actualizar la lista de símbolos: ' + r.msg);
+      if (U.simbolos && U.simbolos()) { const m = U.simbolos(); m[nuevo] = S[nuevo]; delete m[viejo]; }
+      DatosWeb.lanzarWorkflow('precios.yml', { forzar: 'true' }); U.toast('Ticker cambiado; el precio nuevo llega en 1–2 min (Cartera → Actualizar precios → Traer lo último)');
+    } catch (e) { U.toast('Ticker cambiado, pero no pude actualizar la lista de símbolos'); }
+  }
+
+  /* Datos de la SEC de un ticker: prueba el actual, el anterior (si se renombró) y el base sin sufijo */
+  async function datosSEC(tk) {
+    for (const c of L.claves(D(), tk)) { try { const r = await fetch('datos/' + c.replace(/[^A-Z0-9]/g, '_') + '.json', { cache: 'no-cache' }); if (r.ok) return await r.json(); } catch (e) { /* siguiente */ } }
+    return null;
+  }
+
   /* ───── Contrastar una ficha (de informes) con los datos de la SEC: dos fuentes que coinciden = línea verificada («A»); si difieren se enseña y eliges ───── */
   const CRITL = [['ventas', 'Ventas'], ['ebit', 'EBIT'], ['da', 'Amortización'], ['impuestos', 'Impuestos'], ['acciones', 'Acciones (M)'], ['capex', 'Capex'], ['caja', 'Caja'], ['deuda', 'Deuda']];
   async function contrasteSEC(tk) {
     const d = D(), f = d.fichas[tk]; let j;
-    try { const r = await fetch('datos/' + tk.replace(/[^A-Z0-9]/g, '_') + '.json', { cache: 'no-cache' }); j = r.ok ? await r.json() : null; } catch (e) { j = null; }
+    j = await datosSEC(tk);
     if (!j || !j.anios || !j.hist) return U.toast('No hay datos de la SEC para ' + tk + ' (solo empresas de EE. UU.; el flujo semanal los genera)');
     const an = (f.anios || []).map(Number), filas = [];
     CRITL.forEach(([k, nom]) => {
@@ -218,7 +239,7 @@
     catch (e) {
       if (!(e && e.message === 'ficha incompleta')) console.warn('Valoración ' + sel + ':', e && e.stack || e);
       const falta = L.lineasFaltantes(f); cargarSEC(); const sd0 = secDe(sel, f);
-      return h + '<h2 style="margin:12px 0 4px">' + esc(sel) + ' — ' + esc(f.nombre || '') + '</h2><div class="alert warn" style="margin-top:10px">' + (falta.length ? '<b>Ficha incompleta.</b> Es un borrador y le faltan: ' + esc(falta.join(', ')) + '. Con esas líneas el motor no puede valorar la empresa.' : 'No se pudo calcular: ' + esc(e.message)) + (sd0 && sd0.completar ? '<br>La SEC tiene las cuentas completas de ' + esc(sel) + ': <button class="btn sm" data-v="nuevoej">Completar con los datos de la SEC</button>' : falta.length ? '<br>Pídeselas a una IA con búsqueda web (te preparo el texto) o complétalas a mano en «Revisar datos»: <button class="btn sm" data-v="lineasia">Completar con una IA</button>' + (f.divisa === 'USD' ? ' <button class="btn sm" data-v="contraste">Completar con la SEC</button>' : '') : '') + '</div>' + (U.enlaces ? U.enlaces(sel, 'val') : '') + '<div class="tools"><button class="btn sec sm" data-v="datos">Revisar datos</button></div>' + acciones(f);
+      return h + '<h2 style="margin:12px 0 4px">' + esc(sel) + ' — ' + esc(f.nombre || '') + '</h2><div class="alert warn" style="margin-top:10px">' + (falta.length ? '<b>Ficha incompleta.</b> Es un borrador y le faltan: ' + esc(falta.join(', ')) + '. Con esas líneas el motor no puede valorar la empresa.' : 'No se pudo calcular: ' + esc(e.message)) + (falta.length ? '<br>' + (sd0 && sd0.completar ? 'La SEC tiene las cuentas completas de ' + esc(sel) + '. «Completar con la SEC» rellena solo lo que falta y verifica lo que coincide; «Sustituir» reemplaza toda la ficha por la de la SEC. ' : 'Pídeselas a una IA con búsqueda web (te preparo el texto) o complétalas a mano en «Revisar datos». ') + '<button class="btn sm" data-v="lineasia">Completar con una IA</button>' + (f.divisa === 'USD' ? ' <button class="btn sm" data-v="contraste">Completar con la SEC</button>' : '') + (sd0 && sd0.completar ? ' <button class="btn sec sm" data-v="nuevoej">Sustituir por la de la SEC</button>' : '') : '') + '</div>' + (U.enlaces ? U.enlaces(sel, 'val') : '') + '<div class="tools"><button class="btn sec sm" data-v="datos">Revisar datos</button></div>' + acciones(f);
     }
     const cons = R.conservador, ref5 = cons.cagr[5].ref, pe = V.precioEntrada(f, cons, o / 100), pt = V.precioEntrada(f, cons, m / 100);
     cargarSEC(); const sd = secDe(sel, f);
@@ -289,15 +310,19 @@
     const f = D().fichas[sel], h = f.hist, an = f.anios || [];
     const fin = V.isFin(f), CR = [['A', 'Informe anual'], ['P', 'Fuente pública'], ['E', 'Estimado']];
     U.dlg('<h2>Datos · ' + esc(sel) + '</h2><p class="small mut">Importes en millones. Marca «Informe anual» cuando lo hayas contrastado con el documento. Desliza la tabla para ver todos los años.</p>' +
-      '<div class="f2">' + U.campo('v-nom', 'Nombre', f.nombre || '') + U.campo('v-div', 'Dividend yield (%)', isN(f.dividend_yield) ? +(f.dividend_yield * 100).toFixed(2) : '', 'number') + '</div>' +
+      '<div class="f2">' + U.campo('v-nom', 'Nombre', f.nombre || '') + U.campo('v-tk', 'Ticker (el de los precios)', sel) + '</div><p class="small mut" style="margin:0 0 6px">Si lo cambias (ej. NRO → NRO.PA) se actualiza en la ficha, los precios, el cribado, los resultados, la cartera y la lista de símbolos de precios.</p><div class="f2">' + U.campo('v-div', 'Dividend yield (%)', isN(f.dividend_yield) ? +(f.dividend_yield * 100).toFixed(2) : '', 'number') + '</div>' +
       '<div class="tw"><table class="tbl"><thead><tr><th>Línea</th>' + an.map(a => '<th>' + a + '</th>').join('') + '<th>Origen</th></tr></thead><tbody>' +
       linesOf(f).map(([k, n]) => '<tr><td style="min-width:150px">' + esc(n) + '</td>' + an.map((a, j) => '<td>' + numIn('class="hc" data-k="' + k + '" data-j="' + j + '" style="min-width:78px"', h[k] && h[k][j]) + '</td>').join('') + '<td><select data-cf="' + k + '">' + CR.map(([c, t]) => '<option value="' + c + '"' + ((f.conf || {})[k] === c ? ' selected' : '') + '>' + t + '</option>').join('') + '</select></td></tr>').join('') + '</tbody></table></div>' +
       '<div class="acts"><button class="btn sec" data-a="cerrar">Cancelar</button><button class="btn" id="v-ds">Guardar</button></div>', dd => {
       dd.querySelector('#v-ds').onclick = () => {
+        const tkNuevo = (U.val('v-tk') || sel).trim().toUpperCase();
+        if (tkNuevo !== sel) { if (!L.tickerValido(tkNuevo)) return U.toast('Ticker no válido: letras, números, punto o guion (ej. NRO.PA)'); if (D().fichas[tkNuevo] || (D().cribado || {})[tkNuevo]) return U.toast('Ya existe el ticker ' + tkNuevo); }
         const g = clone(f); g.nombre = U.val('v-nom') || g.nombre; const dy = parseFloat(U.val('v-div').replace(',', '.')); if (isFinite(dy)) g.dividend_yield = dy / 100; else delete g.dividend_yield;
         dd.querySelectorAll('.hc').forEach(el => { const k = el.dataset.k, j = +el.dataset.j, v = el.value.trim() === '' ? null : parseFloat(el.value.replace(',', '.')); if (!g.hist[k]) g.hist[k] = an.map(() => null); g.hist[k][j] = isFinite(v) ? v : null; });
         g.conf = g.conf || {}; dd.querySelectorAll('[data-cf]').forEach(el => { g.conf[el.dataset.cf] = el.value; });
-        g.fecha_datos = hoy(); delete g._borrador; D().fichas[sel] = g; U.guardar({ ok: true, msg: 'Datos guardados' }); };
+        g.fecha_datos = hoy(); delete g._borrador; D().fichas[sel] = g;
+        if (tkNuevo !== sel) { const viejo = sel, r = L.renombrarTicker(D(), viejo, tkNuevo); if (!r.ok) return U.toast(r.error); sel = tkNuevo; if (U.tickerRenombrado) U.tickerRenombrado(viejo, tkNuevo); simboloRenombrado(viejo, tkNuevo); return U.guardar({ ok: true, msg: 'Ticker cambiado: ' + viejo + ' → ' + tkNuevo }); }
+        U.guardar({ ok: true, msg: 'Datos guardados' }); };
     });
   }
   const KEYS = f => linesOf(f).map(x => x[0]);

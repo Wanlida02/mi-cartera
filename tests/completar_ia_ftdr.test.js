@@ -5,7 +5,7 @@ const srv = http.createServer((q, r) => { const p = path.join(root, q.url.split(
 (async () => {
   const b = await chromium.launch(), pg = await (await b.newContext({ viewport: { width: 390, height: 800 } })).newPage(), errs = [];
   pg.on('pageerror', e => errs.push(e.message)); pg.on('dialog', d => d.accept());
-  await pg.goto('http://localhost:' + srv.address().port + '/');
+  await pg.route('https://api.github.com/**', r => r.fulfill({ status: 404, body: '' })); await pg.goto('http://localhost:' + srv.address().port + '/');
   const alta = () => pg.evaluate(() => { const d = Store.get(); delete d.fichas.FTDR; delete d.cribado.FTDR; d.informes = { generado: '2026-11-01T10:00:00', avisos: [], empresas: [{ nombre: 'Frontdoor', carpeta: 'Frontdoor', tk: 'FTDR', ultimo_anio: 2026, documentos: [], csv: 'f.csv', datos: { divisa: 'USD', anios: [2020, 2021, 2022, 2023, 2024, 2025], metricas: { 'Ventas': [1600, 1700, 1600, 1700, 1800, 1900], 'Beneficio neto': [100, 120, 110, 130, 150, 180], 'BPA diluido': [1.2, 1.4, 1.3, 1.6, 1.9, 2.3], 'FCF / acción': [3, 3, 2, 3, 3, 4] } } }] }; Store.save(); });
   const abre = async () => { await pg.click('[data-tab=informes]'); await pg.waitForTimeout(150); await pg.click('[data-inf="0"]'); await pg.click('#inf-ia'); await pg.waitForSelector('#ia-r'); };
   await alta(); await abre();
