@@ -22,6 +22,34 @@ const Logic = (function () {
     return { version: 1, posiciones: [], movimientos: [], otras: { accounts: [] }, ajustes: AJUSTES(), fichas: {}, precios: {}, cribado: {}, resultados: [], informes: null, updatedAt: 0 };
   }
   /* Rellena lo que falte sin pisar lo que existe (datos importados de versiones anteriores) */
+
+  /* ───── Parches de datos: correcciones verificadas contra fuentes públicas, aplicadas una sola vez por ficha (no pisan lo que edites después) ───── */
+  const PARCHES = [{"id":"danr-2026-11-13","tk":"DANR","anios":[2020,2021,2022,2023,2024,2025,2026],"anio_base":2026,"hist":{"ventas":[2673.4,2725.5,3619,4102.1,4349.8,4200,3833.5],"ebit":[91.6,143.9,209.6,265.1,220.8,303.1,220.8],"ni_reportado":[62.9,80.2,218.7,243.6,240.8,220.1,230.4],"acciones":[75.3,74.9,74.3,74.2,74.2,71.6,71.6],"bpa":[0.8351,1.0712,2.9416,3.2815,3.2432,3.0354,3.2179],"intereses":[1.3,-19.8,21.2,-49.6,-73,-91,-83.4],"da":[96.1,106.3,149.6,158.9,170.4,134.7,218.1],"capex":[175.4,141.4,112.9,158.6,175.8,188.2,188.0],"caja":[null,null,null,null,1711.1,1650.0,1893.7],"equity":[1936.7,2014,2219.7,2404.7,2627.2,2758.8,2972.5],"impuestos":[22.2,34.9,68.1,55.9,69.8,87.8,100.7],"deuda":[601.8,585.3,566.5,315,1011.9,923.7,834.3],"extra":[null,null,null,null,null,null,null],"minoritarios":[null,null,null,null,null,null,null],"otros":[null,null,null,null,null,null,null],"leases":[null,null,null,null,null,null,null],"leases_deuda":[null,null,null,null,35.6,37.6,39.9],"goodwill":[null,null,null,null,null,null,null]},"conf":{"ventas":"A","ebit":"A","ni_reportado":"A","acciones":"P","bpa":"P","intereses":"A","da":"A","capex":"E","caja":"P","equity":"A","impuestos":"A","deuda":"A","extra":"A","minoritarios":"A","otros":"A","leases":"A","leases_deuda":"A","goodwill":"A"}}];
+  const NOTAS_DANR = [
+    'Revisada el 13-11-2026 contra los comunicados de resultados de Danieli (ejercicio a 30-jun-2025 y a 30-jun-2026): ventas, EBIT, D&A, intereses netos, impuestos, beneficio y patrimonio coinciden con el comunicado en 2024, 2025 y 2026.',
+    'Caja = efectivo + valores financieros − anticipos netos de clientes (criterio de caja neta «ajustada» de Danieli: 689 M en 2025, 1.020 M en 2026). Deuda = deuda financiera bancaria sin arrendamientos (834 M en 2026); arrendamientos IFRS 16 aparte (40 M).',
+    'Intereses: ingreso financiero neto (signo negativo = ingreso). No incluye las diferencias de cambio (−87 M en 2025, +27 M en 2026), que se tratan como no recurrentes.',
+    'D&A 2026 (218 M) incluye «svalutazioni» (saneamientos) que el comunicado no desglosa. Capex 2026 no está en el comunicado: estimado (≈ 2025). Acciones: 71,6 M en circulación (ordinarias 36,4 M + ahorro 35,2 M, calculadas con el total del dividendo); NO son las 81,3 M del capital, que incluyen autocartera.',
+    'Acciones ordinarias (DAN) y de ahorro (DANR) comparten beneficio por acción; la de ahorro cotiza con descuento (sin voto) y paga más dividendo (0,3353 € frente a 0,3146 €).'];
+  function aplicarParches(d) {
+    d.ajustes = d.ajustes || {}; const ya = d.ajustes.parches = Array.isArray(d.ajustes.parches) ? d.ajustes.parches : [];
+    PARCHES.forEach(p => {
+      if (ya.indexOf(p.id) >= 0) return; const f = d.fichas && d.fichas[p.tk];
+      if (!f || !/danieli/i.test(f.nombre || '')) return;
+      if (f.verificada) { ya.push(p.id); return; }
+      f.anios = p.anios.slice(); f.anio_base = p.anio_base; f.hist = JSON.parse(JSON.stringify(p.hist)); f.conf = Object.assign({}, p.conf);
+      delete f._borrador; f.leases_ok = true; f.verificada = '2026-11-13'; f.fecha_datos = '2026-11-13';
+      f.fuentes = ['Comunicados de resultados de Danieli (25-09-2025 y 25-09-2026), Intermonte (29-09-2026), Teleborsa (28-10-2026)'];
+      f.notas = NOTAS_DANR.slice(); f.extra_cribado = f.extra_cribado || {};
+      const pr = d.precios && d.precios[p.tk]; if (!pr || pr.simbolo !== 'DANR.MI') d.precios[p.tk] = Object.assign({}, pr || {}, { ticker: p.tk, precio: 37.36, divisa: 'EUR', fecha_precio: '2026-11-13', hora: '2026-11-13T09:00:00.000Z', simbolo: 'DANR.MI', fuente: 'manual', actualizado: '2026-11-13T09:00:00.000Z' });
+      const c = d.cribado && d.cribado[p.tk];
+      if (c) { Object.assign(c, { ventas_cagr_5y: 7.1, ebit_cagr_5y: 8.9, margen_ebit: 5.8, margen_ebit_hace_5y: 5.3, margen_ebit_pico_10y: 8.2, acciones_diluidas_m: 71.6, bpa_ttm: 3.22, bpa_cagr_5y: 24.6, deuda_neta_m: -1019.7, deuda_neta_ebitda: -2.3, ebitda_m: 438.9, market_cap_eur_m: 3240, anio_dato: 2026, fecha_datos: '2026-11-13', confianza: 'media', control_familiar: true });
+        delete c.fcf_por_accion; c.notas_datos = ['Cifras corregidas el 13-11-2026 con los comunicados de resultados (las del cribado anterior venían de una IA y no cuadraban: capitalización 1.650 M, EBITDA 340 M, BPA 3,65).', 'Caja neta ajustada de Danieli 1.020 M (descuenta anticipos de clientes). Dos clases de acciones: ordinarias (DAN) y de ahorro (DANR); aquí se valora la de ahorro.']; }
+      ya.push(p.id);
+    });
+    return d;
+  }
+
   function normalizar(d) {
     const b = nuevoDatos(); d = d || {};
     const out = Object.assign({}, b, d);
@@ -30,7 +58,7 @@ const Logic = (function () {
     ['posiciones', 'movimientos', 'resultados'].forEach(k => { if (!Array.isArray(out[k])) out[k] = []; });
     ['fichas', 'precios', 'cribado'].forEach(k => { if (!out[k] || typeof out[k] !== 'object') out[k] = {}; });
     if (!out.otras || !Array.isArray(out.otras.accounts)) out.otras = { accounts: [] };
-    return out;
+    return aplicarParches(out);
   }
 
   /* ───── Nombres y coincidencia de empresas ───── */

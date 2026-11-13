@@ -77,7 +77,7 @@
     try {
       const cfg = await DatosWeb.leerArchivo('simbolos.json'); if (!cfg || !cfg.simbolos) return;
       const S = cfg.simbolos; if (S[nuevo]) return;
-      const e = S[viejo]; S[nuevo] = e ? Object.assign({}, e, { y: (e.y || []).map(x => (x === viejo ? nuevo : x)) }) : { y: [nuevo] }; if (!(S[nuevo].y || []).length) S[nuevo].y = [nuevo]; delete S[viejo];
+      const e = S[viejo]; S[nuevo] = e ? Object.assign({}, e, { y: (e.y || []).map(x => { if (x === viejo) return nuevo; const b = x.split('.')[0], suf = x.slice(b.length); return (suf && b === viejo.split('.')[0] && nuevo.indexOf('.') < 0) ? nuevo + suf : x; }) }) : { y: [nuevo] }; if (!(S[nuevo].y || []).length) S[nuevo].y = [nuevo]; delete S[viejo];
       const r = await DatosWeb.escribirArchivo('simbolos.json', JSON.stringify(cfg, null, 2) + '\n', 'Símbolos: ' + viejo + ' → ' + nuevo);
       if (r.sinToken) return U.toast('Ticker cambiado. Para que lleguen los precios nuevos falta el token de GitHub (Cartera → Actualizar precios) y repetir el cambio en la lista de símbolos.');
       if (!r.ok) return U.toast('Ticker cambiado, pero no pude actualizar la lista de símbolos: ' + r.msg);

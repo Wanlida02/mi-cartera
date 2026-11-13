@@ -9,7 +9,11 @@ const Store = (function () {
   const subs = [];
 
   function load() {
-    try { const t = localStorage.getItem(KEY); data = Logic.normalizar(t ? JSON.parse(t) : null); }
+    try {
+      const t = localStorage.getItem(KEY), raw = t ? JSON.parse(t) : null; data = Logic.normalizar(raw);
+      const n0 = raw && raw.ajustes && Array.isArray(raw.ajustes.parches) ? raw.ajustes.parches.length : 0;
+      if (raw && data.ajustes.parches && data.ajustes.parches.length > n0) setTimeout(() => save(), 0);   // parche de datos aplicado: se guarda (y sube a Drive) como una edición tuya
+    }
     catch (e) { data = Logic.normalizar(null); aviso = 'No se pudo leer lo guardado en este dispositivo.'; }
     return data;
   }
