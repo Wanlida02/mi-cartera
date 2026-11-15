@@ -234,7 +234,8 @@
     "NRO": {
       "y": [
         "NRO.PA"
-      ]
+      ],
+      "pausa": true
     },
     "FTDR": {
       "y": [
@@ -249,16 +250,43 @@
     "MIPS": {
       "y": [
         "MIPS.ST"
-      ]
+      ],
+      "pausa": true
     },
     "AVAV": {
       "y": [
         "AVAV"
-      ]
+      ],
+      "pausa": true
     },
     "DANR": {
       "y": [
         "DANR.MI"
+      ]
+    },
+    "COLLEGIUM PHARMACEUTICAL": {
+      "y": [
+        "COLLEGIUM PHARMACEUTICAL"
+      ]
+    },
+    "SOL SPA": {
+      "y": [
+        "SOL SPA"
+      ]
+    },
+    "NEURONES": {
+      "y": [
+        "NEURONES"
+      ]
+    },
+    "BZU": {
+      "y": [
+        "BZU"
+      ]
+    },
+    "CSU": {
+      "y": [
+        "CSU"
       ]
     }
   },
