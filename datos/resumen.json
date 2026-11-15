@@ -1,5 +1,5 @@
 {
- "generado": "2026-11-12T20:47:28.093Z",
+ "generado": "2026-11-15T13:56:48.863Z",
  "nota": "Últimos 12 meses (10-Q) y último ejercicio anual (10-K) de la SEC. Solo empresas de EE. UU. con cuentas US-GAAP.",
  "empresas": {
   "ACMR": {
@@ -1557,6 +1557,21 @@
      196
     ]
    }
+  },
+  "COLLEGIUM PHARMACEUTICAL": {
+   "error": "Ticker no válido"
+  },
+  "SOL SPA": {
+   "error": "Ticker no válido"
+  },
+  "NEURONES": {
+   "error": "«NEURONES» no está en la lista de la SEC: solo cubre empresas de EE. UU. Para otras, usa los informes anuales."
+  },
+  "BZU": {
+   "error": "«BZU» no está en la lista de la SEC: solo cubre empresas de EE. UU. Para otras, usa los informes anuales."
+  },
+  "CSU": {
+   "error": "«CSU» no está en la lista de la SEC: solo cubre empresas de EE. UU. Para otras, usa los informes anuales."
   }
  }
 }
