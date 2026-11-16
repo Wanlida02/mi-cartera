@@ -1,54 +1,28 @@
 {
- "generado": "2026-11-04",
- "nota": "Fechas públicas de próximos resultados. confirmada=true: anunciada por la empresa. false: estimada (mismo trimestre del año anterior o proyección de terceros); verifícala en la web de la empresa.",
+ "generado": "2026-11-16",
+ "nota": "Fechas públicas de próximos resultados. confirmada=true: anunciada por la empresa. false: estimada (Nasdaq, o misma presentación del año anterior según la SEC); verifícala en la web de la empresa.",
  "fechas": {
-  "UBER": {
-   "fecha": "2026-11-04",
-   "confirmada": true
-  },
-  "MCD": {
-   "fecha": "2026-11-04",
-   "confirmada": true
-  },
-  "RGLD": {
-   "fecha": "2026-11-04",
-   "confirmada": true
-  },
-  "NET": {
-   "fecha": "2026-11-05",
-   "confirmada": true
-  },
-  "HALO": {
-   "fecha": "2026-11-05",
-   "confirmada": true
-  },
-  "GCT": {
-   "fecha": "2026-11-05",
-   "confirmada": true
-  },
-  "SI": {
-   "fecha": "2026-11-05",
-   "confirmada": true
-  },
-  "ACMR": {
-   "fecha": "2026-11-05",
-   "confirmada": true
-  },
   "ESEA": {
    "fecha": "2026-11-17",
    "confirmada": false
   },
   "CRWD": {
    "fecha": "2026-12-01",
-   "confirmada": false
+   "confirmada": false,
+   "fuente": "SEC: misma fecha del año anterior",
+   "ultima": "2026-08-26"
   },
   "AZO": {
    "fecha": "2026-12-08",
-   "confirmada": false
+   "confirmada": false,
+   "fuente": "SEC: misma fecha del año anterior",
+   "ultima": "2026-09-22"
   },
   "MU": {
    "fecha": "2026-12-16",
-   "confirmada": false
+   "confirmada": false,
+   "fuente": "SEC: misma fecha del año anterior",
+   "ultima": "2026-09-30"
   },
   "TSM": {
    "fecha": "2027-01-14",
@@ -60,31 +34,45 @@
   },
   "RTX": {
    "fecha": "2027-01-26",
-   "confirmada": false
+   "confirmada": false,
+   "fuente": "SEC: misma fecha del año anterior",
+   "ultima": "2026-10-20"
   },
   "BA": {
    "fecha": "2027-01-26",
-   "confirmada": false
+   "confirmada": false,
+   "fuente": "SEC: misma fecha del año anterior",
+   "ultima": "2026-10-27"
   },
   "MSFT": {
    "fecha": "2027-01-27",
-   "confirmada": false
+   "confirmada": false,
+   "fuente": "SEC: misma fecha del año anterior",
+   "ultima": "2026-10-28"
   },
   "META": {
    "fecha": "2027-01-27",
-   "confirmada": false
+   "confirmada": false,
+   "fuente": "SEC: misma fecha del año anterior",
+   "ultima": "2026-10-21"
   },
   "V": {
    "fecha": "2027-01-28",
-   "confirmada": false
+   "confirmada": false,
+   "fuente": "SEC: misma fecha del año anterior",
+   "ultima": "2026-10-27"
   },
   "GOOGL": {
    "fecha": "2027-02-03",
-   "confirmada": false
+   "confirmada": false,
+   "fuente": "SEC: misma fecha del año anterior",
+   "ultima": "2026-10-28"
   },
   "AMZN": {
    "fecha": "2027-02-04",
-   "confirmada": false
+   "confirmada": false,
+   "fuente": "SEC: misma fecha del año anterior",
+   "ultima": "2026-10-29"
   },
   "AER": {
    "fecha": "2027-02-05",
@@ -100,11 +88,15 @@
   },
   "MCO": {
    "fecha": "2027-02-17",
-   "confirmada": false
+   "confirmada": false,
+   "fuente": "SEC: misma fecha del año anterior",
+   "ultima": "2026-10-21"
   },
   "FSLR": {
    "fecha": "2027-02-23",
-   "confirmada": false
+   "confirmada": false,
+   "fuente": "SEC: misma fecha del año anterior",
+   "ultima": "2026-10-29"
   },
   "IDR": {
    "fecha": "2027-02-25",
@@ -113,6 +105,120 @@
   "AENA": {
    "fecha": "2027-02-24",
    "confirmada": false
+  },
+  "ACMR": {
+   "fecha": "2027-01-21",
+   "confirmada": false,
+   "fuente": "SEC: misma fecha del año anterior",
+   "ultima": "2026-11-05"
+  },
+  "GCT": {
+   "fecha": "2027-02-25",
+   "confirmada": false,
+   "fuente": "SEC: misma fecha del año anterior",
+   "ultima": "2026-08-06"
+  },
+  "HALO": {
+   "fecha": "2027-01-27",
+   "confirmada": false,
+   "fuente": "SEC: misma fecha del año anterior",
+   "ultima": "2026-11-05"
+  },
+  "LAUR": {
+   "fecha": "2027-02-18",
+   "confirmada": false,
+   "fuente": "SEC: misma fecha del año anterior",
+   "ultima": "2026-10-29"
+  },
+  "LIN": {
+   "fecha": "2027-02-04",
+   "confirmada": false,
+   "fuente": "SEC: misma fecha del año anterior",
+   "ultima": "2026-10-29"
+  },
+  "MCD": {
+   "fecha": "2027-02-10",
+   "confirmada": false,
+   "fuente": "SEC: misma fecha del año anterior",
+   "ultima": "2026-11-04"
+  },
+  "NET": {
+   "fecha": "2027-02-09",
+   "confirmada": false,
+   "fuente": "SEC: misma fecha del año anterior",
+   "ultima": "2026-11-05"
+  },
+  "RGLD": {
+   "fecha": "2027-01-12",
+   "confirmada": false,
+   "fuente": "SEC: misma fecha del año anterior",
+   "ultima": "2026-11-04"
+  },
+  "SNDK": {
+   "fecha": "2027-01-28",
+   "confirmada": false,
+   "fuente": "SEC: misma fecha del año anterior",
+   "ultima": "2026-10-29"
+  },
+  "TBBK": {
+   "fecha": "2027-01-28",
+   "confirmada": false,
+   "fuente": "SEC: misma fecha del año anterior",
+   "ultima": "2026-10-29"
+  },
+  "UBER": {
+   "fecha": "2027-02-03",
+   "confirmada": false,
+   "fuente": "SEC: misma fecha del año anterior",
+   "ultima": "2026-11-04"
+  },
+  "VITL": {
+   "fecha": "2027-02-25",
+   "confirmada": false,
+   "fuente": "SEC: misma fecha del año anterior",
+   "ultima": "2026-11-03"
+  },
+  "AAPL": {
+   "fecha": "2027-01-28",
+   "confirmada": false,
+   "fuente": "SEC: misma fecha del año anterior",
+   "ultima": "2026-11-02"
+  },
+  "CHE": {
+   "fecha": "2027-02-24",
+   "confirmada": false,
+   "fuente": "SEC: misma fecha del año anterior",
+   "ultima": "2026-10-27"
+  },
+  "OSCR": {
+   "fecha": "2027-02-09",
+   "confirmada": false,
+   "fuente": "SEC: misma fecha del año anterior",
+   "ultima": "2026-11-05"
+  },
+  "BELFA": {
+   "fecha": "2027-02-16",
+   "confirmada": false,
+   "fuente": "SEC: misma fecha del año anterior",
+   "ultima": "2026-10-28"
+  },
+  "STRL": {
+   "fecha": "2027-02-24",
+   "confirmada": false,
+   "fuente": "SEC: misma fecha del año anterior",
+   "ultima": "2026-10-28"
+  },
+  "FTDR": {
+   "fecha": "2027-02-25",
+   "confirmada": false,
+   "fuente": "SEC: misma fecha del año anterior",
+   "ultima": "2026-11-05"
+  },
+  "PRDO": {
+   "fecha": "2027-02-18",
+   "confirmada": false,
+   "fuente": "SEC: misma fecha del año anterior",
+   "ultima": "2026-11-05"
   }
  }
 }

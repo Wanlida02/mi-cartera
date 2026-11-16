@@ -20,8 +20,21 @@
   const precioDe = tk => { try { const p = L.precioFicha(D(), tk); return isN(p.precio) ? p : null; } catch (e) { return null; } };
 
   let CAL = null, calCargando = false;
-  async function cargarCal() { if (CAL || calCargando) return; calCargando = true; try { const r = await fetch('calendario_resultados.json', { cache: 'no-store' }); if (r.ok) { CAL = await r.json(); U.render && U.render(); } } catch (e) { /* sin calendario */ } calCargando = false; }
+  async function cargarCal() { if (CAL || calCargando) return; calCargando = true; try { const r = await fetch('calendario_resultados.json', { cache: 'no-store' }); if (r.ok) { CAL = await r.json(); sincronizar(); U.render && U.render(); } } catch (e) { /* sin calendario */ } calCargando = false; }
   const calDe = k => (CAL && CAL.fechas ? L.claves(D(), k).map(c => CAL.fechas[c]).find(Boolean) : null) || null;
+  /* Alta automática desde el calendario: empresas seguidas sin fecha pendiente → se anotan; fechas «estimadas» (o vacías) que aún no han pasado → se actualizan con la última del calendario. Lo anotado a mano no se toca. */
+  let sincro = false;
+  function sincronizar() {
+    if (sincro || !CAL || !CAL.fechas) return 0; sincro = true; const d = D(); let alta = 0, act = 0;
+    seguidas().forEach(k => {
+      const c = calDe(k); if (!c || !c.fecha || c.fecha < hoy()) return;
+      const mias = (d.resultados || []).filter(r => r.estado !== 'revisado' && r.tk === k);
+      if (!mias.length) { anotar(k, c); alta++; return; }
+      mias.forEach(r => { if ((r.estimada || !r.fecha) && (!r.fecha || r.fecha >= hoy()) && r.fecha !== c.fecha && !publico(r)) { r.fecha = c.fecha; r.estimada = c.confirmada === false ? true : undefined; r.periodo = (c && c.periodo) || trimestre(c.fecha); act++; } });
+    });
+    if (alta || act) { Store.save(); U.toast && U.toast('Calendario: ' + alta + ' fechas nuevas' + (act ? ' y ' + act + ' actualizadas' : '')); }
+    return alta + act;
+  }
   const sugeridas = (sin, conFecha) => CAL && CAL.fechas ? sin.filter(k => calDe(k) && !conFecha.has(k) && calDe(k).fecha >= hoy()).map(k => [k, calDe(k)]) : [];
 
   /* Último trimestre que la SEC ya tiene de la empresa (solo EE. UU.) */
@@ -89,7 +102,7 @@
     const pend = R.filter(r => r.estado !== 'revisado').sort((a, b) => (publico(b) - publico(a)) || (a.fecha || '9').localeCompare(b.fecha || '9'));
     const conFecha = new Set(pend.map(r => r.tk)), sin = seguidas().filter(k => !conFecha.has(k));
     let h = (U.lineaPrecios ? U.lineaPrecios() : '') + '<div class="tools"><button class="btn" data-r="nuevo">+ Añadir fecha</button></div>';
-    h += '<p class="small mut" style="margin:0 2px 8px">Lo importante de cada resultado: ¿la empresa va como suponía tu valoración? Abre una fila para ver las cifras de los últimos 12 meses frente a lo esperado y cómo cambia la rentabilidad a 5 años. EE. UU. se rellena solo con la SEC; en el resto, una IA te saca las cifras.</p>';
+    h += '<p class="small mut" style="margin:0 2px 8px">Lo importante de cada resultado: ¿la empresa va como suponía tu valoración? Abre una fila para ver las cifras de los últimos 12 meses frente a lo esperado y cómo cambia la rentabilidad a 5 años. Las fechas de EE. UU. se rellenan solas (calendario diario); las cifras, con la SEC. En el resto, una IA te saca fechas y cifras.</p>';
     h += '<h3 style="margin:8px 2px 6px">Próximos resultados <span class="mut small">' + pend.length + '</span></h3><div class="card">' + (pend.length ? pend.map(r => {
       const n = r.fecha ? dif(r.fecha) : null, pub = publico(r), v = pub || r.doce ? revDe(r) : null;
       const tag = pub ? 'ya publicó' : n == null ? 'sin fecha' : n < 0 ? 'hace ' + (-n) + ' d: ¿ya publicó?' : n === 0 ? 'hoy' : 'en ' + n + ' d';
@@ -97,11 +110,53 @@
     }).join('') : '<div class="empty">Ninguna fecha anotada. Añade la de las empresas que quieras seguir.</div>') + '</div>';
     const sug = sugeridas(sin, conFecha);
     if (sug.length) h += '<div class="card"><div class="row"><div class="main"><div class="name">Calendario público</div><div class="meta">' + sug.length + ' fechas para tus empresas · «estimada» = según el año anterior</div></div><button class="btn sm" data-r="calall">Añadir todas</button></div>' + sug.map(([k, c]) => '<div class="row"><div class="main"><div class="name">' + esc(nombre(k)) + '</div><div class="meta">' + esc(k) + ' · ' + esc(c.fecha) + (c.confirmada ? ' · confirmada' : ' · estimada') + '</div></div><button class="btn sec sm" data-r="cal" data-k="' + esc(k) + '">Añadir</button></div>').join('') + '</div>';
+    if (sin.length) h += '<div class="card"><div class="row"><div class="main"><div class="name">Sin fecha: ' + sin.length + ' empresas</div><div class="meta">Fuera de EE. UU. (o sin historial en la SEC) no hay calendario público fiable: una IA con internet te las busca de una vez.</div></div><button class="btn sm" data-r="iafechas">Pedir fechas a una IA</button></div></div>';
     if (sin.length) h += '<details class="card"><summary>Sin fecha anotada (' + sin.length + ')</summary><div class="chips" style="margin-top:8px">' + sin.map(k => '<button class="btn sec sm" data-r="nuevo" data-k="' + esc(k) + '">' + esc(k) + '</button>').join('') + '</div></details>';
     if (hechas.length) h += '<h3 style="margin:14px 2px 6px">Revisados <span class="mut small">' + hechas.length + '</span></h3><div class="card">' + hechas.slice(0, 40).map(r => { const s = r.snap || {};
       return '<div class="row click" data-r="rev" data-id="' + esc(r.id) + '"><div class="main"><div class="name">' + esc(nombre(r.tk)) + ' · ' + esc(r.periodo || '') + '</div><div class="meta">' + pillVer(s) + ' ' + (isN(s.antes) && isN(s.despues) ? 'rentab. ' + pc0(s.antes) + ' → ' + pc0(s.despues) + ' · ' : '') + esc(r.nota || '').slice(0, 80) + '</div></div><div class="num"><span class="pill">' + esc(DEC[r.decision] || '—') + '</span><div class="meta">' + esc(r.revisado || '') + '</div></div></div>'; }).join('') + '</div>';
     return h;
   };
+
+  /* ───── Fechas con una IA (empresas sin calendario público) ───── */
+  function promptFechas(ks) {
+    return 'Necesito la FECHA de la próxima presentación de resultados (trimestrales, semestrales o anuales: la que toque primero) de estas empresas cotizadas. Hoy es ' + hoy() + '.\n\nEmpresas:\n' +
+      ks.map(k => '- ' + k + ' · ' + nombre(k) + ' · símbolo de precio ' + (((D().precios[k] || {}).simbolo) || k)).join('\n') +
+      '\n\nREGLAS: busca en la web de relación con inversores de cada empresa (calendario financiero / agenda del inversor / «financial calendar») o en su último comunicado de resultados. No uses tu memoria ni inventes. Si la empresa aún no ha anunciado fecha, da la estimada que indique una fuente (o la del año anterior) y pon \"confirmada\": false. «confirmada»: true solo si la propia empresa la ha anunciado, y entonces pon en «fuente» la URL. Si no encuentras nada, \"fecha\": null. La fecha debe ser posterior a hoy y con formato AAAA-MM-DD. «periodo» = el que se presenta (ej. T4 2026, S1 2027, FY 2026).\n\n' +
+      'Responde SOLO con este JSON, sin texto antes ni después:\n{"fechas":[{"tk":"' + ks[0] + '","fecha":"AAAA-MM-DD","periodo":"T4 2026","confirmada":false,"fuente":"URL"}]}';
+  }
+  function parseFechasIA(txt, ks) {
+    const m = /[\[{][\s\S]*[\]}]/.exec(txt || ''); if (!m) throw new Error('No encuentro el JSON en lo que has pegado.');
+    let j; try { j = JSON.parse(m[0]); } catch (e) { throw new Error('El JSON no es válido (' + e.message + '). Pídele a la IA que lo repita «solo con el JSON, sin texto».'); }
+    const arr = Array.isArray(j) ? j : Array.isArray(j.fechas) ? j.fechas : null; if (!arr) throw new Error('Falta la lista «fechas» en el JSON.');
+    const h = hoy(), tope = new Date(Date.parse(h) + 450 * 864e5).toISOString().slice(0, 10), ok = [], rechazadas = [], vistos = new Set();
+    arr.forEach(x => {
+      const tk = ks.find(k => k.toUpperCase() === String(x && x.tk || '').trim().toUpperCase()); const f = String(x && x.fecha || '').trim();
+      if (!tk) { rechazadas.push((x && x.tk || '?') + ': empresa que no se pidió'); return; }
+      if (!x.fecha) { rechazadas.push(tk + ': la IA no encontró fecha'); return; }
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(f) || isNaN(Date.parse(f))) { rechazadas.push(tk + ': fecha no válida (' + f + ')'); return; }
+      if (f < h || f > tope) { rechazadas.push(tk + ': fecha fuera de rango (' + f + ')'); return; }
+      if (vistos.has(tk)) return; vistos.add(tk);
+      const url = /^https?:\/\//.test(String(x.fuente || '')) ? String(x.fuente).slice(0, 300) : null;
+      ok.push({ tk, fecha: f, periodo: /^(T[1-4]|S[12]|FY) ?\d{4}$/i.test(String(x.periodo || '').trim()) ? String(x.periodo).trim().toUpperCase().replace(/^(T[1-4]|S[12]|FY)(\d)/, '$1 $2') : trimestre(f), confirmada: x.confirmada === true && !!url, fuente: url });
+    });
+    return { ok, rechazadas };
+  }
+  function dialogoFechas() {
+    const d = D(), conF = new Set(d.resultados.filter(r => r.estado !== 'revisado' && r.fecha).map(r => r.tk)), ks = seguidas().filter(k => !conF.has(k)); if (!ks.length) { U.toast && U.toast('Todas tienen fecha'); return; }
+    U.dlg('<h2>Fechas de resultados con una IA</h2><p class="small mut">Vale con cualquier IA con internet (Claude, ChatGPT, Gemini…). 1) Copia el texto y pégaselo; 2) pega aquí su respuesta (el JSON). Las fechas quedan como «estimada» salvo que la IA dé la URL de la propia empresa. Compruébalas antes de fiarte.</p>' +
+      '<textarea id="fi-p" rows="8" readonly></textarea><div class="acts"><button class="btn sec" id="fi-copy">Copiar texto</button></div><label for="fi-r">Respuesta de la IA (el JSON)</label><textarea id="fi-r" rows="6" placeholder="Pega aquí el JSON"></textarea><div id="fi-err" class="alert bad" style="display:none"></div>' +
+      '<div class="acts"><button class="btn sec" data-a="cerrar">Cancelar</button><button class="btn" id="fi-ok">Anotar las fechas</button></div>', dd => {
+      dd.querySelector('#fi-p').value = promptFechas(ks);
+      dd.querySelector('#fi-copy').onclick = () => { const t = dd.querySelector('#fi-p'); t.select(); try { navigator.clipboard.writeText(t.value); } catch (e) { document.execCommand && document.execCommand('copy'); } U.toast('Texto copiado'); };
+      dd.querySelector('#fi-ok').onclick = () => {
+        try {
+          const o = parseFechasIA(dd.querySelector('#fi-r').value, ks); if (!o.ok.length) throw new Error('Ninguna fecha válida.' + (o.rechazadas.length ? ' ' + o.rechazadas.join(' · ') : ''));
+          o.ok.forEach(x => { const r = nuevoReg(x.tk, { fecha: x.fecha, periodo: x.periodo, confirmada: x.confirmada }); r.fuente_fecha = x.fuente || 'IA'; d.resultados.push(r); });
+          U.guardar({ ok: true, msg: o.ok.length + ' fechas anotadas' + (o.rechazadas.length ? ' · ' + o.rechazadas.length + ' sin fecha válida: ' + o.rechazadas.join(' · ') : '') });
+        } catch (e) { const b = dd.querySelector('#fi-err'); b.style.display = ''; b.textContent = e.message; }
+      };
+    });
+  }
 
   function nuevo(tk) {
     const ks = seguidas();
@@ -242,6 +297,7 @@
     });
   }
   U.clicks.push(e => { const t = e.target.closest('[data-r]'); if (!t) return false; if (t.dataset.r === 'nuevo') nuevo(t.dataset.k);
+    else if (t.dataset.r === 'iafechas') dialogoFechas();
     else if (t.dataset.r === 'cal' && CAL) { const c = calDe(t.dataset.k); if (c) { anotar(t.dataset.k, c); U.guardar({ ok: true, msg: 'Fecha anotada' }); } }
     else if (t.dataset.r === 'calall' && CAL) { const cf = new Set(D().resultados.filter(r => r.estado !== 'revisado').map(r => r.tk)); sugeridas(seguidas(), cf).forEach(([k, c]) => anotar(k, c)); U.guardar({ ok: true, msg: 'Fechas anotadas' }); } else if (t.dataset.r === 'rev') revisar(t.dataset.id); else return false; return true; });
   /* Desde Informes: abre la revisión de un trimestre (usa el pendiente de ese periodo o crea uno) */
@@ -250,5 +306,5 @@
     if (!r) { r = nuevoReg(tk, { fecha: null, periodo, confirmada: true }); d.resultados.push(r); Store.save(); }
     U.render(); revisar(r.id);
   };
-  U._resultados = { publico, doceDe, promptIA, parseIA, revDe };
+  U._resultados = { publico, doceDe, promptIA, parseIA, revDe, sincronizar, parseFechasIA, promptFechas };
 })();

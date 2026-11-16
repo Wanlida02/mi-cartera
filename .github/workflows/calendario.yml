@@ -1,0 +1,30 @@
+name: Calendario de resultados
+# L-V a las 6:40 UTC: próximas fechas de resultados de EE. UU. (Nasdaq si responde; si no, SEC → misma fecha del año anterior) → calendario_resultados.json
+on:
+  schedule:
+    - cron: '40 6 * * 1-5'
+  workflow_dispatch: {}
+permissions:
+  contents: write
+concurrency:
+  group: calendario
+  cancel-in-progress: false
+jobs:
+  calendario:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Calcular fechas
+        run: node scripts/calendario.js
+      - name: Guardar
+        run: |
+          git config user.name "mi-cartera-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add calendario_resultados.json
+          if git diff --cached --quiet; then echo "Sin cambios"; exit 0; fi
+          git commit -m "Calendario de resultados: actualización"
+          for i in 1 2 3; do git pull --rebase origin ${{ github.ref_name }} && git push && break || sleep 5; done
