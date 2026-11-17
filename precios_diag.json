@@ -1,11 +1,11 @@
 {
- "generado": "2026-11-17T13:18:11.421Z",
+ "generado": "2026-11-17T17:01:40.168Z",
  "sonda": {
   "google": {
    "status": 200,
    "url": "https://www.google.com/finance/quote/AAPL:NASDAQ?hl=en",
-   "largo": 1477326,
-   "inicio": "<!doctype html><html lang=\"en\" dir=\"ltr\"><head><base href=\"https://www.google.com/finance/\"><link rel=\"preconnect\" href=\"//www.gstatic.com\"><meta name=\"referrer\" content=\"origin\"><script nonce=\"cpEut9r5iXVbFz8E40ihiQ\">window['ppConfig'] = {productName: 'FinHubUi', deleteIsEnforced:  true , sealIsEnf",
+   "largo": 1435746,
+   "inicio": "<!doctype html><html lang=\"en\" dir=\"ltr\"><head><base href=\"https://www.google.com/finance/\"><link rel=\"preconnect\" href=\"//www.gstatic.com\"><meta name=\"referrer\" content=\"origin\"><script nonce=\"_nL0pnR7lqA07py1otTzQw\">window['ppConfig'] = {productName: 'FinHubUi', deleteIsEnforced:  true , sealIsEnf",
    "atributos": [],
    "tiene_consent": false
   },
@@ -36,27 +36,27 @@
   "cnbc": {
    "status": 200,
    "url": "https://quote.cnbc.com/quote-html-webservice/restQuote/symbolType/symbol?symbols=AAPL&requestMethod=itv&noform=1&partnerId=2&fund=1&exthrs=1&output=json&events=1",
-   "largo": 1845,
-   "inicio": "{\"FormattedQuoteResult\":{\"FormattedQuote\":[{\"symbol\":\"AAPL\",\"symbolType\":\"symbol\",\"code\":0,\"name\":\"Apple Inc.\",\"shortName\":\"AAPL\",\"onAirName\":\"Apple Inc.\",\"altName\":\"Apple Inc.\",\"last\":\"352.78\",\"last_timedate\":\"11/16/26 EST\",\"last_time\":\"2026-11-16\",\"changetype\":\"DOWN\",\"type\":\"STOCK\",\"subType\":\"Common Stock\",\"exchange\":\"NASDAQ\",\"source\":\"Last NASDAQ LS, VOL From CTA\",\"open\":\"0.00\",\"high\":\"0.00\",\"low\":\"0.00\",\"change\":\"-3.49\",\"change_pct\":\"-0.98%\",\"currencyCode\":\"USD\",\"volume\":\"34,621,393\",\"volume_alt\":\"34.6M\",\"provider\":\"CNBC QUOTE CACHE\",\"previous_day_closing\":\"352.78\",\"altSymbol\":\"AAPL.O\",\"realTime\":\"true\",\"curmktstatus\":\"PRE_MKT\",\"pe\":\"39.31\",\"mktcapView\":\"5.127T\",\"dividend\":\"1.08\",\"divide",
+   "largo": 1869,
+   "inicio": "{\"FormattedQuoteResult\":{\"FormattedQuote\":[{\"symbol\":\"AAPL\",\"symbolType\":\"symbol\",\"code\":0,\"name\":\"Apple Inc.\",\"shortName\":\"AAPL\",\"onAirName\":\"Apple Inc.\",\"altName\":\"Apple Inc.\",\"last\":\"351.73\",\"last_timedate\":\"12:02 PM EST\",\"last_time\":\"2026-11-17T12:02:01.802-0500\",\"changetype\":\"DOWN\",\"type\":\"STOCK\",\"subType\":\"Common Stock\",\"exchange\":\"NASDAQ\",\"source\":\"Last NASDAQ LS, VOL From CTA\",\"open\":\"352.83\",\"high\":\"355.36\",\"low\":\"350.38\",\"change\":\"-1.05\",\"change_pct\":\"-0.30%\",\"currencyCode\":\"USD\",\"volume\":\"10,796,147\",\"volume_alt\":\"10.8M\",\"provider\":\"CNBC QUOTE CACHE\",\"previous_day_closing\":\"352.78\",\"altSymbol\":\"AAPL.O\",\"realTime\":\"true\",\"curmktstatus\":\"REG_MKT\",\"pe\":\"39.19\",\"mktcapView\":\"5.111T\",\"",
    "atributos": [],
    "tiene_consent": false
   },
   "nasdaq": {
    "status": 200,
    "url": "https://api.nasdaq.com/api/quote/AAPL/info?assetclass=stocks",
-   "largo": 1411,
-   "inicio": "{\"data\":{\"symbol\":\"AAPL\",\"companyName\":\"Apple Inc. Common Stock\",\"stockType\":\"Common Stock\",\"exchange\":\"NASDAQ-GS\",\"isNasdaqListed\":true,\"isNasdaq100\":true,\"isHeld\":false,\"primaryData\":{\"lastSalePrice\":\"$352.25\",\"netChange\":\"-0.53\",\"percentageChange\":\"-0.15%\",\"deltaIndicator\":\"down\",\"lastTradeTimest",
+   "largo": 1167,
+   "inicio": "{\"data\":{\"symbol\":\"AAPL\",\"companyName\":\"Apple Inc. Common Stock\",\"stockType\":\"Common Stock\",\"exchange\":\"NASDAQ-GS\",\"isNasdaqListed\":true,\"isNasdaq100\":true,\"isHeld\":false,\"primaryData\":{\"lastSalePrice\":\"$351.86\",\"netChange\":\"-0.92\",\"percentageChange\":\"-0.26%\",\"deltaIndicator\":\"down\",\"lastTradeTimest",
    "atributos": [],
    "tiene_consent": false
   },
   "stockanalysis": {
    "status": 200,
    "url": "https://stockanalysis.com/stocks/aapl/",
-   "largo": 153477,
+   "largo": 149131,
    "inicio": "<!doctype html>\n<html lang=\"en\">\n\t<head>\n\t\t<meta charset=\"utf-8\" />\n\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n\t\t<!--12qhfyh--><!--[0--><link rel=\"preconnect\" href=\"https://securepubads.g.doubleclick.net\"/> <link rel=\"preconnect\" href=\"https://u5.investingchannel.com\"/>",
    "contexto": [
-    "pace-x-3 bp:space-x-5\"><div class=\"max-w-[50%]\"><div class=\"text-4xl font-bold transition-colors duration-300 block sm:inline\">352.78</div> <!----><div class=\"font-semibold block text-lg xs:text-xl sm:inline sm:text-2xl text-red",
-    "-default\">Price Target</div> <div class=\"mb-0.5 text-center text-4xl font-semibold text-red-vivid\"><!--[0-->$345.63<!--]--></div> <!--[0--><div class=\"mb-1.5 text-center text-xl\">(-2.03% downside)</div><!--]--> <!--[0--><div cla"
+    "s-end space-x-2 xs:space-x-3 bp:space-x-5\"><div><div class=\"text-4xl font-bold transition-colors duration-300 inline-block\">352.39</div> <!----><div class=\"font-semibold inline-block text-2xl text-red-vivid\">-0.39 (-0.11%)</div>",
+    "-default\">Price Target</div> <div class=\"mb-0.5 text-center text-4xl font-semibold text-red-vivid\"><!--[0-->$345.63<!--]--></div> <!--[0--><div class=\"mb-1.5 text-center text-xl\">(-1.92% downside)</div><!--]--> <!--[0--><div cla"
    ],
    "atributos": [],
    "tiene_consent": false
@@ -65,15 +65,15 @@
    "status": 401,
    "url": "https://www.marketwatch.com/investing/stock/aapl",
    "largo": 459,
-   "inicio": "{\"url\":\"https://geo.captcha-delivery.com/interstitial/?initialCid=AHrlqAAAAAMALMEQ2KCvtLUAFECXnQ==&cid=pGH8Ex1rRd1BO2gp1A9KJtnloPcgg7lmGdZCGwEt2OW1LmVEuyVmigZKv64MCGKW0ItkhWBPPJFJhwD4bPjzjaJ1Ea1Ckssk63v~TZ0AT~1vTC16B0ule~07aQ5dSloz&referer=http%3A%2F%2Fwww.marketwatch.com%2Finvesting%2Fstock%2Faapl&",
+   "inicio": "{\"url\":\"https://geo.captcha-delivery.com/interstitial/?initialCid=AHrlqAAAAAMAxTxCV_3YdsMAFDvrkw==&cid=4qOrkBjxriJFEc1tFljhG2bGGJhIekvT9ztUYvO0cG~45ZgODt03os1NbvpZFr0jYEhk0wIsePH_1hLJRbxViijkAdckXNigUWEy~RO~SsBK2RTLJKu9icWDw3pC_9JQ&referer=http%3A%2F%2Fwww.marketwatch.com%2Finvesting%2Fstock%2Faapl&",
    "atributos": [],
    "tiene_consent": false
   },
   "cnbc_AIR-FR": {
    "status": 200,
    "url": "https://quote.cnbc.com/quote-html-webservice/restQuote/symbolType/symbol?symbols=AIR-FR&requestMethod=itv&noform=1&partnerId=2&fund=1&exthrs=1&output=json&events=1",
-   "largo": 1369,
-   "inicio": "{\"FormattedQuoteResult\":{\"FormattedQuote\":[{\"symbol\":\"AIR-FR\",\"symbolType\":\"symbol\",\"code\":0,\"name\":\"Airbus SE\",\"shortName\":\"AIR\",\"onAirName\":\"Airbus SE\",\"altName\":\"Airbus SE\",\"last\":\"204.55\",\"last_timedate\":\"2:03 PM CET\",\"last_time\":\"2026-11-17T14:03:36.000+0100\",\"changetype\":\"UP\",\"type\":\"STOCK\",\"subType\":\"Common Stock\",\"exchange\":\"Euronext Paris\",\"source\":\"Exchange\",\"open\":\"202.80\",\"high\":\"205.00\",\"low\":\"202.65\",\"change\":\"+0.40\",\"change_pct\":\"+0.20%\",\"currencyCode\":\"EUR\",\"volume\":\"196,461\",\"volume_alt\":\"196.5K\",\"provider\":\"CNBC Quote Cache\",\"previous_day_closing\":\"204.15\",\"altSymbol\":\"AIR.PA\",\"realTime\":\"false\",\"curmktstatus\":\"REG_MKT\",\"pe\":\"26.15\",\"mktcapView\":\"162.062B\",\"dividend\":\"3.20\"",
+   "largo": 1371,
+   "inicio": "{\"FormattedQuoteResult\":{\"FormattedQuote\":[{\"symbol\":\"AIR-FR\",\"symbolType\":\"symbol\",\"code\":0,\"name\":\"Airbus SE\",\"shortName\":\"AIR\",\"onAirName\":\"Airbus SE\",\"altName\":\"Airbus SE\",\"last\":\"201.10\",\"last_timedate\":\"5:36 PM CET\",\"last_time\":\"2026-11-17T17:36:01.000+0100\",\"changetype\":\"DOWN\",\"type\":\"STOCK\",\"subType\":\"Common Stock\",\"exchange\":\"Euronext Paris\",\"source\":\"Exchange\",\"open\":\"202.80\",\"high\":\"205.00\",\"low\":\"200.65\",\"change\":\"-3.05\",\"change_pct\":\"-1.49%\",\"currencyCode\":\"EUR\",\"volume\":\"899,380\",\"volume_alt\":\"899.4K\",\"provider\":\"CNBC Quote Cache\",\"previous_day_closing\":\"204.15\",\"altSymbol\":\"AIR.PA\",\"realTime\":\"false\",\"curmktstatus\":\"REG_MKT\",\"pe\":\"25.71\",\"mktcapView\":\"159.328B\",\"dividend\":\"3.2",
    "atributos": [],
    "tiene_consent": false
   },
@@ -81,7 +81,7 @@
    "status": 200,
    "url": "https://quote.cnbc.com/quote-html-webservice/restQuote/symbolType/symbol?symbols=AENA-ES&requestMethod=itv&noform=1&partnerId=2&fund=1&exthrs=1&output=json&events=1",
    "largo": 1299,
-   "inicio": "{\"FormattedQuoteResult\":{\"FormattedQuote\":[{\"symbol\":\"AENA-ES\",\"symbolType\":\"symbol\",\"code\":0,\"name\":\"Aena SME SA\",\"shortName\":\"AENA\",\"onAirName\":\"AENA SA\",\"altName\":\"Aena SME SA\",\"last\":\"28.66\",\"last_timedate\":\"2:00 PM CET\",\"last_time\":\"2026-11-17T14:00:43.000+0100\",\"changetype\":\"DOWN\",\"type\":\"STOCK\",\"subType\":\"Common Stock\",\"exchange\":\"Mercado Continuo\",\"source\":\"Exchange\",\"open\":\"29.08\",\"high\":\"29.14\",\"low\":\"28.66\",\"change\":\"-0.52\",\"change_pct\":\"-1.78%\",\"currencyCode\":\"EUR\",\"volume\":\"134,844\",\"volume_alt\":\"134.8K\",\"provider\":\"CNBC Quote Cache\",\"previous_day_closing\":\"29.18\",\"altSymbol\":\"AENA.MC\",\"realTime\":\"false\",\"curmktstatus\":\"REG_MKT\",\"pe\":\"18.43\",\"mktcapView\":\"42.99B\",\"dividend\":\"1.0",
+   "inicio": "{\"FormattedQuoteResult\":{\"FormattedQuote\":[{\"symbol\":\"AENA-ES\",\"symbolType\":\"symbol\",\"code\":0,\"name\":\"Aena SME SA\",\"shortName\":\"AENA\",\"onAirName\":\"AENA SA\",\"altName\":\"Aena SME SA\",\"last\":\"28.40\",\"last_timedate\":\"5:37 PM CET\",\"last_time\":\"2026-11-17T17:37:52.000+0100\",\"changetype\":\"DOWN\",\"type\":\"STOCK\",\"subType\":\"Common Stock\",\"exchange\":\"Mercado Continuo\",\"source\":\"Exchange\",\"open\":\"29.08\",\"high\":\"29.14\",\"low\":\"28.40\",\"change\":\"-0.78\",\"change_pct\":\"-2.67%\",\"currencyCode\":\"EUR\",\"volume\":\"1,308,168\",\"volume_alt\":\"1.3M\",\"provider\":\"CNBC Quote Cache\",\"previous_day_closing\":\"29.18\",\"altSymbol\":\"AENA.MC\",\"realTime\":\"false\",\"curmktstatus\":\"REG_MKT\",\"pe\":\"18.27\",\"mktcapView\":\"42.60B\",\"dividend\":\"1.0",
    "atributos": [],
    "tiene_consent": false
   },
@@ -89,7 +89,7 @@
    "status": 200,
    "url": "https://quote.cnbc.com/quote-html-webservice/restQuote/symbolType/symbol?symbols=KRI-GR&requestMethod=itv&noform=1&partnerId=2&fund=1&exthrs=1&output=json&events=1",
    "largo": 1394,
-   "inicio": "{\"FormattedQuoteResult\":{\"FormattedQuote\":[{\"symbol\":\"KRI-GR\",\"symbolType\":\"symbol\",\"code\":0,\"name\":\"KRI-KRI Milk Industry S.A.\",\"shortName\":\"KRI\",\"onAirName\":\"KRI-KRI Milk Industry S.A.\",\"altName\":\"KRI-KRI Milk Industry S.A.\",\"last\":\"39.00\",\"last_timedate\":\"2:38 PM EET\",\"last_time\":\"2026-11-17T14:38:41.050+0200\",\"changetype\":\"UP\",\"type\":\"STOCK\",\"subType\":\"Common Stock\",\"exchange\":\"Athens Stock Exchange\",\"source\":\"Exchange\",\"open\":\"38.65\",\"high\":\"39.05\",\"low\":\"36.60\",\"change\":\"+0.35\",\"change_pct\":\"+0.91%\",\"currencyCode\":\"EUR\",\"volume\":\"23,025\",\"volume_alt\":\"23.0K\",\"provider\":\"CNBC Quote Cache\",\"previous_day_closing\":\"38.65\",\"altSymbol\":\"KRIr.AT\",\"realTime\":\"false\",\"curmktstatus\":\"REG_MKT\",\"p",
+   "inicio": "{\"FormattedQuoteResult\":{\"FormattedQuote\":[{\"symbol\":\"KRI-GR\",\"symbolType\":\"symbol\",\"code\":0,\"name\":\"KRI-KRI Milk Industry S.A.\",\"shortName\":\"KRI\",\"onAirName\":\"KRI-KRI Milk Industry S.A.\",\"altName\":\"KRI-KRI Milk Industry S.A.\",\"last\":\"38.65\",\"last_timedate\":\"5:09 PM EET\",\"last_time\":\"2026-11-17T17:09:58.947+0200\",\"changetype\":\"UNCH\",\"type\":\"STOCK\",\"subType\":\"Common Stock\",\"exchange\":\"Athens Stock Exchange\",\"source\":\"Exchange\",\"open\":\"38.65\",\"high\":\"39.10\",\"low\":\"36.60\",\"change\":\"UNCH\",\"change_pct\":\"UNCH\",\"currencyCode\":\"EUR\",\"volume\":\"32,694\",\"volume_alt\":\"32.7K\",\"provider\":\"CNBC Quote Cache\",\"previous_day_closing\":\"38.65\",\"altSymbol\":\"KRIr.AT\",\"realTime\":\"false\",\"curmktstatus\":\"REG_MKT\",\"pe",
    "atributos": [],
    "tiene_consent": false
   },
@@ -121,26 +121,26 @@
    "status": 200,
    "url": "https://quote.cnbc.com/quote-html-webservice/restQuote/symbolType/symbol?symbols=IDR-ES&requestMethod=itv&noform=1&partnerId=2&fund=1&exthrs=1&output=json&events=1",
    "largo": 1315,
-   "inicio": "{\"FormattedQuoteResult\":{\"FormattedQuote\":[{\"symbol\":\"IDR-ES\",\"symbolType\":\"symbol\",\"code\":0,\"name\":\"Indra Sistemas SA\",\"shortName\":\"IDR\",\"onAirName\":\"Indra Sistemas SA\",\"altName\":\"Indra Sistemas SA\",\"last\":\"55.60\",\"last_timedate\":\"2:03 PM CET\",\"last_time\":\"2026-11-17T14:03:40.000+0100\",\"changetype\":\"DOWN\",\"type\":\"STOCK\",\"subType\":\"Common Stock\",\"exchange\":\"Mercado Continuo\",\"source\":\"Exchange\",\"open\":\"57.00\",\"high\":\"57.08\",\"low\":\"55.20\",\"change\":\"-2.10\",\"change_pct\":\"-3.64%\",\"currencyCode\":\"EUR\",\"volume\":\"611,140\",\"volume_alt\":\"611.1K\",\"provider\":\"CNBC Quote Cache\",\"previous_day_closing\":\"57.70\",\"altSymbol\":\"IDR.MC\",\"realTime\":\"false\",\"curmktstatus\":\"REG_MKT\",\"pe\":\"19.53\",\"mktcapView\":\"9.82",
+   "inicio": "{\"FormattedQuoteResult\":{\"FormattedQuote\":[{\"symbol\":\"IDR-ES\",\"symbolType\":\"symbol\",\"code\":0,\"name\":\"Indra Sistemas SA\",\"shortName\":\"IDR\",\"onAirName\":\"Indra Sistemas SA\",\"altName\":\"Indra Sistemas SA\",\"last\":\"54.00\",\"last_timedate\":\"5:42 PM CET\",\"last_time\":\"2026-11-17T17:42:25.000+0100\",\"changetype\":\"DOWN\",\"type\":\"STOCK\",\"subType\":\"Common Stock\",\"exchange\":\"Mercado Continuo\",\"source\":\"Exchange\",\"open\":\"57.00\",\"high\":\"57.08\",\"low\":\"53.84\",\"change\":\"-3.70\",\"change_pct\":\"-6.41%\",\"currencyCode\":\"EUR\",\"volume\":\"1,362,782\",\"volume_alt\":\"1.4M\",\"provider\":\"CNBC Quote Cache\",\"previous_day_closing\":\"57.70\",\"altSymbol\":\"IDR.MC\",\"realTime\":\"false\",\"curmktstatus\":\"REG_MKT\",\"pe\":\"18.96\",\"mktcapView\":\"9.53",
    "atributos": [],
    "tiene_consent": false
   },
   "cnbc_SAF-FR": {
    "status": 200,
    "url": "https://quote.cnbc.com/quote-html-webservice/restQuote/symbolType/symbol?symbols=SAF-FR&requestMethod=itv&noform=1&partnerId=2&fund=1&exthrs=1&output=json&events=1",
-   "largo": 1350,
-   "inicio": "{\"FormattedQuoteResult\":{\"FormattedQuote\":[{\"symbol\":\"SAF-FR\",\"symbolType\":\"symbol\",\"code\":0,\"name\":\"Safran SA\",\"shortName\":\"SAF\",\"onAirName\":\"Safran SA\",\"altName\":\"Safran SA\",\"last\":\"307.60\",\"last_timedate\":\"2:03 PM CET\",\"last_time\":\"2026-11-17T14:03:36.000+0100\",\"changetype\":\"DOWN\",\"type\":\"STOCK\",\"subType\":\"Common Stock\",\"exchange\":\"Euronext Paris\",\"source\":\"Exchange\",\"open\":\"309.20\",\"high\":\"312.00\",\"low\":\"307.20\",\"change\":\"-2.30\",\"change_pct\":\"-0.74%\",\"currencyCode\":\"EUR\",\"volume\":\"96,913\",\"volume_alt\":\"96.9K\",\"provider\":\"CNBC Quote Cache\",\"previous_day_closing\":\"309.90\",\"altSymbol\":\"SAF.PA\",\"realTime\":\"false\",\"curmktstatus\":\"REG_MKT\",\"pe\":\"33.03\",\"mktcapView\":\"128.683B\",\"dividend\":\"3.35\"",
+   "largo": 1352,
+   "inicio": "{\"FormattedQuoteResult\":{\"FormattedQuote\":[{\"symbol\":\"SAF-FR\",\"symbolType\":\"symbol\",\"code\":0,\"name\":\"Safran SA\",\"shortName\":\"SAF\",\"onAirName\":\"Safran SA\",\"altName\":\"Safran SA\",\"last\":\"306.00\",\"last_timedate\":\"5:36 PM CET\",\"last_time\":\"2026-11-17T17:36:01.000+0100\",\"changetype\":\"DOWN\",\"type\":\"STOCK\",\"subType\":\"Common Stock\",\"exchange\":\"Euronext Paris\",\"source\":\"Exchange\",\"open\":\"309.20\",\"high\":\"312.00\",\"low\":\"305.30\",\"change\":\"-3.90\",\"change_pct\":\"-1.26%\",\"currencyCode\":\"EUR\",\"volume\":\"426,275\",\"volume_alt\":\"426.3K\",\"provider\":\"CNBC Quote Cache\",\"previous_day_closing\":\"309.90\",\"altSymbol\":\"SAF.PA\",\"realTime\":\"false\",\"curmktstatus\":\"REG_MKT\",\"pe\":\"32.85\",\"mktcapView\":\"128.013B\",\"dividend\":\"3.3",
    "atributos": [],
    "tiene_consent": false
   },
   "sa_epa/AIR": {
    "status": 200,
    "url": "https://stockanalysis.com/quote/epa/AIR/",
-   "largo": 143150,
+   "largo": 142136,
    "inicio": "<!doctype html>\n<html lang=\"en\">\n\t<head>\n\t\t<meta charset=\"utf-8\" />\n\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n\t\t<!--12qhfyh--><!--[0--><link rel=\"preconnect\" href=\"https://securepubads.g.doubleclick.net\"/> <link rel=\"preconnect\" href=\"https://u5.investingchannel.com\"/>",
    "contexto": [
-    "s-end space-x-2 xs:space-x-3 bp:space-x-5\"><div><div class=\"text-4xl font-bold transition-colors duration-300 inline-block\">204.35</div> <!----><div class=\"font-semibold inline-block text-2xl text-green-vivid\">+0.20 (0.10%)</div",
-    "-default\">Price Target</div> <div class=\"mb-0.5 text-center text-4xl font-semibold text-green-vivid\"><!--[0-->€231.54<!--]--></div> <!--[0--><div class=\"mb-1.5 text-center text-xl\">(13.31% upside)</div><!--]--> <!--[0--><div cla"
+    "s-end space-x-2 xs:space-x-3 bp:space-x-5\"><div><div class=\"text-4xl font-bold transition-colors duration-300 inline-block\">201.45</div> <!----><div class=\"font-semibold inline-block text-2xl text-red-vivid\">-2.70 (-1.32%)</div>",
+    "-default\">Price Target</div> <div class=\"mb-0.5 text-center text-4xl font-semibold text-green-vivid\"><!--[0-->€231.54<!--]--></div> <!--[0--><div class=\"mb-1.5 text-center text-xl\">(14.94% upside)</div><!--]--> <!--[0--><div cla"
    ],
    "atributos": [],
    "tiene_consent": false
@@ -148,11 +148,11 @@
   "sa_bme/AENA": {
    "status": 200,
    "url": "https://stockanalysis.com/quote/bme/AENA/",
-   "largo": 129518,
+   "largo": 129515,
    "inicio": "<!doctype html>\n<html lang=\"en\">\n\t<head>\n\t\t<meta charset=\"utf-8\" />\n\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n\t\t<!--12qhfyh--><!--[0--><link rel=\"preconnect\" href=\"https://securepubads.g.doubleclick.net\"/> <link rel=\"preconnect\" href=\"https://u5.investingchannel.com\"/>",
    "contexto": [
-    "s-end space-x-2 xs:space-x-3 bp:space-x-5\"><div><div class=\"text-4xl font-bold transition-colors duration-300 inline-block\">28.68</div> <!----><div class=\"font-semibold inline-block text-2xl text-red-vivid\">-0.50 (-1.71%)</div><",
-    "-default\">Price Target</div> <div class=\"mb-0.5 text-center text-4xl font-semibold text-red-vivid\"><!--[0-->€27.49<!--]--></div> <!--[0--><div class=\"mb-1.5 text-center text-xl\">(-4.15% downside)</div><!--]--> <!--[0--><div clas"
+    "s-end space-x-2 xs:space-x-3 bp:space-x-5\"><div><div class=\"text-4xl font-bold transition-colors duration-300 inline-block\">28.70</div> <!----><div class=\"font-semibold inline-block text-2xl text-red-vivid\">-0.48 (-1.64%)</div><",
+    "-default\">Price Target</div> <div class=\"mb-0.5 text-center text-4xl font-semibold text-red-vivid\"><!--[0-->€27.49<!--]--></div> <!--[0--><div class=\"mb-1.5 text-center text-xl\">(-4.22% downside)</div><!--]--> <!--[0--><div clas"
    ],
    "atributos": [],
    "tiene_consent": false
@@ -160,11 +160,11 @@
   "sa_ath/KRI": {
    "status": 200,
    "url": "https://stockanalysis.com/quote/ath/KRI/",
-   "largo": 110296,
+   "largo": 110312,
    "inicio": "<!doctype html>\n<html lang=\"en\">\n\t<head>\n\t\t<meta charset=\"utf-8\" />\n\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n\t\t<!--12qhfyh--><!--[0--><link rel=\"preconnect\" href=\"https://securepubads.g.doubleclick.net\"/> <link rel=\"preconnect\" href=\"https://u5.investingchannel.com\"/>",
    "contexto": [
-    "s-end space-x-2 xs:space-x-3 bp:space-x-5\"><div><div class=\"text-4xl font-bold transition-colors duration-300 inline-block\">39.05</div> <!----><div class=\"font-semibold inline-block text-2xl text-green-vivid\">+0.40 (1.03%)</div>",
-    "-default\">Price Target</div> <div class=\"mb-0.5 text-center text-4xl font-semibold text-red-vivid\"><!--[0-->€28.96<!--]--></div> <!--[0--><div class=\"mb-1.5 text-center text-xl\">(-25.84% downside)</div><!--]--> <!--[0--><div cla"
+    "s-end space-x-2 xs:space-x-3 bp:space-x-5\"><div><div class=\"text-4xl font-bold transition-colors duration-300 inline-block\">39.00</div> <!----><div class=\"font-semibold inline-block text-2xl text-green-vivid\">+0.35 (0.91%)</div>",
+    "-default\">Price Target</div> <div class=\"mb-0.5 text-center text-4xl font-semibold text-red-vivid\"><!--[0-->€28.96<!--]--></div> <!--[0--><div class=\"mb-1.5 text-center text-xl\">(-25.74% downside)</div><!--]--> <!--[0--><div cla"
    ],
    "atributos": [],
    "tiene_consent": false
@@ -172,7 +172,7 @@
   "sa_tpe/2330": {
    "status": 200,
    "url": "https://stockanalysis.com/quote/tpe/2330/",
-   "largo": 143038,
+   "largo": 143262,
    "inicio": "<!doctype html>\n<html lang=\"en\">\n\t<head>\n\t\t<meta charset=\"utf-8\" />\n\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n\t\t<!--12qhfyh--><!--[0--><link rel=\"preconnect\" href=\"https://securepubads.g.doubleclick.net\"/> <link rel=\"preconnect\" href=\"https://u5.investingchannel.com\"/>",
    "contexto": [
     "s-end space-x-2 xs:space-x-3 bp:space-x-5\"><div><div class=\"text-4xl font-bold transition-colors duration-300 inline-block\">2,170.00</div> <!----><div class=\"font-semibold inline-block text-2xl text-red-vivid\">-45.00 (-2.03%)</d",
