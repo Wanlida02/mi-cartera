@@ -295,7 +295,8 @@ const Logic = (function () {
     const e = hist && hist.simbolos && hist.simbolos[tk]; if (!e) return { tk, motivo: 'sin histórico de precios (aún no descargado)' };
     if (e.divisa !== f.divisa) return { tk, motivo: 'el histórico está en ' + e.divisa + ' y la ficha en ' + f.divisa + ': no se mezclan' };
     const r = V.multiplosHistoricos(f, e.cierres, e.splits); if (!r) return { tk, motivo: 'no aplica' };
-    if (!r.valido) return { tk, r, motivo: Object.keys(r.descartado || {}).length ? 'múltiplos muy inestables entre años (' + Object.keys(r.descartado).map(k => k + ' ±' + Math.round(r.descartado[k] * 100) + ' %').join(', ') + '): no hay un «de siempre» fiable' : 'datos insuficientes (' + r.anios.length + ' cierres de ejercicio con precio, ' + Math.max(r.n.per, r.n.pfcf) + ' con PER o P/FCF calculables; hacen falta 4)' };
+    if (!r.valido) return { tk, r, motivo: Object.keys(r.descartado || {}).length ? 'múltiplos muy inestables entre años (' + Object.keys(r.descartado).map(k => k + ' ±' + Math.round(r.descartado[k] * 100) + ' %').join(', ') + '): no hay un «de siempre» fiable' : 'datos insuficientes (' + r.anios.length + ' cierres de ejercicio con precio, ' + Math.max(r.n.per, r.n.pfcf) + ' con PER o P/FCF calculables; hacen falta 5)' };
+    const alto = ['per', 'pfcf'].filter(k => r.mult[k] > 40); if (alto.length) return { tk, r, motivo: 'el múltiplo histórico es muy alto (' + alto.map(k => k + ' ' + r.mult[k] + 'x').join(', ') + '): no se aplica solo, revísalo a mano' };
     return { tk, r, mult: r.mult };
   }
   /* Aplica a las fichas provisionales (sin mult_hist) las propuestas válidas. Informe antes/después de la rentabilidad a 5 años; se puede deshacer (ajustes.mult_auto). */

@@ -24,7 +24,7 @@ const c2 = Object.assign({}, cierres, { '2021-12': 400 }); near(V.multiplosHisto
 // sin deuda/caja no se inventa EV/EBITDA; sin capex no se inventa P/FCF
 const f3 = ficha(); f3.hist.capex = rep(null, 6); f3.hist.caja = rep(null, 6); r = V.multiplosHistoricos(f3, cierres, []); assert(r.mult.pfcf === undefined && r.mult.ev_ebitda === undefined && r.mult.per); 
 // pocos años: no vale
-const poco = { '2024-12': 144, '2025-12': 144 }; assert(!V.multiplosHistoricos(ficha(), poco, []).valido);
+const poco = { '2022-12': 144, '2023-12': 144, '2024-12': 144, '2025-12': 144 }; assert(!V.multiplosHistoricos(ficha(), poco, []).valido);
 // split 4:1 en jun-2021: acciones antiguas sin ajustar (10) y las nuevas 40, precios ajustados (36 → cap real 1.440)
 const fs4 = ficha(); fs4.hist.acciones = [10, 10, 40, 40, 40, 40]; fs4.hist.ni_reportado = rep(72, 6); const c4 = {}; anios.forEach(a => { c4[a + '-12'] = a <= 2020 ? 36 : 36; });
 r = V.multiplosHistoricos(fs4, c4, [{ fecha: '2021-06-01', num: 4, den: 1 }]); assert(r.ajustes.includes(2020), 'ajusta 2020 por el split de 2021: ' + r.ajustes);
@@ -41,6 +41,7 @@ assert(q('AAA').aplicado && near(d.fichas.AAA.mult_hist.per, 20, 0.05, 'AAA') ==
 assert(!q('BBB').aplicado && /EUR/.test(q('BBB').motivo) && !d.fichas.BBB.mult_hist, 'divisa distinta: no se mezcla'); assert(!q('EEE').aplicado && /sin histórico/.test(q('EEE').motivo));
 assert.deepEqual(d.fichas.CCC.mult_hist, { per: 12 }, 'no pisa los que ya tienen'); assert(!q('CCC') && !q('DDD'));
 const v = V.defaults(Object.assign({}, d.fichas.AAA, { precio: 150 })).conservador; near(v.per, 20, 0.05, 'el motor usa el PER propio'); near(v.ev_ebitda, 1540 / 120, 0.06, 'y el EV/EBITDA propio');
+{ const cal = {}; anios.forEach(a => { cal[a + '-12'] = 144 * 3; }); const dd = L.normalizar({ fichas: { ALTO: ficha() }, ajustes: {}, precios: {} }); const ra = L.aplicarMultiplos(dd, { simbolos: { ALTO: { divisa: 'USD', cierres: cal, splits: [] } } }); assert(!ra[0].aplicado && /muy alto/.test(ra[0].motivo) && !dd.fichas.ALTO.mult_hist, 'PER 60x no se aplica solo'); }
 assert.deepEqual(L.deshacerMultiplos(d), ['AAA']); assert(L.provisional(d.fichas.AAA) && !d.fichas.AAA.mult_hist_auto);
 // ── Auditoría de divisas ──
 const hoy = '2026-11-17', a = L.normalizar({ ajustes: { fx: { EUR: 1, USD: 1.1, CAD: 1.57, fecha: '2026-11-10' } }, fichas: {

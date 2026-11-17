@@ -37,7 +37,7 @@ async function stooqHist(sym) {
   if (!r.ok) throw new Error('Stooq HTTP ' + r.status); return leerStooqHist(await r.text(), x[1], x[2]);
 }
 /* CNBC (funciona desde GitHub; Yahoo y Stooq no): gráfico histórico «ALL» (o 10Y/5Y) con cierres ajustados por splits. Símbolo igual que en actualizar_precios.js: US tal cual; resto SIMBOLO-PAÍS */
-const CPAIS = { MC: ['ES', 'EUR'], PA: ['FR', 'EUR'], AT: ['GR', 'EUR'], TW: ['TW', 'TWD'], HK: ['HK', 'HKD'], L: ['GB', 'GBP'], DE: ['DE', 'EUR'], MI: ['IT', 'EUR'], AS: ['NL', 'EUR'], SW: ['CH', 'CHF'], T: ['JP', 'JPY'], SZ: ['CN', 'CNY'] };
+const CPAIS = { MC: ['ES', 'EUR'], PA: ['FR', 'EUR'], AT: ['GR', 'EUR'], TW: ['TW', 'TWD'], HK: ['HK', 'HKD'], L: ['GB', 'GBP'], DE: ['DE', 'EUR'], MI: ['IT', 'EUR'], AS: ['NL', 'EUR'], SW: ['CH', 'CHF'], ST: ['SE', 'SEK'], T: ['JP', 'JPY'], SZ: ['CN', 'CNY'] };
 /* ¿La serie es del mismo valor? El último cierre debe parecerse al precio actual (±35 %); si no (símbolo equivocado, otra clase de acción) se rechaza. */
 function coherente(h, precioActual) {
   const ks = Object.keys(h.cierres).sort(), u = h.cierres[ks[ks.length - 1]]; if (!(precioActual > 0) || !u) throw new Error('sin precio actual con el que contrastar la serie');

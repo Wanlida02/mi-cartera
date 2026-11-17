@@ -239,7 +239,7 @@ const Val = (function () {
      Para cada ejercicio j con precio de cierre P_j: capitalización = P_j × acciones_j; PER, P/FCF, EV/EBITDA y EV/EBIT sobre las cifras recurrentes de ESE año
      (mismas fórmulas que «actuales»). Solo cuenta lo que se puede calcular con datos reales (sin rellenar líneas vacías con ceros). Mediana de los últimos 10 años: robusta
      frente a un año de euforia o de crisis. Las acciones se contrastan con las más recientes por si la serie no está ajustada a un split (cierres de Yahoo sí lo están). */
-  const MULT_MIN_AÑOS = 4, MULT_RANGO = { per: [4, 80], pfcf: [4, 90], ev_ebitda: [3, 60], ev_ebit: [3, 70] };
+  const MULT_MIN_AÑOS = 5, MULT_RANGO = { per: [4, 80], pfcf: [4, 90], ev_ebitda: [3, 60], ev_ebit: [3, 70] };
   function accAjustadas(h, splits, anios, mes) {
     const n = h.acciones.length, ult = last(h.acciones.filter(isN)); const out = h.acciones.slice();
     if (!splits || !splits.length || !(ult > 0)) return { acc: out, ajustes: [] };

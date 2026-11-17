@@ -195,7 +195,7 @@
   }
 
   /* ───── Ajustes ───── */
-  const APP_VERSION = '54 · (múltiplos propios: PER y FCF reportados, descarta los inestables) (histórico: respaldo Stooq y splits inferidos) Múltiplos propios de cada empresa (mediana de los cierres de ejercicio × sus cifras) en vez de 15x/9x genéricos, con informe antes/después y deshacer; auditoría de divisas y precios; divisas con espacios normalizadas';
+  const APP_VERSION = '55 · (mínimo 5 cierres; múltiplos > 40x no se aplican solos) (múltiplos propios: PER y FCF reportados, descarta los inestables) (histórico: respaldo Stooq y splits inferidos) Múltiplos propios de cada empresa (mediana de los cierres de ejercicio × sus cifras) en vez de 15x/9x genéricos, con informe antes/después y deshacer; auditoría de divisas y precios; divisas con espacios normalizadas';
   function ajustes() {
     const d = Store.get(), A = d.ajustes, cp = Store.ultimaCopia();
     dlg('<h2>Ajustes</h2><p class="small mut">Versión de la app: ' + APP_VERSION + '</p><h3>Umbrales del Inicio (rentabilidad anual esperada a 5 años)</h3><div class="f2">' + campo('a-b', 'Barata ≥ %', A.umbral_barata, 'number') + campo('a-c', 'Cara ≤ %', A.umbral_cara, 'number') + '</div>' +
