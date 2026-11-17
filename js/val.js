@@ -265,17 +265,19 @@ const Val = (function () {
       const P = cierres[an[j] + '-' + String(mes).padStart(2, '0')], a = acc[j]; if (!(P > 0) || !(a > 0)) continue;
       const cap = P * a, ok = k => isN(h[k][j]), eb = ok('ebit') ? ebitR(h, j) : null, tx = ok('impuestos') ? taxR(h, j) : null;
       const nd = ok('deuda') && ok('caja') ? z(h.deuda[j]) + z(h.leases_deuda[j]) - h.caja[j] : null;
-      const ni = eb != null && tx != null && ok('intereses') ? eb - h.intereses[j] - tx - z(h.minoritarios[j]) + z(h.otros && h.otros[j]) : null;
+      const hh = f.hist, nrep = hh.ni_reportado && isN(hh.ni_reportado[j]) ? hh.ni_reportado[j] : null;   // beneficio reportado (lo que divide el mercado en el PER); si falta, se reconstruye desde el EBIT
+      const ni = nrep != null ? nrep : eb != null && tx != null && ok('intereses') ? eb - h.intereses[j] - tx - z(h.minoritarios[j]) + z(h.otros && h.otros[j]) : null;
       const ebitda = eb != null && ok('da') ? eb + h.da[j] : null;
-      const fcf = ebitda != null && tx != null && ok('capex') && ok('intereses') ? ebitda - h.capex[j] - h.intereses[j] - tx - z(h.minoritarios[j]) - z(h.leases[j]) : null;
+      const fco = hh.fco && isN(hh.fco[j]) ? hh.fco[j] : null;   // flujo de caja operativo reportado menos capex y arrendamientos; si no hay, se reconstruye
+      const fcf = fco != null && ok('capex') ? fco - h.capex[j] - z(h.leases[j]) : ebitda != null && tx != null && ok('capex') && ok('intereses') ? ebitda - h.capex[j] - h.intereses[j] - tx - z(h.minoritarios[j]) - z(h.leases[j]) : null;
       const row = { anio: an[j], precio: P, per: ni > 0 ? cap / ni : null, pfcf: fcf > 0 ? cap / fcf : null, ev_ebitda: ebitda > 0 && nd != null ? (cap + nd) / ebitda : null, ev_ebit: eb > 0 && nd != null ? (cap + nd) / eb : null };
       det.push(row); Object.keys(v).forEach(k => { if (isN(row[k]) && row[k] >= MULT_RANGO[k][0] && row[k] <= MULT_RANGO[k][1]) v[k].push(row[k]); });
     }
-    const res = {}, n = {}; Object.keys(v).forEach(k => { n[k] = v[k].length; if (v[k].length >= MULT_MIN_AÑOS) res[k] = Math.round(median(v[k]) * 10) / 10; });
+    const res = {}, n = {}, descartado = {}; Object.keys(v).forEach(k => { n[k] = v[k].length; if (v[k].length >= MULT_MIN_AÑOS) res[k] = Math.round(median(v[k]) * 10) / 10; });
     const disp = k => { const x = v[k].slice().sort((p, q) => p - q), q1 = x[Math.floor((x.length - 1) * 0.25)], q3 = x[Math.ceil((x.length - 1) * 0.75)], m = median(x); return m > 0 ? (q3 - q1) / m : null; };
-    const dispersion = {}; Object.keys(res).forEach(k => { dispersion[k] = disp(k); });
+    const dispersion = {}; Object.keys(res).forEach(k => { dispersion[k] = disp(k); if (dispersion[k] > 0.8) { descartado[k] = dispersion[k]; delete res[k]; } });   // múltiplo demasiado inestable (rango intercuartílico > 80 % de la mediana): no es «el de siempre»
     const valido = isN(res.per) || isN(res.pfcf);   // sin PER ni P/FCF no hay base: se queda provisional
-    return { mult: res, n, dispersion, detalle: det, ajustes, valido, anios: det.map(x => x.anio), mes };
+    return { mult: res, n, dispersion, descartado, detalle: det, ajustes, valido, anios: det.map(x => x.anio), mes };
   }
 
   /* ---- Control de realismo: avisos sobre los supuestos ---- */

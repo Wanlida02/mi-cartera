@@ -40,7 +40,8 @@ async function stooqHist(sym) {
 const CPAIS = { MC: ['ES', 'EUR'], PA: ['FR', 'EUR'], AT: ['GR', 'EUR'], TW: ['TW', 'TWD'], HK: ['HK', 'HKD'], L: ['GB', 'GBP'], DE: ['DE', 'EUR'], MI: ['IT', 'EUR'], AS: ['NL', 'EUR'], SW: ['CH', 'CHF'], T: ['JP', 'JPY'], SZ: ['CN', 'CNY'] };
 /* ¿La serie es del mismo valor? El último cierre debe parecerse al precio actual (±35 %); si no (símbolo equivocado, otra clase de acción) se rechaza. */
 function coherente(h, precioActual) {
-  const ks = Object.keys(h.cierres).sort(), u = h.cierres[ks[ks.length - 1]]; if (!(precioActual > 0) || !u) return true;
+  const ks = Object.keys(h.cierres).sort(), u = h.cierres[ks[ks.length - 1]]; if (!(precioActual > 0) || !u) throw new Error('sin precio actual con el que contrastar la serie');
+  const lim = new Date(Date.now() - 75 * 864e5).toISOString().slice(0, 7); if (ks[ks.length - 1] < lim) throw new Error('la serie termina en ' + ks[ks.length - 1] + ' (valor sin cotización reciente)');
   const r = u / precioActual; if (r < 0.65 || r > 1.35) throw new Error('el histórico (' + u + ') no cuadra con el precio actual (' + precioActual + ')'); return true;
 }
 function leerCnbcHist(j, divisa) {
@@ -91,7 +92,7 @@ async function main() {
   let precios = {}; try { precios = JSON.parse(fs.readFileSync(path.join(RAIZ, 'precios.json'), 'utf8')).precios || {}; } catch (e) { /* sin divisas conocidas: se usa la del país */ }
   const sim = {}, fallos = [];   // se parte de cero: lo anterior solo se conserva si este valor falla y sigue cuadrando con el precio actual
   for (const tk of Object.keys(cfg.simbolos)) {
-    const c = cfg.simbolos[tk]; if (c.pausa || (solo.length && !solo.includes(tk))) continue;
+    const c = cfg.simbolos[tk]; if (solo.length && !solo.includes(tk)) continue;   // también los valores con precios en pausa: aquí se intenta igualmente
     let ok = null, ult;
     for (const s of candidatos(c)) { try { const pr = precios[s === c.ficha ? tk + '@ficha' : tk]; const h = await pedirHist(s, pr && pr.divisa); coherente(h, pr && pr.precio); ok = Object.assign({ simbolo: s }, h); break; } catch (e) { ult = e; } await esperar(500); }
     if (ok) sim[tk] = Object.assign(ok, { actualizado: new Date().toISOString() });

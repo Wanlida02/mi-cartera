@@ -11,7 +11,7 @@ assert.throws(() => H.leerHistorico({ chart: { result: [{ meta: { currency: 'USD
 { const bars = []; for (let a = 2016; a <= 2026; a++) for (let m = 1; m <= 12; m++) { bars.push({ close: String(100 + a - 2016), tradeTime: a + String(m).padStart(2, '0') + '15000000' }); bars.push({ close: String(200 + a - 2016), tradeTime: a + String(m).padStart(2, '0') + '28000000' }); }
   const ch = H.leerCnbcHist({ barData: { priceBars: bars } }, 'EUR'); assert.equal(ch.divisa, 'EUR'); assert.equal(ch.cierres['2020-12'], 204, 'queda el último cierre del mes'); assert.equal(Object.keys(ch.cierres).length, 132);
   assert.throws(() => H.leerCnbcHist({}, 'USD'), /sin histórico/); }
-assert(H.coherente(ch0 = H.leerCnbcHist({ barData: { priceBars: bars0() } }, 'USD'), 111)); assert.throws(() => H.coherente(ch0, 0.0001 * 1e3 * 1e-1 * 1e3 * 1e-2), /no cuadra/);
+ch0 = { cierres: { '2026-09': 110, '2026-10': 112 } }; assert(H.coherente(ch0, 111)); assert.throws(() => H.coherente(ch0, 1), /no cuadra/); assert.throws(() => H.coherente(ch0, 0), /sin precio actual/); assert.throws(() => H.coherente({ cierres: { '2020-01': 10, '2021-03': 10 } }, 10), /termina en/);
 assert.deepEqual(H.candidatos({ y: ['A', 'B'], ficha: 'F', hist: 'H' }), ['H', 'F', 'A', 'B']);
 // ── Motor ──
 const anios = [2020, 2021, 2022, 2023, 2024, 2025], rep = (v, n) => Array(n).fill(v);
