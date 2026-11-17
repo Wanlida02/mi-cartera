@@ -1,29 +1,19 @@
 {
- "generado": "2026-11-17T12:08:28.566Z",
+ "generado": "2026-11-17T12:24:02.553Z",
  "sonda": {
   "google": {
    "status": 200,
    "url": "https://www.google.com/finance/quote/AAPL:NASDAQ?hl=en",
-   "largo": 1477262,
-   "inicio": "<!doctype html><html lang=\"en\" dir=\"ltr\"><head><base href=\"https://www.google.com/finance/\"><link rel=\"preconnect\" href=\"//www.gstatic.com\"><meta name=\"referrer\" content=\"origin\"><script nonce=\"Nr2gHvr6Ev0-wCJ18KTLNA\">window['ppConfig'] = {productName: 'FinHubUi', deleteIsEnforced:  true , sealIsEnf",
+   "largo": 1479985,
+   "inicio": "<!doctype html><html lang=\"en\" dir=\"ltr\"><head><base href=\"https://www.google.com/finance/\"><link rel=\"preconnect\" href=\"//www.gstatic.com\"><meta name=\"referrer\" content=\"origin\"><script nonce=\"kwU92C1E07YOBU-Qa4YR2Q\">window['ppConfig'] = {productName: 'FinHubUi', deleteIsEnforced:  true , sealIsEnf",
    "atributos": [],
    "tiene_consent": false
   },
   "stooq": {
-   "status": 404,
-   "url": "https://stooq.com/q/l/?s=aapl.us&f=sd2t2c&h&e=csv",
-   "largo": 271,
-   "inicio": "<meta charset=utf-8><title>Stooq</title><center style=font-family:arial;margin-top:50px><p><a href=/><img src=//static.stooq.com/stooq.svg height=68></a><p style=font-size:x-large>The page you requested does not exist<br>or has been moved<p><small><a href=/>Main Page</a>",
-   "atributos": [],
-   "tiene_consent": false
+   "error": "fetch failed"
   },
   "stooq2": {
-   "status": 403,
-   "url": "https://stooq.com/q/d/l/?s=aapl.us&i=d",
-   "largo": 226,
-   "inicio": "<meta charset=utf-8><title>Stooq</title><center style=font-family:arial;margin-top:50px><p><a href=/><img src=//static.stooq.com/stooq.svg height=68></a><p style=font-size:x-large>Access denied<p><small><a href=/>Main Page</a>",
-   "atributos": [],
-   "tiene_consent": false
+   "error": "fetch failed"
   },
   "yahoo": {
    "status": 429,
@@ -44,8 +34,8 @@
   "nasdaq": {
    "status": 200,
    "url": "https://api.nasdaq.com/api/quote/AAPL/info?assetclass=stocks",
-   "largo": 1408,
-   "inicio": "{\"data\":{\"symbol\":\"AAPL\",\"companyName\":\"Apple Inc. Common Stock\",\"stockType\":\"Common Stock\",\"exchange\":\"NASDAQ-GS\",\"isNasdaqListed\":true,\"isNasdaq100\":true,\"isHeld\":false,\"primaryData\":{\"lastSalePrice\":\"$351.76\",\"netChange\":\"-1.02\",\"percentageChange\":\"-0.29%\",\"deltaIndicator\":\"down\",\"lastTradeTimest",
+   "largo": 1409,
+   "inicio": "{\"data\":{\"symbol\":\"AAPL\",\"companyName\":\"Apple Inc. Common Stock\",\"stockType\":\"Common Stock\",\"exchange\":\"NASDAQ-GS\",\"isNasdaqListed\":true,\"isNasdaq100\":true,\"isHeld\":false,\"primaryData\":{\"lastSalePrice\":\"$351.70\",\"netChange\":\"-1.08\",\"percentageChange\":\"-0.31%\",\"deltaIndicator\":\"down\",\"lastTradeTimest",
    "atributos": [],
    "tiene_consent": false
   },
@@ -65,23 +55,23 @@
    "status": 401,
    "url": "https://www.marketwatch.com/investing/stock/aapl",
    "largo": 454,
-   "inicio": "{\"url\":\"https://geo.captcha-delivery.com/captcha/?initialCid=AHrlqAAAAAMAgAGXEQmowoQAAyqdsQ==&cid=z0f7LJxXX5sbza_IUQUUnrMgofvdpc4SN_LK9ZoHvzQ5abUbQEdrD0vEdNaM6B6RZVzZrKalhoKS7zyCIxRhVjCJR~E0EUpdWlKsWJz~RqaIVGK6y34MEDM0vyYHoVVT&referer=http%3A%2F%2Fwww.marketwatch.com%2Finvesting%2Fstock%2Faapl&hash=",
+   "inicio": "{\"url\":\"https://geo.captcha-delivery.com/captcha/?initialCid=AHrlqAAAAAMA7bsYEcZj4yQAAyqdcg==&cid=Kx4IlYnFSDBMFqdSjsmr5hkeCSJPhx0dBGRPVey_5bP0iNnH2h5Y8P791_rG9IXrkQeZcb2lKTS8DwtTIJuwS7LlZNW0OAjgYugK4fYFOhhlEOIbye7WBdQJZFVjnfJI&referer=http%3A%2F%2Fwww.marketwatch.com%2Finvesting%2Fstock%2Faapl&hash=",
    "atributos": [],
    "tiene_consent": false
   },
   "cnbc_AIR-FR": {
    "status": 200,
    "url": "https://quote.cnbc.com/quote-html-webservice/restQuote/symbolType/symbol?symbols=AIR-FR&requestMethod=itv&noform=1&partnerId=2&fund=1&exthrs=1&output=json&events=1",
-   "largo": 1370,
-   "inicio": "{\"FormattedQuoteResult\":{\"FormattedQuote\":[{\"symbol\":\"AIR-FR\",\"symbolType\":\"symbol\",\"code\":0,\"name\":\"Airbus SE\",\"shortName\":\"AIR\",\"onAirName\":\"Airbus SE\",\"altName\":\"Airbus SE\",\"last\":\"204.85\",\"last_timedate\":\"12:53 PM CET\",\"last_time\":\"2026-11-17T12:53:51.000+0100\",\"changetype\":\"UP\",\"type\":\"STOCK\",\"subType\":\"Common Stock\",\"exchange\":\"Euronext Paris\",\"source\":\"Exchange\",\"open\":\"202.80\",\"high\":\"204.85\",\"low\":\"202.65\",\"change\":\"+0.70\",\"change_pct\":\"+0.34%\",\"currencyCode\":\"EUR\",\"volume\":\"165,420\",\"volume_alt\":\"165.4K\",\"provider\":\"CNBC Quote Cache\",\"previous_day_closing\":\"204.15\",\"altSymbol\":\"AIR.PA\",\"realTime\":\"false\",\"curmktstatus\":\"REG_MKT\",\"pe\":\"26.19\",\"mktcapView\":\"162.299B\",\"dividend\":\"3.20",
+   "largo": 1368,
+   "inicio": "{\"FormattedQuoteResult\":{\"FormattedQuote\":[{\"symbol\":\"AIR-FR\",\"symbolType\":\"symbol\",\"code\":0,\"name\":\"Airbus SE\",\"shortName\":\"AIR\",\"onAirName\":\"Airbus SE\",\"altName\":\"Airbus SE\",\"last\":\"204.70\",\"last_timedate\":\"1:09 PM CET\",\"last_time\":\"2026-11-17T13:09:34.000+0100\",\"changetype\":\"UP\",\"type\":\"STOCK\",\"subType\":\"Common Stock\",\"exchange\":\"Euronext Paris\",\"source\":\"Exchange\",\"open\":\"202.80\",\"high\":\"205.00\",\"low\":\"202.65\",\"change\":\"+0.55\",\"change_pct\":\"+0.27%\",\"currencyCode\":\"EUR\",\"volume\":\"176,018\",\"volume_alt\":\"176.0K\",\"provider\":\"CNBC Quote Cache\",\"previous_day_closing\":\"204.15\",\"altSymbol\":\"AIR.PA\",\"realTime\":\"false\",\"curmktstatus\":\"REG_MKT\",\"pe\":\"26.17\",\"mktcapView\":\"162.18B\",\"dividend\":\"3.20\",",
    "atributos": [],
    "tiene_consent": false
   },
   "cnbc_AENA-ES": {
    "status": 200,
    "url": "https://quote.cnbc.com/quote-html-webservice/restQuote/symbolType/symbol?symbols=AENA-ES&requestMethod=itv&noform=1&partnerId=2&fund=1&exthrs=1&output=json&events=1",
-   "largo": 1298,
-   "inicio": "{\"FormattedQuoteResult\":{\"FormattedQuote\":[{\"symbol\":\"AENA-ES\",\"symbolType\":\"symbol\",\"code\":0,\"name\":\"Aena SME SA\",\"shortName\":\"AENA\",\"onAirName\":\"AENA SA\",\"altName\":\"Aena SME SA\",\"last\":\"28.80\",\"last_timedate\":\"12:53 PM CET\",\"last_time\":\"2026-11-17T12:53:28.000+0100\",\"changetype\":\"DOWN\",\"type\":\"STOCK\",\"subType\":\"Common Stock\",\"exchange\":\"Mercado Continuo\",\"source\":\"Exchange\",\"open\":\"29.08\",\"high\":\"29.14\",\"low\":\"28.72\",\"change\":\"-0.38\",\"change_pct\":\"-1.30%\",\"currencyCode\":\"EUR\",\"volume\":\"98,052\",\"volume_alt\":\"98.1K\",\"provider\":\"CNBC Quote Cache\",\"previous_day_closing\":\"29.18\",\"altSymbol\":\"AENA.MC\",\"realTime\":\"false\",\"curmktstatus\":\"REG_MKT\",\"pe\":\"18.52\",\"mktcapView\":\"43.20B\",\"dividend\":\"1.09",
+   "largo": 1299,
+   "inicio": "{\"FormattedQuoteResult\":{\"FormattedQuote\":[{\"symbol\":\"AENA-ES\",\"symbolType\":\"symbol\",\"code\":0,\"name\":\"Aena SME SA\",\"shortName\":\"AENA\",\"onAirName\":\"AENA SA\",\"altName\":\"Aena SME SA\",\"last\":\"28.72\",\"last_timedate\":\"1:05 PM CET\",\"last_time\":\"2026-11-17T13:05:59.000+0100\",\"changetype\":\"DOWN\",\"type\":\"STOCK\",\"subType\":\"Common Stock\",\"exchange\":\"Mercado Continuo\",\"source\":\"Exchange\",\"open\":\"29.08\",\"high\":\"29.14\",\"low\":\"28.70\",\"change\":\"-0.46\",\"change_pct\":\"-1.58%\",\"currencyCode\":\"EUR\",\"volume\":\"106,710\",\"volume_alt\":\"106.7K\",\"provider\":\"CNBC Quote Cache\",\"previous_day_closing\":\"29.18\",\"altSymbol\":\"AENA.MC\",\"realTime\":\"false\",\"curmktstatus\":\"REG_MKT\",\"pe\":\"18.47\",\"mktcapView\":\"43.08B\",\"dividend\":\"1.0",
    "atributos": [],
    "tiene_consent": false
   },
@@ -89,7 +79,7 @@
    "status": 200,
    "url": "https://quote.cnbc.com/quote-html-webservice/restQuote/symbolType/symbol?symbols=KRI-GR&requestMethod=itv&noform=1&partnerId=2&fund=1&exthrs=1&output=json&events=1",
    "largo": 1395,
-   "inicio": "{\"FormattedQuoteResult\":{\"FormattedQuote\":[{\"symbol\":\"KRI-GR\",\"symbolType\":\"symbol\",\"code\":0,\"name\":\"KRI-KRI Milk Industry S.A.\",\"shortName\":\"KRI\",\"onAirName\":\"KRI-KRI Milk Industry S.A.\",\"altName\":\"KRI-KRI Milk Industry S.A.\",\"last\":\"39.05\",\"last_timedate\":\"1:33 PM EET\",\"last_time\":\"2026-11-17T13:33:02.357+0200\",\"changetype\":\"UP\",\"type\":\"STOCK\",\"subType\":\"Common Stock\",\"exchange\":\"Athens Stock Exchange\",\"source\":\"Exchange\",\"open\":\"38.65\",\"high\":\"39.05\",\"low\":\"36.60\",\"change\":\"+0.40\",\"change_pct\":\"+1.03%\",\"currencyCode\":\"EUR\",\"volume\":\"20,327\",\"volume_alt\":\"20.3K\",\"provider\":\"CNBC Quote Cache\",\"previous_day_closing\":\"38.65\",\"altSymbol\":\"KRIr.AT\",\"realTime\":\"false\",\"curmktstatus\":\"REG_MKT\",\"p",
+   "inicio": "{\"FormattedQuoteResult\":{\"FormattedQuote\":[{\"symbol\":\"KRI-GR\",\"symbolType\":\"symbol\",\"code\":0,\"name\":\"KRI-KRI Milk Industry S.A.\",\"shortName\":\"KRI\",\"onAirName\":\"KRI-KRI Milk Industry S.A.\",\"altName\":\"KRI-KRI Milk Industry S.A.\",\"last\":\"38.95\",\"last_timedate\":\"1:59 PM EET\",\"last_time\":\"2026-11-17T13:59:44.843+0200\",\"changetype\":\"UP\",\"type\":\"STOCK\",\"subType\":\"Common Stock\",\"exchange\":\"Athens Stock Exchange\",\"source\":\"Exchange\",\"open\":\"38.65\",\"high\":\"39.05\",\"low\":\"36.60\",\"change\":\"+0.30\",\"change_pct\":\"+0.78%\",\"currencyCode\":\"EUR\",\"volume\":\"20,538\",\"volume_alt\":\"20.5K\",\"provider\":\"CNBC Quote Cache\",\"previous_day_closing\":\"38.65\",\"altSymbol\":\"KRIr.AT\",\"realTime\":\"false\",\"curmktstatus\":\"REG_MKT\",\"p",
    "atributos": [],
    "tiene_consent": false
   },
@@ -120,16 +110,16 @@
   "cnbc_IDR-ES": {
    "status": 200,
    "url": "https://quote.cnbc.com/quote-html-webservice/restQuote/symbolType/symbol?symbols=IDR-ES&requestMethod=itv&noform=1&partnerId=2&fund=1&exthrs=1&output=json&events=1",
-   "largo": 1316,
-   "inicio": "{\"FormattedQuoteResult\":{\"FormattedQuote\":[{\"symbol\":\"IDR-ES\",\"symbolType\":\"symbol\",\"code\":0,\"name\":\"Indra Sistemas SA\",\"shortName\":\"IDR\",\"onAirName\":\"Indra Sistemas SA\",\"altName\":\"Indra Sistemas SA\",\"last\":\"55.56\",\"last_timedate\":\"12:53 PM CET\",\"last_time\":\"2026-11-17T12:53:49.000+0100\",\"changetype\":\"DOWN\",\"type\":\"STOCK\",\"subType\":\"Common Stock\",\"exchange\":\"Mercado Continuo\",\"source\":\"Exchange\",\"open\":\"57.00\",\"high\":\"57.08\",\"low\":\"55.20\",\"change\":\"-2.14\",\"change_pct\":\"-3.71%\",\"currencyCode\":\"EUR\",\"volume\":\"542,684\",\"volume_alt\":\"542.7K\",\"provider\":\"CNBC Quote Cache\",\"previous_day_closing\":\"57.70\",\"altSymbol\":\"IDR.MC\",\"realTime\":\"false\",\"curmktstatus\":\"REG_MKT\",\"pe\":\"19.51\",\"mktcapView\":\"9.8",
+   "largo": 1315,
+   "inicio": "{\"FormattedQuoteResult\":{\"FormattedQuote\":[{\"symbol\":\"IDR-ES\",\"symbolType\":\"symbol\",\"code\":0,\"name\":\"Indra Sistemas SA\",\"shortName\":\"IDR\",\"onAirName\":\"Indra Sistemas SA\",\"altName\":\"Indra Sistemas SA\",\"last\":\"55.50\",\"last_timedate\":\"1:09 PM CET\",\"last_time\":\"2026-11-17T13:09:38.000+0100\",\"changetype\":\"DOWN\",\"type\":\"STOCK\",\"subType\":\"Common Stock\",\"exchange\":\"Mercado Continuo\",\"source\":\"Exchange\",\"open\":\"57.00\",\"high\":\"57.08\",\"low\":\"55.20\",\"change\":\"-2.20\",\"change_pct\":\"-3.81%\",\"currencyCode\":\"EUR\",\"volume\":\"555,861\",\"volume_alt\":\"555.9K\",\"provider\":\"CNBC Quote Cache\",\"previous_day_closing\":\"57.70\",\"altSymbol\":\"IDR.MC\",\"realTime\":\"false\",\"curmktstatus\":\"REG_MKT\",\"pe\":\"19.49\",\"mktcapView\":\"9.80",
    "atributos": [],
    "tiene_consent": false
   },
   "cnbc_SAF-FR": {
    "status": 200,
    "url": "https://quote.cnbc.com/quote-html-webservice/restQuote/symbolType/symbol?symbols=SAF-FR&requestMethod=itv&noform=1&partnerId=2&fund=1&exthrs=1&output=json&events=1",
-   "largo": 1351,
-   "inicio": "{\"FormattedQuoteResult\":{\"FormattedQuote\":[{\"symbol\":\"SAF-FR\",\"symbolType\":\"symbol\",\"code\":0,\"name\":\"Safran SA\",\"shortName\":\"SAF\",\"onAirName\":\"Safran SA\",\"altName\":\"Safran SA\",\"last\":\"309.00\",\"last_timedate\":\"12:53 PM CET\",\"last_time\":\"2026-11-17T12:53:34.000+0100\",\"changetype\":\"DOWN\",\"type\":\"STOCK\",\"subType\":\"Common Stock\",\"exchange\":\"Euronext Paris\",\"source\":\"Exchange\",\"open\":\"309.20\",\"high\":\"312.00\",\"low\":\"307.20\",\"change\":\"-0.90\",\"change_pct\":\"-0.29%\",\"currencyCode\":\"EUR\",\"volume\":\"84,295\",\"volume_alt\":\"84.3K\",\"provider\":\"CNBC Quote Cache\",\"previous_day_closing\":\"309.90\",\"altSymbol\":\"SAF.PA\",\"realTime\":\"false\",\"curmktstatus\":\"REG_MKT\",\"pe\":\"33.18\",\"mktcapView\":\"129.268B\",\"dividend\":\"3.35",
+   "largo": 1350,
+   "inicio": "{\"FormattedQuoteResult\":{\"FormattedQuote\":[{\"symbol\":\"SAF-FR\",\"symbolType\":\"symbol\",\"code\":0,\"name\":\"Safran SA\",\"shortName\":\"SAF\",\"onAirName\":\"Safran SA\",\"altName\":\"Safran SA\",\"last\":\"308.70\",\"last_timedate\":\"1:09 PM CET\",\"last_time\":\"2026-11-17T13:09:44.000+0100\",\"changetype\":\"DOWN\",\"type\":\"STOCK\",\"subType\":\"Common Stock\",\"exchange\":\"Euronext Paris\",\"source\":\"Exchange\",\"open\":\"309.20\",\"high\":\"312.00\",\"low\":\"307.20\",\"change\":\"-1.20\",\"change_pct\":\"-0.39%\",\"currencyCode\":\"EUR\",\"volume\":\"86,761\",\"volume_alt\":\"86.8K\",\"provider\":\"CNBC Quote Cache\",\"previous_day_closing\":\"309.90\",\"altSymbol\":\"SAF.PA\",\"realTime\":\"false\",\"curmktstatus\":\"REG_MKT\",\"pe\":\"33.14\",\"mktcapView\":\"129.143B\",\"dividend\":\"3.35\"",
    "atributos": [],
    "tiene_consent": false
   },
