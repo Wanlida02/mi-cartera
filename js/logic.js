@@ -369,7 +369,9 @@ const Logic = (function () {
       if (v && !v.error && isN(v.ref) && !V.isFin(f) && !V.esMO(f)) {
         try {
           const fx = Object.assign({}, f, { precio: v.precio }), dcf = V.dcfInverso(fx, 0.10, 0.03), gE = (V.defaults(fx).conservador || {}).g;
-          if (dcf && isN(dcf.g) && isN(gE)) {
+          const ac = V.actuales(fx), fcfDeprimido = ac && isN(ac.pfcf) && isN(ac.per) && ac.per > 0 && ac.pfcf > 2.5 * ac.per;   // inversión récord (capex de IA…): el flujo libre de hoy no representa el beneficio y el DCF inverso exagera el crecimiento exigido
+          if (fcfDeprimido) { if (dcf && isN(dcf.g) && isN(gE) && Math.abs(dcf.g - gE) > 0.04) add('i', 'dcf_fcf', 'El DCF inverso por flujo libre no es comparable aquí: hoy paga ' + Math.round(ac.pfcf) + 'x flujo libre frente a ' + Math.round(ac.per) + 'x beneficio (inversión elevada); no se contrasta.', 'abrir', 'Ver ficha'); }
+          else if (dcf && isN(dcf.g) && isN(gE)) {
             if (v.ref >= 0.12 && dcf.g - gE > 0.04) add('y', 'dcf', 'Contradicción: por múltiplos rinde un ' + Math.round(v.ref * 100) + ' % pero el precio ya descuenta un crecimiento del ' + Math.round(dcf.g * 100) + ' % (tu escenario: ' + Math.round(gE * 100) + ' %). Revisa si los múltiplos de salida son demasiado altos.', 'abrir', 'Ver DCF inverso');
             else if (v.ref <= 0.05 && gE - dcf.g > 0.04) add('y', 'dcf', 'Contradicción: por múltiplos rinde solo un ' + Math.round(v.ref * 100) + ' % pero el precio solo descuenta un ' + Math.round(dcf.g * 100) + ' % de crecimiento (tu escenario: ' + Math.round(gE * 100) + ' %). Puede que los múltiplos de salida sean demasiado bajos.', 'abrir', 'Ver DCF inverso');
           } else if (dcf && dcf.g == null && v.ref >= 0.12) add('y', 'dcf', 'Contradicción: por múltiplos rinde un ' + Math.round(v.ref * 100) + ' % pero ni con +60 % anual se justifica el precio con flujos.', 'abrir', 'Ver DCF inverso');
