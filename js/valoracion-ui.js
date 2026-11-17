@@ -365,7 +365,7 @@
     Object.keys(d.fichas).forEach(k => {
       const f = d.fichas[k], e = enlazadas.find(x => (x.tk || '').toUpperCase() === k.toUpperCase()); if (!e) return;
       const an = ((e.datos || {}).anios || []).map(Number), ult = an.length ? Math.max.apply(null, an) : null;
-      if (f._borrador) { const n = DatosWeb.aFichaInformes(e, hoy()); if (n) { n.precio = f.precio; n.precio_fecha = f.precio_fecha; d.fichas[k] = n; rehechas.push(k + ' (hasta ' + ult + ')'); } else sinDatos.push(k); }
+      if (f._borrador) { const n = DatosWeb.aFichaInformes(e, hoy(), L.divisaCotizacion(D(), k)); if (n) { n.precio = f.precio; n.precio_fecha = f.precio_fecha; d.fichas[k] = n; rehechas.push(k + ' (hasta ' + ult + ')'); } else sinDatos.push(k); }
       else if (ult && Number(f.anio_base) < ult) nuevas.push(k + ': ficha ' + f.anio_base + ' → informes ' + ult);
     });
     if (rehechas.length) { Store.save(); U.render(); }

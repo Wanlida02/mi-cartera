@@ -340,6 +340,8 @@ const Logic = (function () {
     const cambio = pf.precio / pr - 1; return { ref: pr, fecha, precio: pf.precio, cambio, alerta: Math.abs(cambio) >= 0.25 };
   }
 
+  /* Moneda en la que cotiza (precio guardado → cribado → ficha); null si no se sabe */
+  function divisaCotizacion(d, tk) { const g = x => (x && typeof x === 'string' && /^[A-Za-z]{3}$/.test(x.trim()) ? x.trim().toUpperCase() : null); return g((d.precios[tk] || {}).divisa) || g((d.cribado[tk] || {}).divisa_cotizacion) || g((d.fichas[tk] || {}).divisa) || null; }
   /* ───── Informes anuales: cruza el índice (indice_informes.json) con cartera y watchlist ───── */
   const baseTk = t => (t || '').toUpperCase().split('.')[0];
   /* Cifras puestas a mano o por IA (d.informes_manual[carpeta] = {divisa, metricas:{métrica:{año:valor}}}) superpuestas al CSV: el CSV manda donde tiene dato */
@@ -427,6 +429,6 @@ const Logic = (function () {
   }
 
   return { isN, today, clone, nuevoDatos, normalizar, norm, coreName, sameCompany, findExisting, tickerDe, fxPorEur, aEur, precioPos, costeEur, mercadoEur, valorEur, variacion, diasDesde,
-    compra, venta, editar, eliminar, borrarMov, reverseMov, precioManual, precioFicha, valoracion, renombrarTicker, tickerValido, claves, mezclarManual, contrastar, lineasFaltantes, revision, precioRef, pesos, dashboard, informes, V };
+    compra, venta, editar, eliminar, borrarMov, reverseMov, precioManual, precioFicha, valoracion, renombrarTicker, tickerValido, claves, divisaCotizacion, mezclarManual, contrastar, lineasFaltantes, revision, precioRef, pesos, dashboard, informes, V };
 })();
 if (typeof module !== 'undefined') module.exports = Logic;

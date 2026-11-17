@@ -282,12 +282,14 @@
   const ALIAS_IA = { ventas: 'Ventas', ingresos: 'Ventas', revenue: 'Ventas', sales: 'Ventas', beneficiooperativoebit: 'Beneficio operativo (EBIT)', ebit: 'Beneficio operativo (EBIT)', operatingincome: 'Beneficio operativo (EBIT)', beneficiooperativo: 'Beneficio operativo (EBIT)', beneficioneto: 'Beneficio neto', netincome: 'Beneficio neto', bpadiluido: 'BPA diluido', bpa: 'BPA diluido', dilutedeps: 'BPA diluido', eps: 'BPA diluido', deudanetaebitda: 'Deuda neta / EBITDA', deudanetebitda: 'Deuda neta / EBITDA', netdebtebitda: 'Deuda neta / EBITDA', fcfaccion: 'FCF / acción', fcfporaccion: 'FCF / acción', fcfpershare: 'FCF / acción' };
   const CORE_IA = ['Ventas', 'Beneficio operativo (EBIT)', 'Beneficio neto', 'BPA diluido'];
   U.completarIA = function (e) {
-    const dt = e.datos || {}, ult = Number(e.ultimo_anio) || (new Date().getFullYear() - 1), base = (dt.anios && dt.anios.length >= 2 ? dt.anios : [ult - 5, ult - 4, ult - 3, ult - 2, ult - 1, ult]).map(Number), div = dt.divisa || 'EUR';
+    const dt = e.datos || {}, ult = Number(e.ultimo_anio) || (new Date().getFullYear() - 1), base = (dt.anios && dt.anios.length >= 2 ? dt.anios : [ult - 5, ult - 4, ult - 3, ult - 2, ult - 1, ult]).map(Number);
+    /* Moneda de las CUENTAS (la que usa la empresa en sus estados financieros): la de tus cifras si ya las tienes; si no, se le pregunta a la IA. NO se da por buena la de cotización (CSU cotiza en CAD e informa en USD) ni se supone EUR. */
+    const man0 = (D().informes_manual || {})[e.carpeta] || {}, fc0 = D().fichas[e.tk], cot = L.divisaCotizacion(D(), e.tk), div = String(dt.divisa || man0.divisa || (fc0 && !fc0._borrador && fc0.divisa) || '').trim().toUpperCase() || null, mon = div || 'la moneda de sus estados financieros';
     const sig = base[base.length - 1] + 1, hoyD = new Date(), publicable = sig <= hoyD.getFullYear() && (Number(e.ultimo_anio) >= sig || hoyD >= new Date(sig + 1, 2, 1)),   // el ejercicio siguiente solo puede existir si ya hay informe suyo o han pasado dos meses de su cierre (dic → marzo); si no, no se pide
       extra = publicable ? sig : null, anios = extra ? base.concat(extra) : base, n = anios.length;
     const M = dt.metricas || {}, serie = k => anios.map((_, i) => (i < base.length && NUM_IA((M[k] || [])[i]) ? M[k][i] : null));
     const falta = {}; METR_IA.forEach(k => { const ys = anios.filter((y, i) => serie(k)[i] == null && y !== extra); if (ys.length) falta[k] = ys; });
-    const tpl = METR_IA.filter(k => falta[k] || extra), plantilla = '{' + tpl.map(k => '"' + k + '":' + JSON.stringify(serie(k))).join(',') + ',"fuentes":"nombre y enlace de cada métrica","discrepancias":"entre fuentes, si las hay"}';
+    const tpl = METR_IA.filter(k => falta[k] || extra), plantilla = '{"divisa":"' + (div || 'XXX') + '",' + tpl.map(k => '"' + k + '":' + JSON.stringify(serie(k))).join(',') + ',"fuentes":"nombre y enlace de cada métrica","discrepancias":"entre fuentes, si las hay"}';
     const pend = Object.keys(falta).map(k => '- ' + k + ' (' + DEF_IA[k] + '): faltan los años ' + falta[k].join(', ')).join('\n');
     if (!extra && !Object.keys(falta).length) {   // nada que pedir de las seis métricas: no se genera un mensaje vacío
       const f0 = D().fichas[e.tk], fl = f0 ? L.lineasFaltantes(f0) : [];
@@ -298,9 +300,9 @@
     const sym0 = (U.simboloYahoo ? U.simboloYahoo(e.tk) : e.tk) || e.tk || '';
     const prompt = modo => {
       const sym = ((document.querySelector('#ia-sym') || {}).value || sym0).trim(), E = U.enlacesDatos ? U.enlacesDatos(sym) : [];
-      const cab = 'Eres un analista financiero. Necesito cifras anuales de ' + (e.nombre || e.tk) + ' (símbolo ' + sym + ', divisa ' + div + ') que NO aparecen en mis informes.\n\nLO QUE FALTA:\n' + (pend || '- (de los años cerrados no falta nada)') +
+      const cab = 'Eres un analista financiero. Necesito cifras anuales de ' + (e.nombre || e.tk) + ' (símbolo ' + sym + ') que NO aparecen en mis informes.\n\nMONEDA: ' + (div ? 'mis cifras están en ' + div + ' (millones de ' + div + '): da todo en ' + div + ' aunque la acción cotice en otra moneda.' : 'no sé en qué moneda presenta cuentas' + (cot ? ' (la acción cotiza en ' + cot + ', que puede ser distinta)' : '') + ': da las cifras en la moneda de sus ESTADOS FINANCIEROS e indica su código en el campo "divisa" (ej. USD, EUR, CAD). No conviertas nada ni mezcles monedas; el BPA y el FCF por acción, en esa misma moneda.') + '\n\nLO QUE FALTA:\n' + (pend || '- (de los años cerrados no falta nada)') +
         (extra ? '\n\nEJERCICIO ' + extra + ': dime si la empresa YA HA PUBLICADO sus resultados anuales de ' + extra + ' (ejercicio completo, no trimestres sueltos). Si sí, rellena también las seis métricas de ' + extra + '; si no, deja ' + extra + ' en null en todas. IMPORTANTE: que ' + extra + ' no esté publicado NO es motivo para parar: rellena igualmente todo lo demás y responde siempre con el JSON.' : '') +
-        '\n\nPRECARGO lo que ya tengo (ejercicios ' + anios.join(', ') + ', en ese orden). Rellena solo los null y NO cambies mis valores; si crees que alguno de los míos es incorrecto, no lo cambies: dilo en "discrepancias". Unidades: millones de ' + div + ' (BPA y FCF por acción en ' + div + ' por acción; deuda neta/EBITDA como ratio), ejercicio cerrado de cada año.\n\n';
+        '\n\nPRECARGO lo que ya tengo (ejercicios ' + anios.join(', ') + ', en ese orden). Rellena solo los null y NO cambies mis valores; si crees que alguno de los míos es incorrecto, no lo cambies: dilo en "discrepancias". Unidades: millones de ' + mon + ' (BPA y FCF por acción en ' + mon + ' por acción; deuda neta/EBITDA como ratio), ejercicio cerrado de cada año.\n\n';
       const formato = 'FORMATO (JSON, un valor por año y en ese orden; null si no lo encuentras):\n' + plantilla + '\n\nREGLAS: usa SOLO datos de las páginas, no tu memoria; no estimes ni inventes; contrasta con dos fuentes y si difieren más de un 3 % di cuál elegiste en "discrepancias". Responde SOLO con el JSON.';
       if (modo === 'pegar') return cab + 'Debajo te pego el TEXTO COPIADO de las páginas de StockAnalysis y/o Yahoo Finance (resultados, balance y flujos de caja). No necesitas navegar.\n\n' + formato + '\n\n=== TEXTO COPIADO (pégalo aquí debajo) ===\n';
       return cab + 'PASO 1. Abre estas páginas:\n' + E.map(x => '- ' + x.n + ': ' + x.u).join('\n') + '\nSi no puedes abrir páginas web, responde SOLO {"error":"sin_navegacion"} y nada más (no respondas de memoria). Si alguna no carga, usa MarketScreener o la web de relación con inversores de la empresa.\n\nPASO 2. Rellena los datos que faltan.\n\n' + formato;
@@ -320,6 +322,10 @@
         const txt = dd.querySelector('#ia-r').value, i = txt.indexOf('{'), j = txt.lastIndexOf('}'); let o0;
         try { o0 = JSON.parse(txt.slice(i, j + 1)); } catch (err) { return U.avisoDlg('No encuentro un JSON válido en la respuesta. Pide a la IA «solo el JSON» y vuelve a pegarlo.'); }
         if (o0.error === 'sin_navegacion') return U.avisoDlg('Tu IA dice que no puede abrir páginas. Cambia a «no navega», copia el texto de las páginas y pégalo con el mensaje.');
+        const dIA = typeof o0.divisa === 'string' && /^[A-Za-z]{3}$/.test(o0.divisa.trim()) && o0.divisa.trim().toUpperCase() !== 'XXX' ? o0.divisa.trim().toUpperCase() : null;
+        if (div && dIA && dIA !== div) return U.avisoDlg('La IA ha dado las cifras en ' + dIA + ' y las tuyas están en ' + div + '. No se pueden mezclar monedas: pídele que use ' + div + ' (o dime si tus cifras estaban mal).');
+        if (!div && !dIA) return U.avisoDlg('La respuesta no indica la moneda de las cifras (campo «divisa», p. ej. USD). Pídeselo a la IA: sin ella no sé en qué moneda están.');
+        const divFin = div || dIA;
         const o = {}; Object.keys(o0).forEach(k => { const c = METR_IA.find(m => NORM_IA(m) === NORM_IA(k)) || ALIAS_IA[NORM_IA(k)]; if (c) o[c] = o0[k]; });
         const fills = {}, ia = [], cambios = [], hay = (k, p) => NUM_IA(serie(k)[p]);
         METR_IA.forEach(k => {
@@ -330,10 +336,10 @@
         Object.keys(fills).forEach(k => { if (Object.keys(fills[k]).length) ia.push(k); else delete fills[k]; });
         if (!ia.length) return U.avisoDlg('La respuesta no trae ninguna cifra nueva utilizable' + (extra ? ' (si traía solo ' + extra + ' incompleto, se descarta: hacen falta ventas, EBIT, beneficio neto y BPA).' : '.'));
         /* Las cifras de IA se guardan APARTE (informes_manual) y se superponen al CSV de la carpeta: sobreviven a releer el índice y, cuando el CSV traiga el dato oficial, este manda. */
-        const dd0 = D(); dd0.informes_manual = dd0.informes_manual || {}; const man = dd0.informes_manual[e.carpeta] = dd0.informes_manual[e.carpeta] || { divisa: div, metricas: {} };
+        const dd0 = D(); dd0.informes_manual = dd0.informes_manual || {}; const man = dd0.informes_manual[e.carpeta] = dd0.informes_manual[e.carpeta] || { divisa: divFin, metricas: {} }; if (!man.divisa) man.divisa = divFin;
         Object.keys(fills).forEach(k => { man.metricas[k] = Object.assign(man.metricas[k] || {}, fills[k]); }); man.actualizado = hoy();
         Store.save(); const e2 = (L.informes(dd0).lista || []).find(x => x.carpeta === e.carpeta) || e;
-        const f = DatosWeb.aFichaInformes(e2, hoy()); if (!f) return U.avisoDlg('Aún faltan: ' + DatosWeb.faltanInformes(e2).join(', ') + '. Se han guardado las cifras recibidas; pide el resto a la IA o complétalas a mano.');
+        const f = DatosWeb.aFichaInformes(e2, hoy(), L.divisaCotizacion(D(), e2.tk)); if (!f) return U.avisoDlg('Aún faltan: ' + DatosWeb.faltanInformes(e2).join(', ') + '. Se han guardado las cifras recibidas; pide el resto a la IA o complétalas a mano.');
         f.notas.push('Cifras completadas por IA desde webs de datos (sin verificar): ' + ia.join(', ') + '.'); if (cambios.length) f.notas.push('La IA discrepa de tus informes (no cambiado): ' + cambios.join('; ') + '.');
         const tras = [o0.fuentes, o0.discrepancias].filter(x => typeof x === 'string' && x).join(' · ') || txt.slice(j + 1).trim().replace(/```/g, '').slice(0, 800); if (tras) f.notas.push('Fuentes y discrepancias según la IA: ' + String(tras).slice(0, 800)); f.fuentes.push('IA (sin verificar)'); ia.forEach(k => { const m = { 'Ventas': 'ventas', 'Beneficio operativo (EBIT)': 'ebit', 'Beneficio neto': 'ni_reportado', 'BPA diluido': 'bpa' }[k]; if (m) f.conf[m] = 'E'; });
         const d = D(), tk = e.tk; if (!tk) return U.avisoDlg('Esta empresa no tiene ticker: vincúlala primero.');
@@ -346,7 +352,7 @@
     if (!tk) return dev('Esta empresa no tiene ticker: vincúlala primero (en Informes, «Sin informes descargados» o el desplegable de vincular).');
     if (d.fichas[tk] && !L.lineasFaltantes(d.fichas[tk]).length) return dev('Ya tienes una ficha completa de ' + tk + ' (con intereses, impuestos, amortización…). No la sustituyo por un borrador, que tiene menos datos y no se puede valorar. Si quieres actualizarla, hazlo desde Valoración.');
     if (d.fichas[tk] && !confirm('Ya existe ficha de ' + tk + '. ¿Sustituirla por este borrador?')) return false;
-    const f = DatosWeb.aFichaInformes(e, hoy()); if (!f) return dev('No se puede crear: faltan en el CSV ' + DatosWeb.faltanInformes(e).join(', ') + '. Necesito Ventas, EBIT, Beneficio neto y BPA diluido con algún dato.');
+    const f = DatosWeb.aFichaInformes(e, hoy(), L.divisaCotizacion(D(), e.tk)); if (!f) return dev('No se puede crear: faltan en el CSV ' + DatosWeb.faltanInformes(e).join(', ') + '. Necesito Ventas, EBIT, Beneficio neto y BPA diluido con algún dato.');
     d.fichas[tk] = f; const r = desdeFicha(tk, true); if (!d.cribado[tk]) d.cribado[tk] = { ticker: tk, nombre: f.nombre, origen: 'ficha' };
     U.guardar({ ok: true, msg: r.ok ? 'Ficha borrador y cribado de ' + tk + ' creados desde tus informes' : 'Ficha creada; faltan cuentas para el cribado' }); return true;
   };

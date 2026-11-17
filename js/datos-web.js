@@ -59,7 +59,7 @@ const DatosWeb = (function () {
     const dt = e && e.datos, m = dt && dt.metricas; if (!m || !Array.isArray(dt.anios) || dt.anios.length < 2) return ['el resumen de cifras (¿hay un archivo *_datos.csv en la carpeta y has vuelto a ejecutar indice_informes.py?)'];
     return ['Ventas', 'Beneficio operativo (EBIT)', 'Beneficio neto', 'BPA diluido'].filter(k => !(m[k] || []).some(v => typeof v === 'number' && isFinite(v)));
   }
-  function aFichaInformes(e, hoy) {
+  function aFichaInformes(e, hoy, divDef) {
     const dt = e && e.datos, m = dt && dt.metricas; if (!m || !Array.isArray(dt.anios) || dt.anios.length < 2) return null;
     const an = dt.anios.map(Number), n = an.length, num = v => (typeof v === 'number' && isFinite(v) ? v : null), ser = k => { const a = (m[k] || []).slice(0, n).map(num); while (a.length < n) a.push(null); return a; };
     const V = ser('Ventas'), E = ser('Beneficio operativo (EBIT)'), NI = ser('Beneficio neto'), B = ser('BPA diluido');
@@ -67,7 +67,7 @@ const DatosWeb = (function () {
     while (V.length < n) V.push(null);
     const A = NI.map((x, i) => (x != null && B[i] != null && B[i] > 0 ? Math.round(x / B[i] * 10) / 10 : null));
     const last = k => { const s = ser(k); for (let i = s.length - 1; i >= 0; i--) if (s[i] != null) return s[i]; return null; };
-    const f = { ticker: e.tk, nombre: e.nombre || e.tk, divisa: String(dt.divisa || 'EUR').trim().toUpperCase(), anio_base: an[n - 1], anios: an, leases_ok: true, hist: { ventas: V, ebit: E, ni_reportado: NI, acciones: A, bpa: B }, conf: { ventas: 'P', ebit: 'P', ni_reportado: 'P', acciones: 'E', bpa: 'P' },
+    const f = { ticker: e.tk, nombre: e.nombre || e.tk, divisa: String(dt.divisa || divDef || 'EUR').trim().toUpperCase(), anio_base: an[n - 1], anios: an, leases_ok: true, hist: { ventas: V, ebit: E, ni_reportado: NI, acciones: A, bpa: B }, conf: { ventas: 'P', ebit: 'P', ni_reportado: 'P', acciones: 'E', bpa: 'P' },
       fuentes: ['Cifras clave de los informes anuales (' + (e.csv || 'CSV') + ')'], notas: ['Ficha borrador creada desde el resumen de tus informes (' + n + ' años). Acciones estimadas como beneficio neto / BPA diluido. Lo que el CSV no trae (si falta algo) se completa con IA o desde el informe.'], fecha_datos: (e.generado || '').slice(0, 10) || hoy, _borrador: true, extra_cribado: {} };
     /* El resto de líneas del CSV (antes se ignoraban): solo entran si traen dato en el último año; lo que no esté se pedirá a la IA / PDF */
     const lineas = { intereses: 'Gastos financieros (brutos)', da: 'Amortizaciones (D&A)', capex: 'Capex', caja: 'Caja y equivalentes', leases_deuda: 'Arrendamientos (pasivo)', goodwill: 'Fondo de comercio', equity: 'Patrimonio neto (dominante)', fco: 'Flujo de caja operativo', sbc: 'Remuneración en acciones (SBC)', dividendos: 'Dividendos pagados', recompras: 'Recompras', impuestos: 'Impuesto sobre beneficios' };
