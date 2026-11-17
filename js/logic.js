@@ -351,7 +351,7 @@ const Logic = (function () {
       /* 3 · contabilidad distorsionada → método de flujo */
       const ds = distorsion(f);
       if (f.solo_fcf) add('i', 'solofcf', 'Método alternativo activo: la salida se valora solo con el flujo de caja (P/FCF).', 'quitarsolofcf', 'Volver al método normal');
-      else if (ds && ds.distorsionada) add('y', 'distorsion', 'El beneficio contable no casa con el flujo de caja (' + ds.raros + ' de ' + ds.serie.length + ' años fuera de 0,6–1,6x FCF/beneficio' + (ds.baja >= 2 ? '; beneficio neto muy bajo frente al EBIT' : '') + '): el PER y el EV/EBITDA pueden engañar.', 'solofcf', 'Valorar solo con el flujo de caja');
+      else if (ds && ds.distorsionada) add('i', 'distorsion', 'El beneficio contable no casa con el flujo de caja (' + ds.raros + ' de ' + ds.serie.length + ' años fuera de 0,6–1,6x FCF/beneficio' + (ds.baja >= 2 ? '; beneficio neto muy bajo frente al EBIT' : '') + '): el PER y el EV/EBITDA pueden engañar. Ojo: en el backtest 2021-24 valorar solo con flujo de caja empeoró el acierto (error mediano 64 % frente a 56 %), úsalo solo para contrastar.', 'solofcf', 'Valorar solo con el flujo de caja');
       /* 4 · base de 12 meses (TTM): SEC o, si la empresa no está en la SEC, IA/manual */
       if (!f._borrador && f.anio_base) {
         const fin = f.anio_base + '-' + String(f.mes_cierre || 12).padStart(2, '0') + '-28', mesesDesde = Math.floor((Date.parse(hoy) - Date.parse(fin)) / (30.44 * 864e5));
