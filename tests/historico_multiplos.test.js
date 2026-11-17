@@ -5,11 +5,13 @@ const near = (a, b, t, m) => assert(Math.abs(a - b) <= t, m + ': ' + a + ' vs ' 
 // ── Parser de Yahoo ──
 const ts = []; for (let y = 2014; y <= 2026; y++) for (let m = 1; m <= 12; m++) ts.push(Date.UTC(y, m - 1, 1, 14) / 1000);
 const yj = { chart: { result: [{ meta: { currency: 'GBp', exchangeTimezoneName: 'Europe/London' }, timestamp: ts, indicators: { quote: [{ close: ts.map((_, i) => 1000 + i) }] }, events: { splits: { 1: { date: Date.UTC(2021, 5, 1) / 1000, numerator: 4, denominator: 1 } } } }] } };
+let ch0; const bars0 = () => { const b = []; for (let a = 2016; a <= 2026; a++) for (let m = 1; m <= 12; m++) b.push({ close: '110', tradeTime: a + String(m).padStart(2, '0') + '20000000' }); return b; };
 const hy = H.leerHistorico(yj); assert.equal(hy.divisa, 'GBP'); near(hy.cierres['2014-01'], 10, 1e-9, 'peniques → libras'); assert.equal(hy.splits.length, 1); assert.equal(hy.splits[0].num, 4); assert(hy.cierres['2025-12']);
 assert.throws(() => H.leerHistorico({ chart: { result: [{ meta: { currency: 'USD' }, timestamp: ts.slice(0, 5), indicators: { quote: [{ close: [1, 2, 3, 4, 5] }] } }] } }), /corto/);
 { const bars = []; for (let a = 2016; a <= 2026; a++) for (let m = 1; m <= 12; m++) { bars.push({ close: String(100 + a - 2016), tradeTime: a + String(m).padStart(2, '0') + '15000000' }); bars.push({ close: String(200 + a - 2016), tradeTime: a + String(m).padStart(2, '0') + '28000000' }); }
   const ch = H.leerCnbcHist({ barData: { priceBars: bars } }, 'EUR'); assert.equal(ch.divisa, 'EUR'); assert.equal(ch.cierres['2020-12'], 204, 'queda el último cierre del mes'); assert.equal(Object.keys(ch.cierres).length, 132);
   assert.throws(() => H.leerCnbcHist({}, 'USD'), /sin histórico/); }
+assert(H.coherente(ch0 = H.leerCnbcHist({ barData: { priceBars: bars0() } }, 'USD'), 111)); assert.throws(() => H.coherente(ch0, 0.0001 * 1e3 * 1e-1 * 1e3 * 1e-2), /no cuadra/);
 assert.deepEqual(H.candidatos({ y: ['A', 'B'], ficha: 'F', hist: 'H' }), ['H', 'F', 'A', 'B']);
 // ── Motor ──
 const anios = [2020, 2021, 2022, 2023, 2024, 2025], rep = (v, n) => Array(n).fill(v);

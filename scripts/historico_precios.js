@@ -38,6 +38,11 @@ async function stooqHist(sym) {
 }
 /* CNBC (funciona desde GitHub; Yahoo y Stooq no): gráfico histórico «ALL» (o 10Y/5Y) con cierres ajustados por splits. Símbolo igual que en actualizar_precios.js: US tal cual; resto SIMBOLO-PAÍS */
 const CPAIS = { MC: ['ES', 'EUR'], PA: ['FR', 'EUR'], AT: ['GR', 'EUR'], TW: ['TW', 'TWD'], HK: ['HK', 'HKD'], L: ['GB', 'GBP'], DE: ['DE', 'EUR'], MI: ['IT', 'EUR'], AS: ['NL', 'EUR'], SW: ['CH', 'CHF'], T: ['JP', 'JPY'], SZ: ['CN', 'CNY'] };
+/* ¿La serie es del mismo valor? El último cierre debe parecerse al precio actual (±35 %); si no (símbolo equivocado, otra clase de acción) se rechaza. */
+function coherente(h, precioActual) {
+  const ks = Object.keys(h.cierres).sort(), u = h.cierres[ks[ks.length - 1]]; if (!(precioActual > 0) || !u) return true;
+  const r = u / precioActual; if (r < 0.65 || r > 1.35) throw new Error('el histórico (' + u + ') no cuadra con el precio actual (' + precioActual + ')'); return true;
+}
 function leerCnbcHist(j, divisa) {
   const b = j && j.barData && j.barData.priceBars; if (!Array.isArray(b) || b.length < 12) throw new Error('CNBC sin histórico'); const cierres = {};
   b.forEach(x => { const t = String(x.tradeTime || ''), v = num(Number(x.close)); if (v && /^\d{8}/.test(t)) cierres[t.slice(0, 4) + '-' + t.slice(4, 6)] = Math.round(v * 1e4) / 1e4; });   // barras ordenadas por fecha: queda el último cierre de cada mes
@@ -46,7 +51,7 @@ function leerCnbcHist(j, divisa) {
 async function cnbcHist(sym, divisa) {
   const m = sym.match(/^(.+)\.([A-Z]+)$/); let c = sym, dv = divisa || 'USD';
   if (m) { const x = CPAIS[m[2]]; if (!x) throw new Error('CNBC: bolsa desconocida'); c = m[1] + '-' + x[0]; dv = divisa || x[1]; }
-  let ult; for (const rg of ['ALL', '10Y', '5Y']) { try { const r = await fetch('https://ts-api.cnbc.com/harmony/app/charts/' + rg + '.json?symbol=' + encodeURIComponent(c), { headers: UA, signal: AbortSignal.timeout(30000) }); if (!r.ok) throw new Error('CNBC HTTP ' + r.status); const h = leerCnbcHist(await r.json(), dv); h.rango = rg; return h; } catch (e) { ult = e; } }
+  let ult; for (const rg of ['10Y', 'ALL', '5Y']) { try { const r = await fetch('https://ts-api.cnbc.com/harmony/app/charts/' + rg + '.json?symbol=' + encodeURIComponent(c), { headers: UA, signal: AbortSignal.timeout(30000) }); if (!r.ok) throw new Error('CNBC HTTP ' + r.status); const h = leerCnbcHist(await r.json(), dv); h.rango = rg; return h; } catch (e) { ult = e; } }
   throw ult;
 }
 let n429 = 0, yahooOff = false;
@@ -84,12 +89,13 @@ async function main() {
   const cfg = JSON.parse(fs.readFileSync(path.join(RAIZ, 'simbolos.json'), 'utf8')), solo = (process.argv.find(a => a.startsWith('--solo=')) || '').slice(7).split(',').filter(Boolean);
   let prev = {}; try { prev = JSON.parse(fs.readFileSync(OUT, 'utf8')).simbolos || {}; } catch (e) { /* primera vez */ }
   let precios = {}; try { precios = JSON.parse(fs.readFileSync(path.join(RAIZ, 'precios.json'), 'utf8')).precios || {}; } catch (e) { /* sin divisas conocidas: se usa la del país */ }
-  const sim = Object.assign({}, prev), fallos = [];
+  const sim = {}, fallos = [];   // se parte de cero: lo anterior solo se conserva si este valor falla y sigue cuadrando con el precio actual
   for (const tk of Object.keys(cfg.simbolos)) {
     const c = cfg.simbolos[tk]; if (c.pausa || (solo.length && !solo.includes(tk))) continue;
     let ok = null, ult;
-    for (const s of candidatos(c)) { try { const pr = precios[s === c.ficha ? tk + '@ficha' : tk]; const h = await pedirHist(s, pr && pr.divisa); ok = Object.assign({ simbolo: s }, h); break; } catch (e) { ult = e; } await esperar(500); }
-    if (ok) sim[tk] = Object.assign(ok, { actualizado: new Date().toISOString() }); else fallos.push({ ticker: tk, error: ult && ult.message });
+    for (const s of candidatos(c)) { try { const pr = precios[s === c.ficha ? tk + '@ficha' : tk]; const h = await pedirHist(s, pr && pr.divisa); coherente(h, pr && pr.precio); ok = Object.assign({ simbolo: s }, h); break; } catch (e) { ult = e; } await esperar(500); }
+    if (ok) sim[tk] = Object.assign(ok, { actualizado: new Date().toISOString() });
+    else { fallos.push({ ticker: tk, error: ult && ult.message }); try { if (prev[tk]) { coherente(prev[tk], (precios[tk] || {}).precio); sim[tk] = prev[tk]; } } catch (e) { /* el anterior tampoco vale */ } }
     await esperar(700);
   }
   fs.mkdirSync(path.dirname(OUT), { recursive: true });
@@ -97,4 +103,4 @@ async function main() {
   console.log('Histórico: ' + Object.keys(sim).length + ' valores · fallos: ' + (fallos.map(f => f.ticker).join(', ') || 'ninguno'));
 }
 if (require.main === module) main().catch(e => { console.error(e); process.exit(1); });
-module.exports = { leerCnbcHist, leerStooqHist, leerHistorico, candidatos, mesLocal };
+module.exports = { coherente, leerCnbcHist, leerStooqHist, leerHistorico, candidatos, mesLocal };
