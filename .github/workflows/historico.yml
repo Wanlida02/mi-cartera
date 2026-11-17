@@ -17,6 +17,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Sonda de proveedores
+        run: node scripts/historico_precios.js --sonda || true
       - name: Descargar histórico de precios
         run: node scripts/historico_precios.js
       - name: Guardar

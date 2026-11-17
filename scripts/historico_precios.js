@@ -57,7 +57,18 @@ async function pedirYahoo(sym) {
 }
 /* símbolos a probar para un valor: el específico de histórico, el de la ficha (divisa de las cuentas) y luego los de cotización */
 const candidatos = c => [c.hist, c.ficha].concat(c.y || []).filter((x, i, a) => x && a.indexOf(x) === i);
+/* Sonda de proveedores: qué responde desde GitHub (para elegir fuente); imprime estado y el principio de la respuesta */
+async function sonda() {
+  const u = [['yahoo', 'https://query1.finance.yahoo.com/v8/finance/chart/AAPL?range=12y&interval=1mo'], ['stooq.com', 'https://stooq.com/q/d/l/?s=aapl.us&i=m'], ['stooq.pl', 'https://stooq.pl/q/d/l/?s=aapl.us&i=m'],
+    ['cnbc-bars', 'https://ts-api.cnbc.com/harmony/app/bars/AAPL/1M/20150101000000/20261117000000/adjusted/EST5EDT.json'], ['cnbc-charts', 'https://ts-api.cnbc.com/harmony/app/charts/5Y.json?symbol=AAPL'],
+    ['nasdaq', 'https://api.nasdaq.com/api/quote/AAPL/historical?assetclass=stocks&fromdate=2015-01-01&limit=20&todate=2026-11-17&todate=2026-11-17'],
+    ['tencent-us', 'https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=usAAPL.OQ,month,,,150,qfq'], ['tencent-hk', 'https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=hk03750,month,,,150,qfq'], ['tencent-es', 'https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=sz300750,month,,,150,qfq'],
+    ['google', 'https://www.google.com/finance/quote/AAPL:NASDAQ?hl=en'], ['alpha-demo', 'https://www.alphavantage.co/query?function=TIME_SERIES_MONTHLY_ADJUSTED&symbol=IBM&apikey=demo'], ['eod-demo', 'https://eodhd.com/api/eod/AAPL.US?api_token=demo&period=m&fmt=json&from=2020-01-01'],
+    ['marketstack', 'https://api.marketstack.com/v1/eod?access_key=demo&symbols=AAPL'], ['fmp-demo', 'https://financialmodelingprep.com/api/v3/historical-price-full/AAPL?apikey=demo&serietype=line'], ['investing', 'https://api.investing.com/api/financialdata/6408/historical/chart/?period=P5Y&interval=P1M&pointscount=120']];
+  for (const [n, url] of u) { try { const r = await fetch(url, { headers: UA, signal: AbortSignal.timeout(20000) }); const t = (await r.text()).replace(/\s+/g, ' ').slice(0, 140); console.log('SONDA ' + n + ' → HTTP ' + r.status + ' · ' + t); } catch (e) { console.log('SONDA ' + n + ' → ERROR ' + e.message); } await esperar(400); }
+}
 async function main() {
+  if (process.argv.includes('--sonda')) return sonda();
   const cfg = JSON.parse(fs.readFileSync(path.join(RAIZ, 'simbolos.json'), 'utf8')), solo = (process.argv.find(a => a.startsWith('--solo=')) || '').slice(7).split(',').filter(Boolean);
   let prev = {}; try { prev = JSON.parse(fs.readFileSync(OUT, 'utf8')).simbolos || {}; } catch (e) { /* primera vez */ }
   const sim = Object.assign({}, prev), fallos = [];
