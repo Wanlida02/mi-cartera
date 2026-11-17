@@ -12,6 +12,8 @@ concurrency:
 jobs:
   datos:
     runs-on: ubuntu-latest
+    env:
+      SEC_CONTACT: ${{ vars.SEC_CONTACT }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

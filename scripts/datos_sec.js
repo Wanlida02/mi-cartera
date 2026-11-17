@@ -4,7 +4,8 @@
    Se ejecuta desde GitHub Actions (workflow «Datos de empresa»). La app lee datos/TICKER.json y crea con él el cribado y la ficha. */
 const fs = require('fs'), path = require('path');
 const RAIZ = path.join(__dirname, '..');
-const UA = { 'User-Agent': 'MiCartera franserrano02@gmail.com', Accept: 'application/json' };
+/* La SEC pide identificar al cliente. El contacto va en la variable de entorno SEC_CONTACT (en GitHub: Settings → Secrets and variables → Actions → Variables); sin ella se usa un nombre genérico. */
+const UA = { 'User-Agent': 'MiCartera-personal ' + (process.env.SEC_CONTACT || '(uso personal, sin contacto)'), Accept: 'application/json' };
 const isN = v => typeof v === 'number' && isFinite(v);
 const esperar = ms => new Promise(r => setTimeout(r, ms));
 
@@ -164,6 +165,47 @@ async function lote() {
   }
   fs.writeFileSync(path.join(RAIZ, 'datos', 'resumen.json'), JSON.stringify(resumen, null, 1) + '\n');
 }
-if (require.main === module && process.argv[2] === '--todos') lote().catch(e => { console.error('ERROR: ' + e.message); process.exit(1); });
+/* «Tal como se publicó»: para cada línea y periodo, el PRIMER valor presentado (10-K o 10-Q) con su fecha de presentación (filed).
+   Sirve para reconstruir qué se sabía en cada fecha (backtest sin sesgo de reexpresiones) y los últimos 12 meses de entonces.
+   Formato por línea: [[inicio|null, fin, valor, filed, form], …] ordenado por fin. Los valores van en millones (acciones en millones, BPA en USD). */
+function publicado(cf) {
+  const gaap = cf && cf.facts && cf.facts['us-gaap']; if (!gaap) throw new Error('Sin datos US-GAAP');
+  const out = {};
+  for (const [k, def] of Object.entries(LINEAS)) {
+    const por = {};   // clave periodo → {prio de etiqueta, hecho}
+    def.tags.forEach((tag, prio) => {
+      const t = gaap[tag], u = t && t.units && t.units[def.unidad || 'USD']; if (!u) return;
+      for (const h of u) {
+        if (!/^10-[KQ]/.test(h.form || '') || !isN(h.val) || !h.end || !h.filed) continue;
+        if (def.tipo === 'flujo' && !h.start) continue;
+        const clave = (def.tipo === 'flujo' ? h.start : '') + '|' + h.end, p = por[clave];
+        // una etiqueta mejor (menor prio) manda; dentro de la misma etiqueta, gana la presentación más antigua
+        if (!p || prio < p.prio || (prio === p.prio && h.filed < p.h.filed)) por[clave] = { prio, h };
+      }
+    });
+    const esc = def.escala || 1e6;
+    out[k] = Object.values(por).map(x => [def.tipo === 'flujo' ? x.h.start : null, x.h.end, Math.round(x.h.val / esc * 1000) / 1000, x.h.filed, x.h.form]).sort((a, b) => a[1].localeCompare(b[1]) || String(a[0]).localeCompare(String(b[0])));
+  }
+  return out;
+}
+async function lotePublicado(lista) {
+  const cfg = JSON.parse(fs.readFileSync(path.join(RAIZ, 'simbolos.json'), 'utf8')).simbolos || {};
+  const mapa = await (await pedir('https://www.sec.gov/files/company_tickers.json')).json();
+  const propios = Object.keys(cfg).filter(k => !cfg[k].pausa && Array.isArray(cfg[k].y) && cfg[k].y[0] && !/[.=^]/.test(cfg[k].y[0]) && cfg[k].sec !== false);
+  const tks = [...new Set(propios.concat(lista || []))]; const dir = path.join(RAIZ, 'datos', 'publicado'); fs.mkdirSync(dir, { recursive: true });
+  const resumen = { generado: new Date().toISOString(), empresas: {} };
+  for (const tk of tks) {
+    try {
+      const e = Object.values(mapa).find(x => x.ticker.toUpperCase() === tk.replace('.', '-')) || Object.values(mapa).find(x => x.ticker.toUpperCase() === tk); if (!e) throw new Error('no está en la SEC');
+      const cik = String(e.cik_str).padStart(10, '0'), cf = await (await pedir('https://data.sec.gov/api/xbrl/companyfacts/CIK' + cik + '.json')).json(), p = publicado(cf);
+      fs.writeFileSync(path.join(dir, tk.replace(/[^A-Z0-9]/g, '_') + '.json'), JSON.stringify({ ticker: tk, nombre: cf.entityName || e.title, cik, generado: new Date().toISOString(), lineas: p }) + '\n');
+      resumen.empresas[tk] = { filas: Object.values(p).reduce((s, a) => s + a.length, 0), desde: (p.ventas[0] || [])[1] || null }; console.log(tk + ': ' + resumen.empresas[tk].filas + ' hechos desde ' + resumen.empresas[tk].desde);
+    } catch (x) { resumen.empresas[tk] = { error: x.message.slice(0, 100) }; console.log(tk + ': ' + x.message); }
+    await esperar(250);
+  }
+  fs.writeFileSync(path.join(dir, '_resumen.json'), JSON.stringify(resumen, null, 1) + '\n');
+}
+if (require.main === module && process.argv[2] === '--publicado') lotePublicado((process.argv[3] || '').split(',').map(s => s.trim().toUpperCase()).filter(Boolean)).catch(e => { console.error('ERROR: ' + e.message); process.exit(1); });
+else if (require.main === module && process.argv[2] === '--todos') lote().catch(e => { console.error('ERROR: ' + e.message); process.exit(1); });
 else if (require.main === module) principal(process.argv[2]).catch(e => { console.error('ERROR: ' + e.message); fs.mkdirSync(path.join(RAIZ, 'datos'), { recursive: true }); try { fs.writeFileSync(path.join(RAIZ, 'datos', String(process.argv[2] || 'x').toUpperCase().replace(/[^A-Z0-9]/g, '_') + '.json'), JSON.stringify({ ticker: String(process.argv[2] || '').toUpperCase(), error: e.message, generado: new Date().toISOString() }, null, 1) + '\n'); } catch (x) { } process.exit(0); });
-module.exports = { construir, serie, anioDe, ttm, ultimoEjercicio };
+module.exports = { construir, serie, anioDe, ttm, ultimoEjercicio, publicado };

@@ -1,0 +1,35 @@
+name: Datos de la SEC tal como se publicaron
+# Manual. Guarda, para cada empresa, el primer valor presentado de cada dato (10-K y 10-Q) con su fecha de presentación
+# → datos/publicado/TICKER.json. Sirve para backtests sin reexpresiones y para el TTM de cada fecha.
+on:
+  workflow_dispatch:
+    inputs:
+      extra:
+        description: 'Tickers adicionales separados por comas (además de los de simbolos.json)'
+        required: false
+        default: 'KO,JNJ,PG,MCD,HD,CAT,NKE,SBUX,TGT,ORCL,WM,COST,LOW,PEP,UNP,ADP,MMM,ABT,TXN,ADBE,LMT,GD,CL,KMB,CLX,GIS,SHW,ITW,ROST'
+permissions:
+  contents: write
+concurrency:
+  group: datos-empresa
+  cancel-in-progress: false
+jobs:
+  datos:
+    runs-on: ubuntu-latest
+    env:
+      SEC_CONTACT: ${{ vars.SEC_CONTACT }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Descargar cuentas publicadas
+        run: node scripts/datos_sec.js --publicado "${{ github.event.inputs.extra }}"
+      - name: Guardar
+        run: |
+          git config user.name "mi-cartera-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add datos
+          if git diff --cached --quiet; then echo "Sin cambios"; exit 0; fi
+          git commit -m "Datos de la SEC tal como se publicaron"
+          for i in 1 2 3; do git pull --rebase origin ${{ github.ref_name }} && git push && break || sleep 5; done
