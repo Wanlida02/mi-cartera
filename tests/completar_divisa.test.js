@@ -11,6 +11,7 @@ const srv = http.createServer((q, r) => { const u = q.url.split('?')[0]; const p
   const b = await chromium.launch(), pg = await (await b.newContext()).newPage(); const errs = []; pg.on('pageerror', e => errs.push(e.message));
   await pg.route('https://api.github.com/**', r => r.fulfill({ status: 404, body: '' }));
   await pg.goto('http://localhost:' + srv.address().port + '/'); await pg.click('#btn-ajustes'); await pg.setInputFiles('#a-imp', f); await pg.waitForTimeout(800);
+  await pg.evaluate(() => { delete Store.get().fichas.CSU; });   // el parche crea la ficha CSU (USD/FCFA2S); aquí se parte de «sin ficha» para probar el mensaje cuando no se sabe la moneda
   const abre = async () => { await pg.evaluate(() => { const e = Logic.informes(Store.get()).lista.find(x => x.tk === 'CSU'); UI.completarIA(e); }); await pg.waitForTimeout(300); };
   await abre(); const p1 = await pg.inputValue('#ia-p');
   assert(!/divisa EUR/.test(p1) && !/en EUR/.test(p1), 'no debe suponer EUR'); assert(/MONEDA: no sé en qué moneda presenta cuentas \(la acción cotiza en CAD/.test(p1), p1.slice(0, 400)); assert(/"divisa":"XXX"/.test(p1) && /campo "divisa"/.test(p1));

@@ -195,7 +195,7 @@
   }
 
   /* ───── Ajustes ───── */
-  const APP_VERSION = '49 · Completar con IA: la moneda de las cuentas ya no se supone (CSU cotiza en CAD e informa en USD); la IA la indica y no se mezclan monedas';
+  const APP_VERSION = '50 · CSU: precio CAD y cuentas USD ya no se mezclan (conversión con el tipo de cambio de Ajustes; aviso si no hay); método FCFA2S (solo flujo libre tras minoritarios × múltiplo de salida, sin PER/EV); ficha CSU en USD';
   function ajustes() {
     const d = Store.get(), A = d.ajustes, cp = Store.ultimaCopia();
     dlg('<h2>Ajustes</h2><p class="small mut">Versión de la app: ' + APP_VERSION + '</p><h3>Umbrales del Inicio (rentabilidad anual esperada a 5 años)</h3><div class="f2">' + campo('a-b', 'Barata ≥ %', A.umbral_barata, 'number') + campo('a-c', 'Cara ≤ %', A.umbral_cara, 'number') + '</div>' +

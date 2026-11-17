@@ -8,7 +8,8 @@
     ['acciones', 'Acciones diluidas (M)'], ['capex', 'CAPEX'], ['leases', 'Pago de leases'], ['caja', 'Caja e inversiones CP'], ['deuda', 'Deuda financiera'], ['leases_deuda', 'Deuda por leases'], ['goodwill', 'Goodwill'], ['equity', 'Patrimonio (matriz)'], ['ni_reportado', 'Beneficio neto reportado (control)']];
   const LINES_FIN = [['ni', 'Beneficio neto (ordinarios)'], ['extra', 'Extraordinarios tras impuestos'], ['equity', 'Patrimonio (matriz)'], ['goodwill', 'Goodwill'], ['intangibles', 'Otros intangibles'], ['preferentes', 'Preferentes'],
     ['dividendos', 'Dividendos pagados'], ['recompras', 'Recompras'], ['acciones', 'Acciones diluidas (M)'], ['deuda', 'Deuda financiera (arrendadores)'], ['acciones_cierre', 'Acciones al cierre (opcional)'], ['emisiones', 'Emisiones de capital (opcional)']];
-  const linesOf = f => (f.tipo && f.tipo !== 'industrial') ? LINES_FIN : LINES;
+  const LINES_FC = [['fcfa2s', 'FCFA2S (flujo libre para el accionista, neto de minoritarios)']].concat(LINES);
+  const linesOf = f => (f.tipo && f.tipo !== 'industrial') ? LINES_FIN : f.metodo === 'fcfa2s' ? LINES_FC : LINES;
   const D = () => Store.get(), hoy = () => L.today(), clone = o => JSON.parse(JSON.stringify(o));
   let sel = null, filtro = '', abiertos = { esc: 1, res: 1, real: 1, dat: 0, fit: 1, proj: 0 };
 
@@ -23,7 +24,7 @@
   function cargarSEC() { if (SECR || secCarga) return; secCarga = true; fetch('datos/resumen.json', { cache: 'no-cache' }).then(r => (r.ok ? r.json() : null)).then(j => { SECR = (j && j.empresas) || {}; U.render(); }).catch(() => { SECR = {}; }); }
   /* Para una ficha: ejercicio nuevo publicado y factor de 12 meses (EBIT 12 meses / EBIT del mismo ejercicio en la SEC) */
   function secSEC(tk, f) {
-    const e = SECR && ((L.claves(D(), tk).map(c => SECR[c]).find(Boolean))); if (!e || e.error || !f || f.divisa !== 'USD' || V.isFin(f)) return null;   // los bancos tienen otras líneas: no se mezclan con los datos de empresa de la SEC
+    const e = SECR && ((L.claves(D(), tk).map(c => SECR[c]).find(Boolean))); if (!e || e.error || !f || f.divisa !== 'USD' || V.isFin(f) || V.esFC(f)) return null;   // los bancos tienen otras líneas: no se mezclan con los datos de empresa de la SEC
     const out = { nombre: e.nombre };
     if (L.lineasFaltantes(f).length && !(f.tipo === 'reit')) out.completar = true;
     if (e.ultimo_ejercicio && e.ultimo_ejercicio.anio > f.anio_base) out.nuevo = e.ultimo_ejercicio.anio;
@@ -229,7 +230,7 @@
   function numIn(attrs, v, step) { return '<input type="number" step="' + (step || 'any') + '" inputmode="decimal" ' + attrs + ' value="' + (isN(v) ? +(+v).toFixed(3) : '') + '">'; }
   function vistaDetalle() {
     const d = D(), a = d.ajustes, f0 = d.fichas[sel]; if (!f0) { sel = null; return vistaLista(); }
-    const f = fichaCon(sel), fin = V.isFin(f), mo = V.esMO(f), o = a.objetivo, m = a.minimo;
+    const f = fichaCon(sel), fin = V.isFin(f), mo = V.esMO(f), fc = V.esFC(f), o = a.objetivo, m = a.minimo, pAviso = L.precioFicha(d, sel).aviso, pConv = L.precioFicha(d, sel).convertido;
     let h = '<button class="btn sec sm" data-v="volver">← Valoración</button>';
     if (!V.soportado(f)) return h + '<div class="alert warn" style="margin-top:10px">Este tipo de empresa (REIT) no está soportado por el método de valoración.</div>' + acciones(f);
     if (!isN(f.precio)) return h + '<h2 style="margin:12px 0 4px">' + esc(sel) + ' — ' + esc(f.nombre || '') + '</h2><div class="alert warn" style="margin-top:10px">La ficha no tiene precio. Ponlo y revisa los datos para ver la valoración.</div><div class="tools"><button class="btn" data-v="precio">Poner precio</button></div>' + acciones(f);
@@ -255,7 +256,7 @@
     const dp = L.diasDesde(f.fecha_precio, hoy());
     h += '<div class="card" style="margin-top:10px;border-left:6px solid var(--' + { g: 'ok', y: 'warn', r: 'bad' }[t] + ')"><div class="meta">' + esc(sel) + ' — ' + esc(f.nombre || '') + ' · ' + estadoDe(sel) + '</div><h2 style="font-size:21px;margin:4px 0">' + title + '</h2><p style="margin:0 0 8px">' + sub + '</p>' + (U.enlaces ? U.enlaces(sel, 'val') : '') +
       '<p class="small mut" style="margin:0 0 8px">En el pesimista: ' + pc(R.pesimista.cagr[5].ref) + ' anual · en el optimista: ' + pc(R.optimista.cagr[5].ref) + '</p>' +
-      '<div class="kpis"><div class="kpi"><span>Precio actual</span><b>' + nf(f.precio, 2) + '</b><span>' + esc(f.divisa) + (dp != null ? ' · hace ' + dp + ' d' : '') + '</span></div><div class="kpi"><span>Objetivo a 5 años</span><b>' + (cons.po[5].ref > 0 ? nf(cons.po[5].ref, 2) : '—') + '</b></div>' +
+      (pAviso ? '<div class="alert warn" style="margin-bottom:8px">' + esc(pAviso) + '</div>' : '') + '<div class="kpis"><div class="kpi"><span>Precio actual</span><b>' + nf(f.precio, 2) + '</b><span>' + esc(f.divisa) + (pConv ? ' · convertido de ' + esc(pConv.split('→')[0]) : '') + (dp != null ? ' · hace ' + dp + ' d' : '') + '</span></div><div class="kpi"><span>Objetivo a 5 años</span><b>' + (cons.po[5].ref > 0 ? nf(cons.po[5].ref, 2) : '—') + '</b></div>' +
       '<div class="kpi"><span>Entrada para ' + nf(o, 0) + ' %</span><b>' + (pe ? nf(pe, 2) : '—') + '</b></div><div class="kpi"><span>Máximo para ' + nf(m, 0) + ' %</span><b>' + (pt ? nf(pt, 2) : '—') + '</b></div>' +
       (vm && vm.sinBeneficio ? '<div class="kpi"><span>¿Chollo ahora?</span><b>—</b><span class="c-r">EBIT de 12 meses negativo</span></div>' : '') +
       (vm && !vm.sinBeneficio ? '<div class="kpi"><span>A su múltiplo de siempre</span><b>' + nf(vm.valor, 2) + '</b><span class="c-' + VMT[vm.nivel][0] + '">' + VMT[vm.nivel][1] + ' (' + (vm.descuento >= 0 ? '−' : '+') + nf(Math.abs(vm.descuento) * 100, 0) + ' %)' + (vm.doce ? ' · 12 meses' : '') + '</span></div>' : '') + '</div>' +
@@ -267,13 +268,13 @@
       (sd && sd.nuevo ? '<div class="alert warn" style="margin-top:8px">La SEC ya tiene el ejercicio ' + sd.nuevo + ' y esta ficha llega a ' + f.anio_base + '. <button class="btn sm" data-v="nuevoej">' + (sd.nuevo - f.anio_base > 1 || f.anio_base < 2020 ? 'Sustituir por los datos de la SEC' : 'Añadir ' + sd.nuevo + ' desde la SEC') + '</button></div>' : '') + '</div>' +
       '<div class="tools"><button class="btn sm" data-v="precio">Precio</button><button class="btn sec sm" data-v="datos">Editar datos</button>' + (f.divisa === 'USD' && !fin ? '<button class="btn sec sm" data-v="contraste">Contrastar con la SEC</button>' : '') + '<button class="btn sec sm" data-v="reset">Restablecer supuestos</button></div>';
     // escenarios
-    const P = fin ? [['rote', 'ROTE (%)', 100, .5], ['pdiv', 'Dividendos (% beneficio)', 100, 2.5], ['prec', 'Recompras (% beneficio)', 100, 2.5], ['per', 'PER', 1, .5], ['ptbv', 'P/TBV', 1, .1], ['ke', 'Coste del capital (%)', 100, .5], ['gt', 'Crecimiento largo plazo (%)', 100, .5]] :
+    const P = fc ? [['g', 'Crecimiento del FCFA2S (%/año)', 100, .5], ['acc', 'Variación acciones (%/año)', 100, .25], ['pfcf', 'P/FCFA2S de salida (x)', 1, 1]] : fin ? [['rote', 'ROTE (%)', 100, .5], ['pdiv', 'Dividendos (% beneficio)', 100, 2.5], ['prec', 'Recompras (% beneficio)', 100, 2.5], ['per', 'PER', 1, .5], ['ptbv', 'P/TBV', 1, .1], ['ke', 'Coste del capital (%)', 100, .5], ['gt', 'Crecimiento largo plazo (%)', 100, .5]] :
       [['g', 'Crecimiento ventas (%/año)', 100, .5], ...(mo ? [['m0', 'Margen EBIT inicial (%)', 100, .5], ['m', 'Margen EBIT objetivo año 5 (%)', 100, .5]] : [['m', 'Margen EBIT (%)', 100, .5]]), ['t', 'Tipo impositivo (%)', 100, .5], ['acc', 'Variación acciones (%/año)', 100, .25], ['per', 'PER', 1, .5], ['pfcf', 'P/FCF', 1, .5], ['ev_ebitda', 'EV/EBITDA', 1, .5], ['ev_ebit', 'EV/EBIT', 1, .5]];
     h += sec('esc', 'Escenarios y supuestos', 'edita cualquier celda', (mo ? '' : '<p class="small"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" data-v-cic' + (f.ciclica ? ' checked' : '') + ' style="width:auto;min-height:0"> Tratar como cíclica (usa la media de todo el ciclo y restablece supuestos)</label></p>') +
       '<div class="tw"><table class="tbl"><thead><tr><th></th>' + ESC.map(s => '<th>' + ENAME[s] + '</th>').join('') + '</tr></thead><tbody>' +
       P.map(([k, n, mul, st]) => '<tr><td>' + esc(n) + '</td>' + ESC.map(s => '<td>' + numIn('data-sc="' + s + '" data-k="' + k + '" data-mul="' + mul + '" aria-label="' + ENAME[s] + ' ' + esc(n) + '"', isN(sc[s][k]) ? sc[s][k] * mul : null, st) + '</td>').join('') + '</tr>').join('') + '</tbody></table></div>');
     // resultados
-    const rows = fin ? [['PER', r => r.po[5].per, 'po'], ['P/TBV (tope ROE)', r => r.po[5].ptbv, 'po'], ['Referencia', r => r.po[5].ref, 'po', 1], ['PER · 5 años', r => r.cagr[5].per, 'c'], ['P/TBV · 5 años', r => r.cagr[5].ptbv, 'c'], ['Referencia · 3 años', r => r.cagr[3].ref, 'c', 1], ['Referencia · 5 años', r => r.cagr[5].ref, 'c', 1]] :
+    const rows = fc ? [['P/FCFA2S (único método)', r => r.po[5].pfcf, 'po', 1], ['Referencia · 3 años', r => r.cagr[3].ref, 'c', 1], ['Referencia · 5 años', r => r.cagr[5].ref, 'c', 1]] : fin ? [['PER', r => r.po[5].per, 'po'], ['P/TBV (tope ROE)', r => r.po[5].ptbv, 'po'], ['Referencia', r => r.po[5].ref, 'po', 1], ['PER · 5 años', r => r.cagr[5].per, 'c'], ['P/TBV · 5 años', r => r.cagr[5].ptbv, 'c'], ['Referencia · 3 años', r => r.cagr[3].ref, 'c', 1], ['Referencia · 5 años', r => r.cagr[5].ref, 'c', 1]] :
       [['PER', r => r.po[5].per, 'po'], ['P/FCF', r => r.po[5].pfcf, 'po'], ['EV/EBITDA', r => r.po[5].ev_ebitda, 'po'], ['EV/EBIT', r => r.po[5].ev_ebit, 'po'], ['Referencia', r => r.po[5].ref, 'po', 1],
         ['PER o P/FCF · 5 años', r => r.cagr[5].perpfcf, 'c'], ['EV/EBITDA · 5 años', r => r.cagr[5].ev_ebitda, 'c'], ['EV/EBIT · 5 años', r => r.cagr[5].ev_ebit, 'c'], ['Referencia · 3 años', r => r.cagr[3].ref, 'c', 1], ['Referencia · 5 años', r => r.cagr[5].ref, 'c', 1]];
     h += sec('res', 'Precio objetivo y rentabilidad', 'objetivo ' + nf(o, 0) + ' % · mínimo ' + nf(m, 0) + ' %', '<div class="tw"><table class="tbl"><thead><tr><th></th>' + ESC.map(s => '<th>' + ENAME[s] + '</th>').join('') + '</tr></thead><tbody>' +

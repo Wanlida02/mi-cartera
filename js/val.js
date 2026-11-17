@@ -16,6 +16,10 @@ const Val = (function () {
   const taxR = (h, j) => { const e = z(h.extra && h.extra[j]); if (!e || !isN(h.impuestos[j])) return h.impuestos[j];
     const pt = z(h.ebit[j]) - z(h.intereses[j]), ptR = pt - e; return pt > 0 && ptR > 0 ? h.impuestos[j] * ptR / pt : ptR <= 0 ? 0 : h.impuestos[j]; };
   const esMO = f => !!f && f.metodo === 'margen_objetivo';
+  /* Método FCFA2S †: compounders de software (Constellation) cuyo beneficio IFRS no sirve (amortización de intangibles de compras, revalorización de pasivos IRGA/TSS).
+     Se valora SOLO por el flujo libre para el accionista tras minoritarios (ficha.hist.fcfa2s, ya neto de intereses, arrendamientos y minoritarios) × múltiplo de salida.
+     No hay PER, EV/EBIT ni EV/EBITDA en la referencia. Precio y cifras, siempre en la misma divisa (la de la ficha). */
+  const esFC = f => !!f && f.metodo === 'fcfa2s';
   const CFG = { crisis: 'ventas', ancho: true, gpre: false };   // gpre y el aviso de trampa de valor se probaron y NO mejoraron en la muestra de validación   // mejoras del backtest (21/10/2026): normalizar años de crisis y escenarios más anchos
   const median = a => { const x = a.filter(isN).sort((p, q) => p - q); return x.length ? (x.length % 2 ? x[(x.length - 1) / 2] : (x[x.length / 2 - 1] + x[x.length / 2]) / 2) : null; };
   /* Años de crisis †: ventas más de un 10 % por debajo del año anterior, o margen EBIT recurrente por debajo de la mitad de la mediana del resto de años */
@@ -67,6 +71,13 @@ const Val = (function () {
       per: (mh.per || 15) * kM, pfcf: (mh.pfcf || mh.per || 15) * kM,
       ev_ebitda: (mh.ev_ebitda || 9) * kM, ev_ebit: (mh.ev_ebit || 11) * kM
     });
+    if (esFC(f)) {   // FCFA2S: crecimiento = CAGR de la serie (conservador), la mitad (pesimista) y el de 3 años (optimista); múltiplos de salida de la propia ficha
+      const fc = h.fcfa2s || [], g4 = cagr(fc, 5), g3 = cagr(fc, 3), gB = clamp(g4 == null ? 0.05 : g4, 0, 0.25), gO = clamp(g3 == null ? gB : Math.max(g3, gB), 0, 0.25);
+      const mm = Object.assign({ pesimista: 20, conservador: 26, optimista: 30 }, f.mult_fcfa2s || {});
+      const fix = (o, g, esc) => Object.assign(o, { g, pfcf: mm[esc], per: null, ev_ebitda: null, ev_ebit: null });
+      const b = mk(1, 1, 1, 'conservador'), p = mk(0.5, 0.8, 0.7, 'pesimista'), op = mk(1.5, 1.15, 1.25, 'optimista');
+      return { conservador: fix(b, gB, 'conservador'), pesimista: fix(p, gB * 0.5, 'pesimista'), optimista: fix(op, gO, 'optimista') };
+    }
     return {
       conservador: mk(1, 1, 1, 'conservador'),            // "neutral/conservador": histórico
       pesimista: CFG.ancho ? mk(0.5, 0.8, 0.7, 'pesimista') : mk(0.5, 0.92, 0.8, 'pesimista'),   // menos crecimiento ⇒ menos múltiplo
@@ -117,6 +128,7 @@ const Val = (function () {
     let p = { ventas: last(h.ventas), da: z(last(h.da)), interes: z(last(h.intereses)), min: z(last(h.minoritarios)),
       capex: z(last(h.capex)), leases: z(last(h.leases)), acc: last(h.acciones) };
     const otros = z(last(h.otros)); // resultado de participadas y pensiones (no escala con las ventas): se mantiene constante
+    const fc = esFC(f); let fcb = fc ? last(h.fcfa2s) : null;
     let fv0 = 1;   // factor acumulado de crecimiento (para la recuperación tras crisis)
     for (let k = 1; k <= 5; k++) {
       const q = {}, gk = gAnio(sc, k); fv0 *= 1 + gk; q.g = gk;
@@ -133,11 +145,12 @@ const Val = (function () {
       q.capex = p.capex * (1 + gk);                 // Excel: capex crece con las ventas
       q.leases = p.leases * (1 + gk);
       q.fcf = q.ebitda - q.capex - q.interes - q.impuestos - q.min - q.leases;
+      if (fc) { fcb = fcb * (1 + gk); q.fcf = fcb; }   // FCFA2S: crece a g (ya es neto de minoritarios, intereses y arrendamientos)
       q.acc = opts.accPath ? opts.accPath[k - 1] : p.acc * (1 + sc.acc);
       q.nd = ndPath ? ndPath[k - 1] : nd0;            // Excel: deuda neta introducida a mano; por defecto constante
       const cash = (x, m) => (q.nd < 0 ? x * m - q.nd : x * m) / q.acc;   // caja neta se suma; deuda no se resta en PER/P·FCF
       const ev = (x, m) => (x * m - q.nd) / q.acc;
-      q.po = { per: cash(q.ni, sc.per), pfcf: cash(q.fcf, sc.pfcf), ev_ebitda: ev(q.ebitda, sc.ev_ebitda), ev_ebit: ev(q.ebit, sc.ev_ebit) };
+      q.po = fc ? { per: null, pfcf: cash(q.fcf, sc.pfcf), ev_ebitda: null, ev_ebit: null } : { per: cash(q.ni, sc.per), pfcf: cash(q.fcf, sc.pfcf), ev_ebitda: ev(q.ebitda, sc.ev_ebitda), ev_ebit: ev(q.ebit, sc.ev_ebit) };
       q.anio = f.anio_base + k;
       rows.push(q); p = q;
     }
@@ -145,12 +158,12 @@ const Val = (function () {
     const res = { rows, cagr: {}, po: {}, nd0 };
     [3, 5].forEach(n => {
       const q = rows[n - 1];
-      const pp = Math.max(q.po.per, q.po.pfcf);                    // M14: el más alto entre PER y P/FCF
-      const ref = (pp + q.po.ev_ebitda) / 2;                        // referencia: PER/P·FCF elegido + EV/EBITDA (EV/EBIT aporta poco)
-      const bajo = Math.min(pp, q.po.ev_ebitda);
+      const pp = fc ? q.po.pfcf : Math.max(q.po.per, q.po.pfcf);   // M14: el más alto entre PER y P/FCF (FCFA2S: solo P/FCFA2S)
+      const ref = fc ? pp : (pp + q.po.ev_ebitda) / 2;               // referencia: PER/P·FCF elegido + EV/EBITDA (EV/EBIT aporta poco); FCFA2S: solo el flujo
+      const bajo = fc ? pp : Math.min(pp, q.po.ev_ebitda);
       res.po[n] = { per: q.po.per, pfcf: q.po.pfcf, perpfcf: pp, ev_ebitda: q.po.ev_ebitda, ev_ebit: q.po.ev_ebit, ref, bajo,
-        eligio: q.po.per >= q.po.pfcf ? 'PER' : 'P/FCF' };
-      res.cagr[n] = { per: c(q.po.per, n), pfcf: c(q.po.pfcf, n), perpfcf: c(pp, n), ev_ebitda: c(q.po.ev_ebitda, n), ev_ebit: c(q.po.ev_ebit, n), ref: c(ref, n), bajo: c(bajo, n) };
+        eligio: fc ? 'FCFA2S' : q.po.per >= q.po.pfcf ? 'PER' : 'P/FCF' };
+      res.cagr[n] = { per: fc ? null : c(q.po.per, n), pfcf: c(q.po.pfcf, n), perpfcf: c(pp, n), ev_ebitda: fc ? null : c(q.po.ev_ebitda, n), ev_ebit: fc ? null : c(q.po.ev_ebit, n), ref: c(ref, n), bajo: c(bajo, n) };
     });
     return res;
   }
@@ -183,7 +196,7 @@ const Val = (function () {
     const h = asegurar(f), i = h.ventas.length - 1;
     const ni = z(ebitR(h, i)) - z(h.intereses[i]) - z(taxR(h, i)) - z(h.minoritarios[i]) + z(h.otros && h.otros[i]);
     const fcf0 = z(ebitR(h, i)) + z(h.da[i]) - z(h.capex[i]) - z(h.intereses[i]) - z(taxR(h, i)) - z(h.minoritarios[i]) - z(h.leases[i]);
-    const base = fcf0 > 0 ? fcf0 : ni;
+    const base = esFC(f) && last(h.fcfa2s) > 0 ? last(h.fcfa2s) : fcf0 > 0 ? fcf0 : ni;
     if (!(base > 0) || !(f.precio > 0)) return null;
     const cap = f.precio * last(h.acciones);
     const nd = z(last(h.deuda)) + z(last(h.leases_deuda)) - z(last(h.caja));
@@ -205,6 +218,8 @@ const Val = (function () {
     const ni = eb - z(h.intereses[i]) - tx - z(h.minoritarios[i]) + z(h.otros && h.otros[i]);
     const ebitda = eb + z(h.da[i]);
     const fcf = ebitda - z(h.capex[i]) - z(h.intereses[i]) - tx - z(h.minoritarios[i]) - z(h.leases[i]);
+    if (esFC(f)) { const ff = last(h.fcfa2s); return { cap, nd, ev: cap + nd, ni: null, fcf: ff, ebitda: null, ebit: null, extra: 0, per: null, pfcf: ff > 0 ? cap / ff : null, ev_ebitda: null, ev_ebit: null,
+      ps: h.ventas[i] > 0 ? cap / h.ventas[i] : null, ev_ventas: h.ventas[i] > 0 ? (cap + nd) / h.ventas[i] : null, nd_ebitda: null, fcfa2s: true }; }
     return { cap, nd, ev: cap + nd, ni, fcf, ebitda, ebit: eb, extra: z(h.extra && h.extra[i]),
       per: ni > 0 ? cap / ni : null, pfcf: fcf > 0 ? cap / fcf : null,
       ev_ebitda: ebitda > 0 ? (cap + nd) / ebitda : null, ev_ebit: eb > 0 ? (cap + nd) / eb : null,
@@ -213,7 +228,18 @@ const Val = (function () {
   }
 
   /* ---- Control de realismo: avisos sobre los supuestos ---- */
+  function realismoFC(f, sc, nombre, act) {
+    const h = asegurar(f), fc = h.fcfa2s || [], out = [], add = (nivel, txt) => out.push({ nivel, txt }), g = cagr(fc, 5);
+    if (nombre === 'conservador') add('y', 'Método FCFA2S †: solo cuenta el flujo libre para el accionista tras intereses, arrendamientos, minoritarios y la revalorización de pasivos IRGA/TSS. PER, EV/EBIT y EV/EBITDA no entran (el beneficio IFRS está distorsionado por la amortización de intangibles de compras y por el pasivo IRGA/TSS).');
+    if (g != null && sc.g > g + 0.005) add('r', `Crecimiento del FCFA2S ${(sc.g * 100).toFixed(1)} % por encima del de la serie (${(g * 100).toFixed(1)} %).`);
+    if (act && isN(act.pfcf) && sc.pfcf < act.pfcf * 0.85) add('y', `Múltiplo de salida ${sc.pfcf.toFixed(1)}x frente a ${act.pfcf.toFixed(1)}x hoy: la rentabilidad ya descuenta que el múltiplo baje.`);
+    if (act && isN(act.pfcf) && sc.pfcf > act.pfcf * 1.2) add('y', `P/FCFA2S objetivo ${sc.pfcf.toFixed(1)}x frente a ${act.pfcf.toFixed(1)}x hoy: la rentabilidad depende de que el múltiplo suba.`);
+    if (nombre === 'conservador' && sc.fade !== false && sc.g > G_LARGO) add('y', `Crecimiento que se desvanece †: ${(sc.g * 100).toFixed(1)} % el año 1 y ${(gAnio(sc, 5) * 100).toFixed(1)} % el año 5.`);
+    if (sc.acc < -0.04) add('y', `Recompra de acciones del ${(-sc.acc * 100).toFixed(1)} % anual: muy agresiva.`);
+    return out;
+  }
   function realismo(f, sc, nombre, act) {
+    if (esFC(f)) return realismoFC(f, sc, nombre, act);
     const h = asegurar(f), out = [], mh = f.mult_hist || {};
     const margen = h.ventas.map((v, i) => (isN(h.ebit[i]) && v > 0 ? ebitR(h, i) / v : null)).filter(isN);
     const g5 = cagr(h.ventas, 5), mMax = Math.max.apply(null, margen), mMed = avg(margen);
@@ -251,7 +277,16 @@ const Val = (function () {
   /* ---- Control de fiabilidad de los datos ---- */
   const CRIT = ['ventas', 'ebit', 'da', 'impuestos', 'acciones', 'capex', 'caja', 'deuda'];
   const OPC = ['intereses', 'minoritarios'];
+  function fiabilidadFC(f, hoy) {
+    const h = asegurar(f), conf = f.conf || {}, av = [], add = (nivel, campo, txt) => av.push({ nivel, campo, txt }), K = ['fcfa2s', 'acciones', 'ventas'];
+    K.forEach(k => { if (!isN(last(h[k]))) add('r', k, `Falta el dato de ${k} del último ejercicio.`); });
+    if (f.fecha_precio && hoy) { const dd = Math.floor((Date.parse(hoy) - Date.parse(f.fecha_precio)) / 864e5); if (dd > 2) add('y', 'precio', `Precio de hace ${dd} días: actualízalo, el CAGR depende de él.`); }
+    const peso = { A: 1, P: 0.7, E: 0.4 }; let tot = 0, nE = 0, nP = 0, nA = 0;
+    K.forEach(k => { const c = conf[k] || 'E'; tot += peso[c] || 0.4; if (c === 'E') nE++; else if (c === 'P') nP++; else nA++; });
+    return { avisos: av, puntuacion: Math.round((tot / K.length) * 100), nivel: nE === 0 && nP === 0 ? 'profunda' : nE === 0 ? 'rapida' : 'rapida-estimada', nA, nP, nE, graves: av.filter(a => a.nivel === 'r').length };
+  }
   function fiabilidad(f, hoy) {
+    if (esFC(f)) return fiabilidadFC(f, hoy);
     const n = f.hist.ventas.length, h = Object.assign({}, f.hist), av = [], conf = f.conf || {};
     ['leases', 'leases_deuda', 'goodwill', 'equity', 'minoritarios', 'otros', 'impuestos', 'intereses', 'da', 'capex', 'caja', 'deuda', 'acciones'].forEach(k => { if (!Array.isArray(h[k])) h[k] = Array(n).fill(null); });   // ficha borrador sin alguna línea: avisa, no revienta
     const add = (nivel, campo, txt) => av.push({ nivel, campo, txt });
@@ -408,7 +443,7 @@ const Val = (function () {
   const M14 = { defaults, proyectar, dcfInverso, actuales, realismo, fiabilidad, margenImplicito, trampa, valorMultiplo };
   const pick = nombre => function (f) { return (isFin(f) ? Fin : M14)[nombre].apply(null, arguments); };
 
-  return { CFG, crisisYears, gAnio, valorMultiplo: (f, aj) => (isFin(f) || esMO(f) ? null : valorMultiplo(f, aj)), defaults: pick('defaults'), proyectar: pick('proyectar'), precioEntrada, dcfInverso: pick('dcfInverso'), actuales: pick('actuales'), realismo: pick('realismo'), margenImplicito: pick('margenImplicito'), trampa: f => (isFin(f) ? [] : trampa(f)), esMO, fiabilidad: pick('fiabilidad'), cagr, avg, isN, isFin, Fin,
+  return { CFG, crisisYears, gAnio, valorMultiplo: (f, aj) => (isFin(f) || esMO(f) || esFC(f) ? null : valorMultiplo(f, aj)), defaults: pick('defaults'), proyectar: pick('proyectar'), precioEntrada, dcfInverso: pick('dcfInverso'), actuales: pick('actuales'), realismo: pick('realismo'), margenImplicito: pick('margenImplicito'), trampa: f => (isFin(f) ? [] : trampa(f)), esMO, esFC, fiabilidad: pick('fiabilidad'), cagr, avg, isN, isFin, Fin,
     soportado: f => !(f && f.tipo === 'reit') };
 })();
 if (typeof module !== 'undefined') module.exports = Val;

@@ -16,7 +16,7 @@ const Logic = (function () {
     lim_empresa: 10,     // % máximo de la cartera en una empresa
     lim_sector: 30,      // % máximo en un sector
     dias_precio_viejo: 5,
-    fx: { EUR: 1, USD: 1.1193, CNY: 7.466, TWD: 36.5, fecha: '2026-10-23' }  // unidades de divisa por 1 EUR
+    fx: { EUR: 1, USD: 1.1193, CAD: 1.575, CNY: 7.466, TWD: 36.5, fecha: '2026-10-23' }  // unidades de divisa por 1 EUR
   });
   function nuevoDatos() {
     return { version: 1, posiciones: [], movimientos: [], otras: { accounts: [] }, ajustes: AJUSTES(), fichas: {}, precios: {}, cribado: {}, resultados: [], informes: null, updatedAt: 0 };
@@ -31,11 +31,31 @@ const Logic = (function () {
     'Intereses: ingreso financiero neto (signo negativo = ingreso). No incluye las diferencias de cambio (−87 M en 2025, +27 M en 2026), que se tratan como no recurrentes.',
     'D&A 2026 (218 M) incluye «svalutazioni» (saneamientos) que el comunicado no desglosa. Capex 2026 no está en el comunicado: estimado (≈ 2025). Acciones: 71,6 M en circulación (ordinarias 36,4 M + ahorro 35,2 M, calculadas con el total del dividendo); NO son las 81,3 M del capital, que incluyen autocartera.',
     'Acciones ordinarias (DAN) y de ahorro (DANR) comparten beneficio por acción; la de ahorro cotiza con descuento (sin voto) y paga más dividendo (0,3353 € frente a 0,3146 €).'];
+  /* CSU: cotiza en CAD (TSX) pero las cuentas son en USD y el beneficio IFRS está distorsionado (amortización de intangibles de compras, pasivo IRGA/TSS):
+     ficha en USD con método FCFA2S (cifras de los comunicados de Constellation; 2020 queda fuera: 989 M sin restar minoritarios, no comparable). */
+  const nul5 = [null, null, null, null, null];
+  const FICHA_CSU = { ticker: 'CSU', nombre: 'Constellation Software', divisa: 'USD', metodo: 'fcfa2s', estado: 'watchlist', anio_base: 2025, anios: [2021, 2022, 2023, 2024, 2025], precio: 2403.17, fecha_precio: '2026-11-16', dividend_yield: 0, leases_ok: true,
+    hist: { ventas: [5106, 6622, 8407, 10066, 11623], ebit: [870, 920, 1182, 1471, 1928], ni_reportado: [310, 512, 565, 731, 512], bpa: [14.63, 24.16, 26.66, 34.48, 24.15], acciones: [21.19, 21.19, 21.19, 21.2, 21.2],
+      fcfa2s: [883, 853, 1160, 1472, 1683], caja: [763, 811, 1284, 1980, 3089], deuda: [1387, 2288, 3682, 4533, 5787], equity: [1060, 1712, 1876, 2794, 3576], goodwill: [610, 792, 1263, 1451, 1781],
+      intereses: nul5, da: nul5, capex: nul5, impuestos: nul5, leases: nul5, leases_deuda: nul5, minoritarios: nul5, otros: nul5, extra: nul5 },
+    conf: { ventas: 'P', ebit: 'P', ni_reportado: 'P', bpa: 'P', acciones: 'P', fcfa2s: 'A', caja: 'P', deuda: 'P', equity: 'P', goodwill: 'P' },
+    fuentes: ['Comunicados de resultados de Constellation Software (conciliación FCFA2S 2021-2025); StockAnalysis (ventas, EBIT, BPA, balance)'],
+    notas: ['Método FCFA2S: se valora solo por el flujo libre para el accionista (después de intereses, arrendamientos, minoritarios de Topicus/Lumine y la revalorización IRGA/TSS). PER, EV/EBIT y EV/EBITDA no se usan: el beneficio IFRS lleva la amortización de intangibles de compras y el pasivo IRGA/TSS.',
+      'Precio y cifras en USD: la acción cotiza en CAD en Toronto y la app convierte con el tipo de cambio de Ajustes (CAD por 1 €). Múltiplos de salida: pesimista 20x, base 26x, optimista 30x FCFA2S.',
+      'Deuda = deuda total del balance (incluye arrendamientos); no se resta al valor porque el FCFA2S ya es posterior a intereses. Acciones = beneficio neto / BPA. El FCFA2S de 2020 (989 M) no lleva restados los minoritarios y se excluye de la serie.'],
+    fecha_datos: '2026-11-17', verificada: '2026-11-17', extra_cribado: {} };
+  const ID_CSU = 'csu-fcfa2s-2026-11-17';
   /* Nombres de cribado que son solo el ticker: con el nombre real se enlazan solas las carpetas de informes */
   const NOMBRES = { CSU: 'Constellation Software' };
   function aplicarParches(d) {
     Object.keys(NOMBRES).forEach(k => { const c = d.cribado && d.cribado[k]; if (c && (!c.nombre || c.nombre === k) && !(d.fichas && d.fichas[k])) c.nombre = NOMBRES[k]; });
     d.ajustes = d.ajustes || {}; const ya = d.ajustes.parches = Array.isArray(d.ajustes.parches) ? d.ajustes.parches : [];
+    if (ya.indexOf(ID_CSU) < 0) {   // CSU: si no hay ficha, o la que hay no está verificada (borrador o en otra divisa), se crea la de USD/FCFA2S; la anterior se guarda en ajustes.copia_ficha_CSU
+      const f = d.fichas && d.fichas.CSU;
+      const interes = !!f || !!(d.cribado && d.cribado.CSU) || (d.posiciones || []).some(x => (x.ticker || '').toUpperCase() === 'CSU');   // solo si ya sigues CSU (cribado, posición o ficha): una instalación vacía no la recibe
+      if (interes && (!f || (!f.verificada && f.metodo !== 'fcfa2s'))) { d.fichas = d.fichas || {}; if (f) d.ajustes.copia_ficha_CSU = JSON.parse(JSON.stringify(f)); d.fichas.CSU = JSON.parse(JSON.stringify(FICHA_CSU)); }
+      if (interes) ya.push(ID_CSU);
+    }
     PARCHES.forEach(p => {
       if (ya.indexOf(p.id) >= 0) return; const f = d.fichas && d.fichas[p.tk];
       if (!f || !/danieli/i.test(f.nombre || '')) return;
@@ -217,19 +237,21 @@ const Logic = (function () {
   }
 
   /* ───── Valoración de una empresa (motor Val) ───── */
+  const MISMO_VALOR = { EUR: 1, USD: 1, CAD: 1 };   // divisas entre las que una misma cotización se convierte sin ratio ni prima
   function precioFicha(d, tk) {
     const f = d.fichas[tk], pf = d.precios[tk + '@ficha'];
-    let pr = d.precios[tk], precio = f.precio, fecha = f.fecha_precio || '';
+    let pr = d.precios[tk], precio = f.precio, fecha = f.fecha_precio || '', aviso = null, convertido = null;
     // Cotización en la divisa de la ficha (p. ej. TSM: ADR en USD, ficha en TWD → se usa 2330.TW)
     if (pf && isN(pf.precio) && pf.divisa === f.divisa && (!pr || pr.divisa !== f.divisa || (pf.fecha_precio || '') >= (pr.fecha_precio || ''))) pr = pf;
     if (pr && isN(pr.precio) && (pr.fecha_precio || '') >= fecha) {
       if (pr.divisa === f.divisa) { precio = pr.precio; fecha = pr.fecha_precio || ''; }
-      else if ((pr.divisa === 'EUR' && f.divisa === 'USD') || (pr.divisa === 'USD' && f.divisa === 'EUR')) {
+      else if (MISMO_VALOR[pr.divisa] && MISMO_VALOR[f.divisa]) {   // EUR/USD/CAD: misma acción cotizando en otra moneda (p. ej. CSU: cotiza en CAD, cuentas en USD) → se convierte con el tipo de cambio de la app
         const e = aEur(d, pr.precio, pr.divisa), k = fxPorEur(d, f.divisa);
-        if (e != null && k) { precio = e * k; fecha = pr.fecha_precio || ''; }
-      }   // Otras divisas (ADR de TSM, H-share de CATL) no se convierten: valen distinto por ratio/prima; se usa la cotización «@ficha» o el precio de la ficha
+        if (e != null && k) { precio = e * k; fecha = pr.fecha_precio || ''; convertido = pr.divisa + '→' + f.divisa; }
+        else aviso = 'Sin tipo de cambio ' + pr.divisa + '/' + f.divisa + ': el precio automático (' + pr.divisa + ') no se usa y la ficha queda con su último precio. Añade la divisa en Ajustes.';
+      } else aviso = 'El precio automático está en ' + pr.divisa + ' y la ficha en ' + f.divisa + ': no se mezclan. Se usa el precio de la ficha (o su cotización «@ficha»); ponlo a mano en ' + f.divisa + '.';   // otras divisas (ADR de TSM, H-share de CATL) valen distinto por ratio/prima: no se convierten
     }
-    return { precio, fecha };
+    return { precio, fecha, aviso, convertido };
   }
   const cache = new Map();
   /* Contraste entre fuentes: fuentes = [{fuente, valores:[...]}] (un valor por año, o un solo valor) y elegido = lo que se usa.
