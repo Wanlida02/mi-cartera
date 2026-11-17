@@ -87,6 +87,8 @@ const Logic = (function () {
     ['posiciones', 'movimientos', 'resultados'].forEach(k => { if (!Array.isArray(out[k])) out[k] = []; });
     ['fichas', 'precios', 'cribado'].forEach(k => { if (!out[k] || typeof out[k] !== 'object') out[k] = {}; });
     if (!out.otras || !Array.isArray(out.otras.accounts)) out.otras = { accounts: [] };
+    const limpia = o => { if (o && typeof o.divisa === 'string') { const t = o.divisa.trim().toUpperCase(); if (t !== o.divisa) o.divisa = t; } };   // «EUR » con un espacio rompía la comparación de divisas (BIT:SOL@ficha)
+    Object.keys(out.fichas).forEach(k => limpia(out.fichas[k])); Object.keys(out.precios).forEach(k => limpia(out.precios[k]));
     return aplicarParches(out);
   }
 
@@ -267,6 +269,48 @@ const Logic = (function () {
     const m = V.matrizEntrada(f, rs, mults), filas = rs.map(r => ({ r, celdas: mults.map(x => ({ mult: x, precio: m[r][x], cot: isN(m[r][x]) && kq ? m[r][x] * kq : null })) }));
     return { filas, mults, divisa: f.divisa, cotizacion: kq ? q : null, precio: pf.precio, hor: V.proyectar(f, V.defaults(f).conservador).hor[5] };
   }
+  /* ───── Auditoría de divisas de todas las fichas †: ¿el precio que se usa está en la moneda de las cuentas, es reciente y viene de una fuente coherente? ───── */
+  function auditoriaDivisas(d, hoy) {
+    hoy = hoy || today(); const out = [], fx = d.ajustes && d.ajustes.fx || {};
+    Object.keys(d.fichas || {}).forEach(tk => {
+      const f = d.fichas[tk]; if (!f || !f.divisa) return; const nombre = f.nombre || tk, add = (nivel, txt) => out.push({ tk, nombre, nivel, txt });
+      let p; try { p = precioFicha(d, tk); } catch (e) { add('r', 'No se puede obtener el precio: ' + e.message); return; }
+      if (!isN(p.precio) || !(p.precio > 0)) return add('r', 'Sin precio utilizable en ' + f.divisa + '.');
+      if (p.aviso) add('y', p.aviso);
+      if (p.convertido) { add('i', 'Cotiza en ' + p.convertido.split('→')[0] + ' y la ficha está en ' + f.divisa + ': se convierte con el tipo de Ajustes (' + (fx.fecha || 's/f') + ').'); const dfx = diasDesde(fx.fecha, hoy); if (dfx != null && dfx > 5) add('y', 'El tipo de cambio es de hace ' + dfx + ' días.'); }
+      const dp = p.fecha ? diasDesde(p.fecha, hoy) : null;
+      if (dp == null) add('y', 'El precio no tiene fecha.'); else if (dp > 4) add('y', 'Precio de hace ' + dp + ' días (' + p.fecha + '): puede no reflejar el mercado.');
+      const pa = d.precios[tk], pf = d.precios[tk + '@ficha'];
+      if (pa && pa.divisa !== f.divisa && !(pf && pf.divisa === f.divisa) && !p.convertido && !p.aviso) add('y', 'El precio automático está en ' + pa.divisa + ' y la ficha en ' + f.divisa + ' sin cotización «@ficha»: se usa el precio guardado en la ficha.');
+      if (pf && pf.divisa !== f.divisa) add('y', 'La cotización «@ficha» está en ' + pf.divisa + ' y la ficha en ' + f.divisa + '.');
+    });
+    const o = { r: 0, y: 1, i: 2 }; return out.sort((a, b) => o[a.nivel] - o[b.nivel] || a.tk.localeCompare(b.tk));
+  }
+
+  /* ───── Múltiplos propios de cada empresa †: sustituyen a los genéricos (15x/15x/9x/11x) cuando hay histórico de precios ───── */
+  const ES_INDUSTRIAL = f => !!f && (!f.tipo || f.tipo === 'industrial') && f.metodo !== 'margen_objetivo' && f.metodo !== 'fcfa2s';
+  const provisional = f => ES_INDUSTRIAL(f) && !f.mult_hist;
+  function proponerMultiplos(d, tk, hist) {
+    const f = d.fichas[tk]; if (!ES_INDUSTRIAL(f)) return { tk, motivo: 'no aplica (método distinto)' };
+    const e = hist && hist.simbolos && hist.simbolos[tk]; if (!e) return { tk, motivo: 'sin histórico de precios (aún no descargado)' };
+    if (e.divisa !== f.divisa) return { tk, motivo: 'el histórico está en ' + e.divisa + ' y la ficha en ' + f.divisa + ': no se mezclan' };
+    const r = V.multiplosHistoricos(f, e.cierres, e.splits); if (!r) return { tk, motivo: 'no aplica' };
+    if (!r.valido) return { tk, motivo: 'datos insuficientes (' + (Math.max(r.n.per, r.n.pfcf)) + ' años con PER o P/FCF calculables; hacen falta 4)', r };
+    return { tk, r, mult: r.mult };
+  }
+  /* Aplica a las fichas provisionales (sin mult_hist) las propuestas válidas. Informe antes/después de la rentabilidad a 5 años; se puede deshacer (ajustes.mult_auto). */
+  function aplicarMultiplos(d, hist, solo) {
+    const rep = []; d.ajustes.mult_auto = d.ajustes.mult_auto || {};
+    Object.keys(d.fichas).forEach(tk => {
+      if (solo && solo.indexOf(tk) < 0) return; const f = d.fichas[tk]; if (!provisional(f)) return;
+      const pr = proponerMultiplos(d, tk, hist); if (!pr.mult) { rep.push({ tk, nombre: f.nombre || tk, aplicado: false, motivo: pr.motivo }); return; }
+      const antes = (() => { try { return valoracion(d, tk).ref; } catch (e) { return null; } })();
+      f.mult_hist = Object.assign({}, pr.mult); f.mult_hist_auto = { fecha: today(), anios: pr.r.anios, n: pr.r.n, dispersion: pr.r.dispersion, ajustes_split: pr.r.ajustes, fuente: 'cierres anuales (Yahoo) × cifras de la ficha' };
+      cache.clear(); const desp = (() => { try { return valoracion(d, tk).ref; } catch (e) { return null; } })();
+      d.ajustes.mult_auto[tk] = { fecha: today() }; rep.push({ tk, nombre: f.nombre || tk, aplicado: true, mult: pr.mult, n: pr.r.n, antes: isN(antes) ? antes : null, despues: isN(desp) ? desp : null, dispersion: pr.r.dispersion });
+    }); cache.clear(); return rep;
+  }
+  function deshacerMultiplos(d) { const ks = Object.keys(d.ajustes.mult_auto || {}); ks.forEach(tk => { const f = d.fichas[tk]; if (f && f.mult_hist_auto) { delete f.mult_hist; delete f.mult_hist_auto; } }); d.ajustes.mult_auto = {}; cache.clear(); return ks; }
   const cache = new Map();
   /* Contraste entre fuentes: fuentes = [{fuente, valores:[...]}] (un valor por año, o un solo valor) y elegido = lo que se usa.
      Devuelve las diferencias de más de `umbral` (5 % por defecto) entre la fuente más baja y la más alta, y cuántas fuentes respaldan cada dato. */
@@ -465,6 +509,6 @@ const Logic = (function () {
   }
 
   return { isN, today, clone, nuevoDatos, normalizar, norm, coreName, sameCompany, findExisting, tickerDe, fxPorEur, aEur, precioPos, costeEur, mercadoEur, valorEur, variacion, diasDesde,
-    compra, venta, editar, eliminar, borrarMov, reverseMov, precioManual, precioFicha, matrizEntrada, valoracion, renombrarTicker, tickerValido, claves, divisaCotizacion, mezclarManual, contrastar, lineasFaltantes, revision, precioRef, pesos, dashboard, informes, V };
+    compra, venta, editar, eliminar, borrarMov, reverseMov, precioManual, precioFicha, matrizEntrada, auditoriaDivisas, provisional, proponerMultiplos, aplicarMultiplos, deshacerMultiplos, valoracion, renombrarTicker, tickerValido, claves, divisaCotizacion, mezclarManual, contrastar, lineasFaltantes, revision, precioRef, pesos, dashboard, informes, V };
 })();
 if (typeof module !== 'undefined') module.exports = Logic;

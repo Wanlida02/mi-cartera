@@ -195,7 +195,7 @@
   }
 
   /* ───── Ajustes ───── */
-  const APP_VERSION = '51 · CSU: la valoración parte del FCFA2S de los últimos 12 meses (T3 2026) y anualiza a 4,15 años; matriz de precio máximo de compra (12/15/18 % × 20x/26x/30x, en USD y CAD)';
+  const APP_VERSION = '52 · Múltiplos propios de cada empresa (mediana de los cierres de ejercicio × sus cifras) en vez de 15x/9x genéricos, con informe antes/después y deshacer; auditoría de divisas y precios; divisas con espacios normalizadas';
   function ajustes() {
     const d = Store.get(), A = d.ajustes, cp = Store.ultimaCopia();
     dlg('<h2>Ajustes</h2><p class="small mut">Versión de la app: ' + APP_VERSION + '</p><h3>Umbrales del Inicio (rentabilidad anual esperada a 5 años)</h3><div class="f2">' + campo('a-b', 'Barata ≥ %', A.umbral_barata, 'number') + campo('a-c', 'Cara ≤ %', A.umbral_cara, 'number') + '</div>' +

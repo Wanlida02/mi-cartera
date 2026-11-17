@@ -235,6 +235,41 @@ const Val = (function () {
       nd_ebitda: ebitda > 0 ? nd / ebitda : null };
   }
 
+  /* ---- Múltiplos propios †: lo que el mercado ha pagado de verdad por la empresa (cierre de cada ejercicio) ----
+     Para cada ejercicio j con precio de cierre P_j: capitalización = P_j × acciones_j; PER, P/FCF, EV/EBITDA y EV/EBIT sobre las cifras recurrentes de ESE año
+     (mismas fórmulas que «actuales»). Solo cuenta lo que se puede calcular con datos reales (sin rellenar líneas vacías con ceros). Mediana de los últimos 10 años: robusta
+     frente a un año de euforia o de crisis. Las acciones se contrastan con las más recientes por si la serie no está ajustada a un split (cierres de Yahoo sí lo están). */
+  const MULT_MIN_AÑOS = 4, MULT_RANGO = { per: [4, 80], pfcf: [4, 90], ev_ebitda: [3, 60], ev_ebit: [3, 70] };
+  function accAjustadas(h, splits, anios, mes) {
+    const n = h.acciones.length, ult = last(h.acciones.filter(isN)); const out = h.acciones.slice();
+    if (!splits || !splits.length || !(ult > 0)) return { acc: out, ajustes: [] };
+    const aj = [];
+    for (let j = 0; j < n; j++) { const a = h.acciones[j]; if (!isN(a) || !(a > 0)) continue;
+      const fin = anios[j] + '-' + String(mes).padStart(2, '0') + '-28';
+      const k = splits.filter(sp => sp.fecha > fin).reduce((p, sp) => p * (sp.num / sp.den), 1);
+      if (k !== 1 && Math.abs(Math.log(a * k / ult)) < Math.abs(Math.log(a / ult))) { out[j] = a * k; aj.push(anios[j]); } }   // se ajusta solo si así casa mejor con las acciones actuales
+    return { acc: out, ajustes: aj };
+  }
+  function multiplosHistoricos(f, cierres, splits) {
+    if (!f || !cierres || !f.hist || isFin(f) || esMO(f) || esFC(f) || (f.tipo && f.tipo !== 'industrial')) return null;
+    const h = asegurar(f), an = f.anios || [], mes = f.mes_cierre || 12, { acc, ajustes } = accAjustadas(h, splits, an, mes), det = [], v = { per: [], pfcf: [], ev_ebitda: [], ev_ebit: [] };
+    for (let j = Math.max(0, h.ventas.length - 10); j < h.ventas.length; j++) {
+      const P = cierres[an[j] + '-' + String(mes).padStart(2, '0')], a = acc[j]; if (!(P > 0) || !(a > 0)) continue;
+      const cap = P * a, ok = k => isN(h[k][j]), eb = ok('ebit') ? ebitR(h, j) : null, tx = ok('impuestos') ? taxR(h, j) : null;
+      const nd = ok('deuda') && ok('caja') ? z(h.deuda[j]) + z(h.leases_deuda[j]) - h.caja[j] : null;
+      const ni = eb != null && tx != null && ok('intereses') ? eb - h.intereses[j] - tx - z(h.minoritarios[j]) + z(h.otros && h.otros[j]) : null;
+      const ebitda = eb != null && ok('da') ? eb + h.da[j] : null;
+      const fcf = ebitda != null && tx != null && ok('capex') && ok('intereses') ? ebitda - h.capex[j] - h.intereses[j] - tx - z(h.minoritarios[j]) - z(h.leases[j]) : null;
+      const row = { anio: an[j], precio: P, per: ni > 0 ? cap / ni : null, pfcf: fcf > 0 ? cap / fcf : null, ev_ebitda: ebitda > 0 && nd != null ? (cap + nd) / ebitda : null, ev_ebit: eb > 0 && nd != null ? (cap + nd) / eb : null };
+      det.push(row); Object.keys(v).forEach(k => { if (isN(row[k]) && row[k] >= MULT_RANGO[k][0] && row[k] <= MULT_RANGO[k][1]) v[k].push(row[k]); });
+    }
+    const res = {}, n = {}; Object.keys(v).forEach(k => { n[k] = v[k].length; if (v[k].length >= MULT_MIN_AÑOS) res[k] = Math.round(median(v[k]) * 10) / 10; });
+    const disp = k => { const x = v[k].slice().sort((p, q) => p - q), q1 = x[Math.floor((x.length - 1) * 0.25)], q3 = x[Math.ceil((x.length - 1) * 0.75)], m = median(x); return m > 0 ? (q3 - q1) / m : null; };
+    const dispersion = {}; Object.keys(res).forEach(k => { dispersion[k] = disp(k); });
+    const valido = isN(res.per) || isN(res.pfcf);   // sin PER ni P/FCF no hay base: se queda provisional
+    return { mult: res, n, dispersion, detalle: det, ajustes, valido, anios: det.map(x => x.anio), mes };
+  }
+
   /* ---- Control de realismo: avisos sobre los supuestos ---- */
   function realismoFC(f, sc, nombre, act) {
     const h = asegurar(f), fc = h.fcfa2s || [], out = [], add = (nivel, txt) => out.push({ nivel, txt }), g = cagr(fc, 5);
@@ -451,7 +486,7 @@ const Val = (function () {
   const M14 = { defaults, proyectar, dcfInverso, actuales, realismo, fiabilidad, margenImplicito, trampa, valorMultiplo };
   const pick = nombre => function (f) { return (isFin(f) ? Fin : M14)[nombre].apply(null, arguments); };
 
-  return { CFG, crisisYears, gAnio, valorMultiplo: (f, aj) => (isFin(f) || esMO(f) || esFC(f) ? null : valorMultiplo(f, aj)), defaults: pick('defaults'), proyectar: pick('proyectar'), precioEntrada, dcfInverso: pick('dcfInverso'), actuales: pick('actuales'), realismo: pick('realismo'), margenImplicito: pick('margenImplicito'), trampa: f => (isFin(f) ? [] : trampa(f)), esMO, esFC, matrizEntrada, fiabilidad: pick('fiabilidad'), cagr, avg, isN, isFin, Fin,
+  return { CFG, crisisYears, gAnio, valorMultiplo: (f, aj) => (isFin(f) || esMO(f) || esFC(f) ? null : valorMultiplo(f, aj)), defaults: pick('defaults'), proyectar: pick('proyectar'), precioEntrada, dcfInverso: pick('dcfInverso'), actuales: pick('actuales'), realismo: pick('realismo'), margenImplicito: pick('margenImplicito'), trampa: f => (isFin(f) ? [] : trampa(f)), esMO, esFC, matrizEntrada, multiplosHistoricos, fiabilidad: pick('fiabilidad'), cagr, avg, isN, isFin, Fin,
     soportado: f => !(f && f.tipo === 'reit') };
 })();
 if (typeof module !== 'undefined') module.exports = Val;

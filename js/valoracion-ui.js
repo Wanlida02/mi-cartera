@@ -21,6 +21,26 @@
 
   /* ───── Datos públicos de la SEC: últimos 12 meses y último ejercicio (datos/resumen.json, lo genera el workflow semanal) ───── */
   let SECR = null, secCarga = false;
+  /* Histórico de precios de cierre (datos/precios_anuales.json, lo genera el workflow semanal): base de los múltiplos propios de cada empresa */
+  let HIST = null, histCarga = false;
+  function cargarHist() { if (HIST || histCarga) return; histCarga = true; fetch('datos/precios_anuales.json', { cache: 'no-cache' }).then(r => (r.ok ? r.json() : null)).then(j => { HIST = j || { simbolos: {} }; U.render(); }).catch(() => { HIST = { simbolos: {} }; }); }
+  const nPc = v => (isN(v) ? nf(v * 100, 1) + ' %' : '—');
+  function calidadHtml(d) {
+    cargarHist(); const prov = Object.keys(d.fichas).filter(k => L.provisional(d.fichas[k])), auto = Object.keys(d.ajustes.mult_auto || {}), aud = L.auditoriaDivisas(d).filter(x => x.nivel !== 'i'); let h = '';
+    if (prov.length || auto.length) h += '<div class="card" style="padding:10px 12px;margin:8px 0"><b>Múltiplos de salida</b><p class="small" style="margin:4px 0">' + (prov.length ? '<span class="c-y">' + prov.length + ' fichas usan múltiplos genéricos (15x/15x/9x/11x), provisional:</span> ' + esc(prov.slice(0, 14).join(', ')) + (prov.length > 14 ? '…' : '') + '.' : 'Todas las fichas tienen múltiplos propios.') + (auto.length ? ' ' + auto.length + ' calculados automáticamente del histórico de precios.' : '') + '</p><div class="tools">' +
+      (prov.length ? '<button class="btn sm" data-v="multglobal">Calcular múltiplos propios</button>' : '') + (auto.length ? '<button class="btn sec sm" data-v="deshacermult">Deshacer los automáticos</button>' : '') + '</div>' + (prov.length && HIST && !Object.keys(HIST.simbolos || {}).length ? '<p class="small mut" style="margin:4px 0 0">Aún no hay histórico de precios: lanza el workflow «Histórico de precios» en GitHub Actions (o espera al domingo).</p>' : '') + '</div>';
+    if (aud.length) h += '<details class="card" style="padding:10px 12px;margin:8px 0"><summary><b>Auditoría de divisas y precios</b> <span class="mut small">' + aud.filter(x => x.nivel === 'r').length + ' graves · ' + aud.filter(x => x.nivel === 'y').length + ' avisos</span></summary>' + aud.map(x => '<div class="small" style="margin:6px 0"><span class="pill ' + (x.nivel === 'r' ? 'bad' : 'warn') + '">' + esc(x.tk) + '</span> ' + esc(x.txt) + '</div>').join('') + '</details>';
+    return h;
+  }
+  function informeMult(rep, titulo) {
+    const ap = rep.filter(x => x.aplicado), no = rep.filter(x => !x.aplicado);
+    U.dlg('<h2>' + esc(titulo) + '</h2>' + (ap.length ? '<div class="tw"><table class="tbl"><thead><tr><th>Ficha</th><th>PER</th><th>P/FCF</th><th>EV/EBITDA</th><th>EV/EBIT</th><th>Años</th><th>Rentab. 5a</th></tr></thead><tbody>' + ap.map(x => '<tr><td>' + esc(x.tk) + '</td>' + ['per', 'pfcf', 'ev_ebitda', 'ev_ebit'].map(k => '<td>' + (isN(x.mult[k]) ? nf(x.mult[k], 1) + 'x' : '<span class="mut">15/9/11x</span>') + '</td>').join('') + '<td>' + nf(Math.max.apply(null, ['per', 'pfcf'].map(k => x.n[k] || 0)), 0) + '</td><td>' + nPc(x.antes) + ' → <b>' + nPc(x.despues) + '</b></td></tr>').join('') + '</tbody></table></div><p class="small mut">Mediana de los múltiplos al cierre de cada ejercicio (hasta 10 años). Lo que no se pudo calcular conserva el genérico. Puedes deshacerlo desde la lista.</p>' : '<p>No se ha podido calcular ninguno.</p>') +
+      (no.length ? '<p class="small"><b>Siguen provisionales (' + no.length + '):</b></p><ul class="small">' + no.map(x => '<li>' + esc(x.tk) + ': ' + esc(x.motivo) + '</li>').join('') + '</ul>' : '') + '<div class="acts"><button class="btn" data-a="cerrar">Cerrar</button></div>');
+  }
+  function calcularMult(solo) {
+    if (!HIST) { cargarHist(); return U.toast('Cargando el histórico de precios… vuelve a pulsar'); }
+    const rep = L.aplicarMultiplos(D(), HIST, solo); if (rep.some(x => x.aplicado)) Store.save(); U.render(); informeMult(rep, solo ? 'Múltiplos propios · ' + solo[0] : 'Múltiplos propios de ' + rep.filter(x => x.aplicado).length + ' fichas');
+  }
   function cargarSEC() { if (SECR || secCarga) return; secCarga = true; fetch('datos/resumen.json', { cache: 'no-cache' }).then(r => (r.ok ? r.json() : null)).then(j => { SECR = (j && j.empresas) || {}; U.render(); }).catch(() => { SECR = {}; }); }
   /* Para una ficha: ejercicio nuevo publicado y factor de 12 meses (EBIT 12 meses / EBIT del mismo ejercicio en la SEC) */
   function secSEC(tk, f) {
@@ -211,6 +231,7 @@
     const filas = ks.map(k => ({ k, est: estadoDe(k), v: L.valoracion(d, k, hoy()) })).filter(x => x.v);
     const grupos = [['cartera', 'En cartera'], ['watchlist', 'Watchlist'], ['candidata', 'Candidatas']];
     let h = (U.lineaPrecios ? U.lineaPrecios() : '') + '<div class="tools"><button class="btn" data-v="nueva">+ Nueva ficha</button><button class="btn sec" data-v="releer" title="Vuelve a leer el índice de informes y rehace las fichas borrador">↻ Releer informes</button><input id="v-q" type="search" placeholder="Buscar" value="' + esc(filtro) + '"></div>';
+    h += calidadHtml(d);
     grupos.forEach(([g, t]) => {
       const rows = filas.filter(x => x.est === g).sort((x, y) => (y.v.ref == null ? -9 : y.v.ref) - (x.v.ref == null ? -9 : x.v.ref));
       if (!rows.length) return;
@@ -270,7 +291,8 @@
     // escenarios
     const P = fc ? [['g', 'Crecimiento del FCFA2S (%/año)', 100, .5], ['acc', 'Variación acciones (%/año)', 100, .25], ['pfcf', 'P/FCFA2S de salida (x)', 1, 1]] : fin ? [['rote', 'ROTE (%)', 100, .5], ['pdiv', 'Dividendos (% beneficio)', 100, 2.5], ['prec', 'Recompras (% beneficio)', 100, 2.5], ['per', 'PER', 1, .5], ['ptbv', 'P/TBV', 1, .1], ['ke', 'Coste del capital (%)', 100, .5], ['gt', 'Crecimiento largo plazo (%)', 100, .5]] :
       [['g', 'Crecimiento ventas (%/año)', 100, .5], ...(mo ? [['m0', 'Margen EBIT inicial (%)', 100, .5], ['m', 'Margen EBIT objetivo año 5 (%)', 100, .5]] : [['m', 'Margen EBIT (%)', 100, .5]]), ['t', 'Tipo impositivo (%)', 100, .5], ['acc', 'Variación acciones (%/año)', 100, .25], ['per', 'PER', 1, .5], ['pfcf', 'P/FCF', 1, .5], ['ev_ebitda', 'EV/EBITDA', 1, .5], ['ev_ebit', 'EV/EBIT', 1, .5]];
-    h += sec('esc', 'Escenarios y supuestos', 'edita cualquier celda', (mo ? '' : '<p class="small"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" data-v-cic' + (f.ciclica ? ' checked' : '') + ' style="width:auto;min-height:0"> Tratar como cíclica (usa la media de todo el ciclo y restablece supuestos)</label></p>') +
+    const origenMult = fc || fin || mo ? '' : L.provisional(f) ? '<p class="small c-y" style="margin:0 0 6px">Múltiplos genéricos (15x/15x/9x/11x): provisional. <button class="btn sec sm" data-v="multpropios">Calcular múltiplos propios</button></p>' : f.mult_hist_auto ? '<p class="small mut" style="margin:0 0 6px">Múltiplos propios calculados el ' + esc(f.mult_hist_auto.fecha) + ' (mediana de ' + nf(Math.max.apply(null, [f.mult_hist_auto.n.per || 0, f.mult_hist_auto.n.pfcf || 0]), 0) + ' cierres de ejercicio).</p>' : '';
+    h += sec('esc', 'Escenarios y supuestos', 'edita cualquier celda', origenMult + (mo ? '' : '<p class="small"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" data-v-cic' + (f.ciclica ? ' checked' : '') + ' style="width:auto;min-height:0"> Tratar como cíclica (usa la media de todo el ciclo y restablece supuestos)</label></p>') +
       '<div class="tw"><table class="tbl"><thead><tr><th></th>' + ESC.map(s => '<th>' + ENAME[s] + '</th>').join('') + '</tr></thead><tbody>' +
       P.map(([k, n, mul, st]) => '<tr><td>' + esc(n) + '</td>' + ESC.map(s => '<td>' + numIn('data-sc="' + s + '" data-k="' + k + '" data-mul="' + mul + '" aria-label="' + ENAME[s] + ' ' + esc(n) + '"', isN(sc[s][k]) ? sc[s][k] * mul : null, st) + '</td>').join('') + '</tr>').join('') + '</tbody></table></div>');
     // resultados
@@ -379,6 +401,9 @@
   U.clicks.push(e => {
     const t = e.target.closest('[data-v]'); if (!t) return false; const a = t.dataset.v, d = D();
     if (a === 'nueva') nuevaDlg();
+    else if (a === 'multglobal') calcularMult(null);
+    else if (a === 'multpropios') calcularMult([sel]);
+    else if (a === 'deshacermult') { const ks = L.deshacerMultiplos(d); Store.save(); restore(() => {}); U.toast('Deshechos los múltiplos automáticos de ' + ks.length + ' fichas'); }
     else if (a === 'releer') releerInformes();
     else if (a === 'abrir') { sel = t.dataset.k; U.render(); window.scrollTo(0, 0); }
     else if (a === 'abrir-tk') U.abrirFicha(t.dataset.k);
