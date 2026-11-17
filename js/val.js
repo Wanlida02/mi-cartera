@@ -250,9 +250,17 @@ const Val = (function () {
       if (k !== 1 && Math.abs(Math.log(a * k / ult)) < Math.abs(Math.log(a / ult))) { out[j] = a * k; aj.push(anios[j]); } }   // se ajusta solo si así casa mejor con las acciones actuales
     return { acc: out, ajustes: aj };
   }
+  /* Si el proveedor no da splits (Stooq), se infieren de saltos enteros en las acciones de la ficha (≥ 1,9x casi entero o 3/2, o su inverso): la serie no está ajustada y los precios sí */
+  function inferirSplits(acc, anios, mes) {
+    const out = [], mm = String(mes).padStart(2, '0');
+    for (let j = 1; j < acc.length; j++) { const a = acc[j - 1], b = acc[j]; if (!(a > 0) || !(b > 0)) continue; let r = b / a, inv = false; if (r < 1) { r = 1 / r; inv = true; }
+      const cand = [1.5, 2, 3, 4, 5, 6, 7, 8, 10, 15, 20, 25, 30, 50].find(c => Math.abs(r / c - 1) < 0.05);
+      if (r >= 1.45 && cand) out.push({ fecha: anios[j - 1] + '-' + mm + '-29', num: inv ? 1 : cand, den: inv ? cand : 1, inferido: true }); }
+    return out;
+  }
   function multiplosHistoricos(f, cierres, splits) {
     if (!f || !cierres || !f.hist || isFin(f) || esMO(f) || esFC(f) || (f.tipo && f.tipo !== 'industrial')) return null;
-    const h = asegurar(f), an = f.anios || [], mes = f.mes_cierre || 12, { acc, ajustes } = accAjustadas(h, splits, an, mes), det = [], v = { per: [], pfcf: [], ev_ebitda: [], ev_ebit: [] };
+    const h = asegurar(f), an = f.anios || [], mes = f.mes_cierre || 12, { acc, ajustes } = accAjustadas(h, splits && splits.length ? splits : inferirSplits(h.acciones, an, mes), an, mes), det = [], v = { per: [], pfcf: [], ev_ebitda: [], ev_ebit: [] };
     for (let j = Math.max(0, h.ventas.length - 10); j < h.ventas.length; j++) {
       const P = cierres[an[j] + '-' + String(mes).padStart(2, '0')], a = acc[j]; if (!(P > 0) || !(a > 0)) continue;
       const cap = P * a, ok = k => isN(h[k][j]), eb = ok('ebit') ? ebitR(h, j) : null, tx = ok('impuestos') ? taxR(h, j) : null;

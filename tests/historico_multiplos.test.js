@@ -23,6 +23,8 @@ const poco = { '2024-12': 144, '2025-12': 144 }; assert(!V.multiplosHistoricos(f
 // split 4:1 en jun-2021: acciones antiguas sin ajustar (10) y las nuevas 40, precios ajustados (36 → cap real 1.440)
 const fs4 = ficha(); fs4.hist.acciones = [10, 10, 40, 40, 40, 40]; fs4.hist.ni_reportado = rep(72, 6); const c4 = {}; anios.forEach(a => { c4[a + '-12'] = a <= 2020 ? 36 : 36; });
 r = V.multiplosHistoricos(fs4, c4, [{ fecha: '2021-06-01', num: 4, den: 1 }]); assert(r.ajustes.includes(2020), 'ajusta 2020 por el split de 2021: ' + r.ajustes);
+// sin splits del proveedor (Stooq): se infiere el 4:1 del salto de las acciones y el resultado es el mismo
+r = V.multiplosHistoricos(fs4, c4, []); assert(r.ajustes.includes(2020), 'split inferido: ' + r.ajustes); near(r.mult.per, 20, 0.05, 'PER con split inferido');
 // los financieros / FCFA2S / margen objetivo no aplican
 assert.equal(V.multiplosHistoricos(ficha({ tipo: 'banco' }), cierres, []), null); assert.equal(V.multiplosHistoricos(ficha({ metodo: 'fcfa2s' }), cierres, []), null);
 // ── Lógica: aplicar a las provisionales ──

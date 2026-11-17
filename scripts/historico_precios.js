@@ -24,8 +24,24 @@ function leerHistorico(j) {
   if (Object.keys(cierres).length < 12) throw new Error('histórico demasiado corto');
   return { divisa: div, cierres, splits };
 }
-let n429 = 0;
+/* Stooq (CSV mensual «Date,Open,High,Low,Close,Volume»; precios ajustados por splits): respaldo cuando Yahoo limita (429) desde GitHub. Cubre EE. UU., Reino Unido (peniques) y Alemania; no España/Francia/Italia. */
+const STOOQ = { '': ['us', 'USD', 1], L: ['uk', 'GBP', 0.01], DE: ['de', 'EUR', 1] };
+function leerStooqHist(csv, divisa, k) {
+  const lin = String(csv).trim().split(/\r?\n/); if (!/^Date,/i.test(lin[0] || '')) throw new Error('Stooq sin datos'); const cierres = {};
+  lin.slice(1).forEach(l => { const c = l.split(','), v = num(Number(c[4])); if (v && /^\d{4}-\d\d-\d\d$/.test(c[0])) cierres[c[0].slice(0, 7)] = Math.round(v * (k || 1) * 1e4) / 1e4; });
+  if (Object.keys(cierres).length < 12) throw new Error('histórico demasiado corto'); return { divisa, cierres, splits: [], fuente: 'stooq' };
+}
+async function stooqHist(sym) {
+  const m = sym.match(/^(.+?)(?:\.([A-Z]+))?$/), suf = m[2] || ''; const x = STOOQ[suf]; if (!x) throw new Error('Stooq no cubre ' + (suf || sym));
+  const r = await fetch('https://stooq.com/q/d/l/?s=' + m[1].toLowerCase().replace(/[^a-z0-9.]/g, '') + '.' + x[0] + '&i=m', { headers: UA, signal: AbortSignal.timeout(25000) });
+  if (!r.ok) throw new Error('Stooq HTTP ' + r.status); return leerStooqHist(await r.text(), x[1], x[2]);
+}
+let n429 = 0, yahooOff = false;
 async function pedirHist(sym) {
+  if (yahooOff) return stooqHist(sym);
+  try { return await pedirYahoo(sym); } catch (e) { if (/429|sin respuesta/.test(e.message)) { yahooOff = true; } try { return await stooqHist(sym); } catch (e2) { throw new Error('Yahoo: ' + e.message + ' · Stooq: ' + e2.message); } }
+}
+async function pedirYahoo(sym) {
   for (const host of ['query1', 'query2']) {
     for (let i = 0; i < 2; i++) {
       try {
@@ -48,7 +64,7 @@ async function main() {
   for (const tk of Object.keys(cfg.simbolos)) {
     const c = cfg.simbolos[tk]; if (c.pausa || (solo.length && !solo.includes(tk))) continue;
     let ok = null, ult;
-    for (const s of candidatos(c)) { try { const h = await pedirHist(s); ok = Object.assign({ simbolo: s }, h); break; } catch (e) { ult = e; if (/429/.test(e.message)) break; } await esperar(500); }
+    for (const s of candidatos(c)) { try { const h = await pedirHist(s); ok = Object.assign({ simbolo: s }, h); break; } catch (e) { ult = e; } await esperar(500); }
     if (ok) sim[tk] = Object.assign(ok, { actualizado: new Date().toISOString() }); else fallos.push({ ticker: tk, error: ult && ult.message });
     await esperar(700);
   }
@@ -57,4 +73,4 @@ async function main() {
   console.log('Histórico: ' + Object.keys(sim).length + ' valores · fallos: ' + (fallos.map(f => f.ticker).join(', ') || 'ninguno'));
 }
 if (require.main === module) main().catch(e => { console.error(e); process.exit(1); });
-module.exports = { leerHistorico, candidatos, mesLocal };
+module.exports = { leerStooqHist, leerHistorico, candidatos, mesLocal };
