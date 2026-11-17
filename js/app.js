@@ -195,7 +195,7 @@
   }
 
   /* ───── Ajustes ───── */
-  const APP_VERSION = '50 · CSU: precio CAD y cuentas USD ya no se mezclan (conversión con el tipo de cambio de Ajustes; aviso si no hay); método FCFA2S (solo flujo libre tras minoritarios × múltiplo de salida, sin PER/EV); ficha CSU en USD';
+  const APP_VERSION = '51 · CSU: la valoración parte del FCFA2S de los últimos 12 meses (T3 2026) y anualiza a 4,15 años; matriz de precio máximo de compra (12/15/18 % × 20x/26x/30x, en USD y CAD)';
   function ajustes() {
     const d = Store.get(), A = d.ajustes, cp = Store.ultimaCopia();
     dlg('<h2>Ajustes</h2><p class="small mut">Versión de la app: ' + APP_VERSION + '</p><h3>Umbrales del Inicio (rentabilidad anual esperada a 5 años)</h3><div class="f2">' + campo('a-b', 'Barata ≥ %', A.umbral_barata, 'number') + campo('a-c', 'Cara ≤ %', A.umbral_cara, 'number') + '</div>' +

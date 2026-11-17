@@ -13,10 +13,16 @@ assert.deepEqual(['pesimista', 'conservador', 'optimista'].map(s => D[s].pfcf), 
 const R = {}; ['pesimista', 'conservador', 'optimista'].forEach(s => { R[s] = V.proyectar(f, D[s]); const p = R[s].po[5]; assert.equal(p.eligio, 'FCFA2S'); assert.equal(p.ref, p.pfcf, 'referencia = solo FCFA2S'); assert(p.per == null && p.ev_ebit == null && p.ev_ebitda == null); });
 // objetivo a 5 años = FCFA2S año 5 × múltiplo / acciones (nada más)
 const q = R.conservador.rows[4], h = f.hist, a5 = h.acciones[h.acciones.length - 1] * Math.pow(1 + D.conservador.acc, 5); near(R.conservador.po[5].ref, q.fcf * 26 / a5, 0.5, 'objetivo = FCFA2S×26/acciones');
-let fc = 1683; for (let k = 1; k <= 5; k++) fc *= 1 + V.gAnio(D.conservador, k); near(q.fcf, fc, 0.5, 'FCFA2S proyectado crece a g con desvanecimiento');
+assert.equal(f.base_ttm.fcfa2s, 1946, 'base TTM = 1.683 + 1.522 − 1.259'); near(1683 + 1522 - 1259, 1946, 0, 'TTM'); assert.equal(R.conservador.hor[5], 4.15, 'horizonte 4,15 años');
+let fc = 1946, prod = 1; for (let k = 1; k <= 5; k++) { const g = V.gAnio(D.conservador, k); if (k === 5) fc = 1946 * prod * Math.pow(1 + g, 0.25); prod *= 1 + g; } near(q.fcf, fc, 0.5, 'FCFA2S 2030 = TTM × 4 años completos × 0,25 del quinto');
+near(V.actuales(f).pfcf, V.actuales(f).cap / 1946, 0.001, 'múltiplo de hoy sobre TTM'); const sinTTM = V.proyectar(Object.assign({}, f, { base_ttm: null }), D.conservador); assert(sinTTM.hor[5] === 5 || sinTTM.hor[5] === undefined || sinTTM.hor[5] === 5, 'sin TTM, horizonte 5');
+// matriz inversa: pagar ese precio da exactamente la rentabilidad pedida (USD y CAD)
+const mx = L.matrizEntrada(d, 'CSU'); assert.deepEqual(mx.mults, [20, 26, 30]); assert.deepEqual(mx.filas.map(r => r.r), [0.12, 0.15, 0.18]); assert.equal(mx.cotizacion, 'CAD');
+mx.filas.forEach(r => r.celdas.forEach(c => { const rr = V.proyectar(Object.assign({}, f, { precio: c.precio }), Object.assign({}, D.conservador, { pfcf: c.mult })).cagr[5].ref; near(rr, r.r, 0.0005, 'matriz ' + r.r + ' ' + c.mult); near(c.cot / c.precio, 1.575 / 1.1014, 0.001, 'CAD/USD'); }));
+assert(mx.filas[0].celdas[2].precio > mx.filas[2].celdas[0].precio, 'más rentabilidad y menos múltiplo = precio menor');
 assert(R.pesimista.cagr[5].ref < R.conservador.cagr[5].ref && R.conservador.cagr[5].ref < R.optimista.cagr[5].ref);
 // mezclar divisas daba otra respuesta: precio CAD con cifras USD
-const mez = V.proyectar(Object.assign({}, f0, { precio: 3436.53 }), D.conservador).cagr[5].ref; assert(R.conservador.cagr[5].ref - mez > 0.05, 'mezclar CAD con USD infravalora ~7 puntos: ' + mez);
+const mez = V.proyectar(Object.assign({}, f0, { precio: 3436.53 }), D.conservador).cagr[5].ref; assert(R.conservador.cagr[5].ref - mez > 0.05, 'mezclar CAD con USD infravalora: ' + mez);
 // múltiplos 25x / 27x del enunciado
 const c25 = V.proyectar(f, Object.assign({}, D.conservador, { pfcf: 25 })).cagr[5].ref, c27 = V.proyectar(f, Object.assign({}, D.conservador, { pfcf: 27 })).cagr[5].ref; assert(c25 < R.conservador.cagr[5].ref && R.conservador.cagr[5].ref < c27);
 assert(V.actuales(f).per == null && V.actuales(f).ev_ebit == null && V.actuales(f).pfcf > 25, 'múltiplo actual solo P/FCFA2S');
@@ -42,6 +48,7 @@ const srv = http.createServer((q, r) => { const p = path.join(root, q.url.split(
   const t = await pg.textContent('#vista');
   assert(/P\/FCFA2S/.test(t) && /convertido de CAD/.test(t), t.slice(0, 600)); const celdas = await pg.evaluate(() => [...document.querySelectorAll('#vista td:first-child')].map(x => x.textContent.trim())); assert(celdas.some(c => /P\/FCFA2S/.test(c)) && !celdas.some(c => /^(PER|EV\/|P\/FCF$)/.test(c)), 'tabla sin PER/EV: ' + celdas.join('|'));
   assert(/FCFA2S de salida/.test(await pg.evaluate(() => document.body.innerText)) || /P\/FCFA2S de salida/.test(t) || true);
+  assert(/Precio máximo de compra según rentabilidad exigida/.test(t) && /horizonte 4,15 años|horizonte 4.15 años/.test(t), 'matriz de entrada en pantalla'); assert(/CAD/.test(t));
   await pg.click('[data-v=datos]'); await pg.waitForTimeout(300); assert(/FCFA2S \(flujo libre/.test(await pg.evaluate(() => document.body.innerText)), 'la serie FCFA2S se puede editar');
   assert.deepEqual(errs, []); console.log('csu_fcfa2s ok'); await b.close(); srv.close();
 });

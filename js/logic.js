@@ -44,7 +44,9 @@ const Logic = (function () {
       'Precio y cifras en USD: la acción cotiza en CAD en Toronto y la app convierte con el tipo de cambio de Ajustes (CAD por 1 €). Múltiplos de salida: pesimista 20x, base 26x, optimista 30x FCFA2S.',
       'Deuda = deuda total del balance (incluye arrendamientos); no se resta al valor porque el FCFA2S ya es posterior a intereses. Acciones = beneficio neto / BPA. El FCFA2S de 2020 (989 M) no lleva restados los minoritarios y se excluye de la serie.'],
     fecha_datos: '2026-11-17', verificada: '2026-11-17', extra_cribado: {} };
-  const ID_CSU = 'csu-fcfa2s-2026-11-17';
+  const BASE_TTM_CSU = { fcfa2s: 1946, fin: '2026-09-30', ajuste: 0.85, fraccion: 0.25, nota: 'FCFA2S últimos 12 meses a 30-09-2026 = FY2025 1.683 + 9M 2026 1.522 − 9M 2025 1.259 (comunicado T3 2026). Se proyecta hasta dic-2030 (4,25 años de crecimiento) y se anualiza a 4,15 años (desde mediados de noviembre de 2026).' };
+  FICHA_CSU.base_ttm = BASE_TTM_CSU;
+  const ID_CSU = 'csu-fcfa2s-2026-11-17', ID_CSU_TTM = 'csu-ttm-2026-11-17';
   /* Nombres de cribado que son solo el ticker: con el nombre real se enlazan solas las carpetas de informes */
   const NOMBRES = { CSU: 'Constellation Software' };
   function aplicarParches(d) {
@@ -55,6 +57,10 @@ const Logic = (function () {
       const interes = !!f || !!(d.cribado && d.cribado.CSU) || (d.posiciones || []).some(x => (x.ticker || '').toUpperCase() === 'CSU');   // solo si ya sigues CSU (cribado, posición o ficha): una instalación vacía no la recibe
       if (interes && (!f || (!f.verificada && f.metodo !== 'fcfa2s'))) { d.fichas = d.fichas || {}; if (f) d.ajustes.copia_ficha_CSU = JSON.parse(JSON.stringify(f)); d.fichas.CSU = JSON.parse(JSON.stringify(FICHA_CSU)); }
       if (interes) ya.push(ID_CSU);
+    }
+    if (ya.indexOf(ID_CSU_TTM) < 0) {   // quien ya tenía la ficha FCFA2S de la v50: se le añade la base TTM sin tocar nada más
+      const f = d.fichas && d.fichas.CSU; if (f && f.metodo === 'fcfa2s' && !f.base_ttm) { f.base_ttm = JSON.parse(JSON.stringify(BASE_TTM_CSU)); f.notas = (f.notas || []).concat(['Base TTM (T3 2026): ' + BASE_TTM_CSU.nota]); }
+      if (f || ya.indexOf(ID_CSU) >= 0) ya.push(ID_CSU_TTM);
     }
     PARCHES.forEach(p => {
       if (ya.indexOf(p.id) >= 0) return; const f = d.fichas && d.fichas[p.tk];
@@ -252,6 +258,14 @@ const Logic = (function () {
       } else aviso = 'El precio automático está en ' + pr.divisa + ' y la ficha en ' + f.divisa + ': no se mezclan. Se usa el precio de la ficha (o su cotización «@ficha»); ponlo a mano en ' + f.divisa + '.';   // otras divisas (ADR de TSM, H-share de CATL) valen distinto por ratio/prima: no se convierten
     }
     return { precio, fecha, aviso, convertido };
+  }
+  /* Matriz de precios de entrada (método FCFA2S): precio máximo en la divisa de la ficha y en la de cotización (p. ej. CSU: USD y CAD) */
+  function matrizEntrada(d, tk, rs, mults) {
+    const f0 = d.fichas[tk]; if (!f0 || !V.esFC(f0)) return null;
+    const pf = precioFicha(d, tk), f = Object.assign({}, f0, { precio: pf.precio }); rs = rs || [0.12, 0.15, 0.18]; mults = mults || [20, 26, 30];
+    const q = (d.precios[tk] || {}).divisa, kq = q && q !== f.divisa && MISMO_VALOR[q] ? (fxPorEur(d, q) / fxPorEur(d, f.divisa)) : null;   // unidades de cotización por 1 de la ficha
+    const m = V.matrizEntrada(f, rs, mults), filas = rs.map(r => ({ r, celdas: mults.map(x => ({ mult: x, precio: m[r][x], cot: isN(m[r][x]) && kq ? m[r][x] * kq : null })) }));
+    return { filas, mults, divisa: f.divisa, cotizacion: kq ? q : null, precio: pf.precio, hor: V.proyectar(f, V.defaults(f).conservador).hor[5] };
   }
   const cache = new Map();
   /* Contraste entre fuentes: fuentes = [{fuente, valores:[...]}] (un valor por año, o un solo valor) y elegido = lo que se usa.
@@ -451,6 +465,6 @@ const Logic = (function () {
   }
 
   return { isN, today, clone, nuevoDatos, normalizar, norm, coreName, sameCompany, findExisting, tickerDe, fxPorEur, aEur, precioPos, costeEur, mercadoEur, valorEur, variacion, diasDesde,
-    compra, venta, editar, eliminar, borrarMov, reverseMov, precioManual, precioFicha, valoracion, renombrarTicker, tickerValido, claves, divisaCotizacion, mezclarManual, contrastar, lineasFaltantes, revision, precioRef, pesos, dashboard, informes, V };
+    compra, venta, editar, eliminar, borrarMov, reverseMov, precioManual, precioFicha, matrizEntrada, valoracion, renombrarTicker, tickerValido, claves, divisaCotizacion, mezclarManual, contrastar, lineasFaltantes, revision, precioRef, pesos, dashboard, informes, V };
 })();
 if (typeof module !== 'undefined') module.exports = Logic;
