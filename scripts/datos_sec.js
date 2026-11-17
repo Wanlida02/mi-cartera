@@ -5,7 +5,7 @@
 const fs = require('fs'), path = require('path');
 const RAIZ = path.join(__dirname, '..');
 /* La SEC pide identificar al cliente. El contacto va en la variable de entorno SEC_CONTACT (en GitHub: Settings → Secrets and variables → Actions → Variables); sin ella se usa un nombre genérico. */
-const UA = { 'User-Agent': 'MiCartera-personal ' + (process.env.SEC_CONTACT || '(uso personal, sin contacto)'), Accept: 'application/json' };
+const UA = { 'User-Agent': 'MiCartera-personal ' + (process.env.SEC_CONTACT || 'actions@users.noreply.github.com'), Accept: 'application/json' };
 const isN = v => typeof v === 'number' && isFinite(v);
 const esperar = ms => new Promise(r => setTimeout(r, ms));
 
