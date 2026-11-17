@@ -32,6 +32,52 @@
     if (aud.length) h += '<details class="card" style="padding:10px 12px;margin:8px 0"><summary><b>Auditoría de divisas y precios</b> <span class="mut small">' + aud.filter(x => x.nivel === 'r').length + ' graves · ' + aud.filter(x => x.nivel === 'y').length + ' avisos</span></summary>' + aud.map(x => '<div class="small" style="margin:6px 0"><span class="pill ' + (x.nivel === 'r' ? 'bad' : 'warn') + '">' + esc(x.tk) + '</span> ' + esc(x.txt) + '</div>').join('') + '</details>';
     return h;
   }
+  /* ───── Calidad de fichas: panel único con la acción al lado de cada problema ───── */
+  let CAL = [];
+  function calCtx(d) { cargarSEC(); return { hist: HIST, secListo: !!SECR, sec: (tk, f) => secDe(tk, f), secEntrada: tk => (SECR ? L.claves(d, tk).map(c => SECR[c]).find(Boolean) : undefined) }; }
+  const calDe = tk => CAL.find(x => x.tk === tk);
+  const NV = { r: ['bad', 'poco fiable'], y: ['warn', 'revisar'], ok: ['', 'fiable'] };
+  const calPill = tk => { const c = calDe(tk); return c && c.nivel !== 'ok' ? ' <span class="pill ' + NV[c.nivel][0] + '">' + NV[c.nivel][1] + '</span>' : ''; };
+  const issueHtml = (k, p) => '<li class="small" style="margin:5px 0"><span class="c-' + (p.nivel === 'r' ? 'r' : p.nivel === 'y' ? 'y' : 'g') + '">●</span> ' + esc(p.txt) + (p.acc ? ' <button class="btn ' + (p.nivel === 'i' ? 'sec ' : '') + 'sm" data-v="cal" data-k="' + esc(k) + '" data-ac="' + p.acc + '">' + esc(p.accTxt || 'Hacerlo') + '</button>' : '') + '</li>';
+  function panelCalidad(d) {
+    CAL = L.calidadFichas(d, hoy(), calCtx(d)); const n = x => CAL.filter(c => c.nivel === x).length, mal = CAL.filter(c => c.nivel !== 'ok');
+    if (!CAL.length) return '';
+    return '<div class="card" style="padding:10px 12px;margin:8px 0"><b>Calidad de las fichas</b> <span class="small"><span class="pill bad">' + n('r') + ' poco fiables</span> <span class="pill warn">' + n('y') + ' a revisar</span> <span class="pill">' + n('ok') + ' fiables</span></span>' +
+      '<p class="small mut" style="margin:4px 0">Se recalcula sola con cada cambio. Cada aviso trae el botón que lo arregla (o lo prepara); nada se aplica sin enseñarte antes el efecto.</p>' +
+      (mal.length ? mal.map(c => '<details class="cal-f" style="margin:4px 0"' + (c.nivel === 'r' ? ' open' : '') + '><summary><span class="pill ' + NV[c.nivel][0] + '">' + esc(c.tk) + '</span> <span class="small">' + esc(c.nombre) + ' · ' + NV[c.nivel][1] + ' · ' + c.score + '/100 · ' + c.problemas.filter(p => p.nivel !== 'i').length + ' aviso(s)</span></summary><ul style="margin:4px 0 6px;padding-left:4px;list-style:none">' + c.problemas.map(p => issueHtml(c.tk, p)).join('') + '</ul></details>').join('') : '<p class="small c-g" style="margin:6px 0 0">Todas las fichas están en buen estado.</p>') + '</div>';
+  }
+  function fichaCalidad(tk) {
+    CAL = L.calidadFichas(D(), hoy(), calCtx(D())); const c = calDe(tk); if (!c) return '';
+    if (!c.problemas.length) return '<p class="small" style="margin:8px 0"><span class="pill">fiable</span> ' + c.score + '/100 · sin avisos de calidad.</p>';
+    return '<div class="card" style="padding:10px 12px;margin:8px 0"><b>Calidad de esta ficha</b> <span class="pill ' + NV[c.nivel][0] + '">' + NV[c.nivel][1] + '</span> <span class="small mut">' + c.score + '/100</span><ul style="margin:6px 0 0;padding-left:4px;list-style:none">' + c.problemas.map(p => issueHtml(tk, p)).join('') + '</ul></div>';
+  }
+  function soloFcfDlg(tk) {
+    const d = D(), pv = L.previsualizarSoloFcf(d, tk), ds = pv && pv.distorsion;
+    U.dlg('<h2>Valorar ' + esc(tk) + ' solo con el flujo de caja</h2><p class="small">Cuando el beneficio contable se aleja del flujo de caja (extraordinarios, amortizaciones de compra, participadas), el PER y el EV/EBITDA arrastran esa distorsión. Con este método el valor de salida se calcula <b>solo con P/FCF</b> (múltiplo propio de la ficha) y se ignoran PER, EV/EBITDA y EV/EBIT.</p>' +
+      (ds ? '<div class="tw"><table class="tbl"><thead><tr><th>Año</th><th>Benef. neto</th><th>FCF</th><th>FCF / beneficio</th></tr></thead><tbody>' + ds.serie.map(x => '<tr><td>' + esc(x.anio) + '</td><td>' + nf(x.ni, 0) + '</td><td>' + nf(x.fcf, 0) + '</td><td>' + (x.ratio == null ? '—' : nf(x.ratio, 2) + 'x') + '</td></tr>').join('') + '</tbody></table></div>' : '') +
+      '<p><b>Rentabilidad a 5 años (escenario conservador):</b> ' + nPc(pv && pv.antes) + ' → <b>' + nPc(pv && pv.despues) + '</b></p><p class="small mut">Es reversible desde la propia ficha («Volver al método normal»).</p>' +
+      '<div class="acts"><button class="btn sec" data-a="cerrar">Cancelar</button><button class="btn" id="v-sf-ok">Aplicar</button></div>', dd => {
+        dd.querySelector('#v-sf-ok').onclick = () => { L.aplicarSoloFcf(d, tk, true); Store.save(); dd.querySelector('[data-a="cerrar"]').click(); U.render(); U.toast('Método de flujo de caja aplicado a ' + tk); };
+      });
+  }
+  async function cifras12Accion(tk) {
+    const d = D(), ent = SECR && L.claves(d, tk).map(c => SECR[c]).find(Boolean);
+    if (ent && !ent.error) {   // en la SEC: el workflow descarga las cifras; se ven al recargar
+      const l = await DatosWeb.lanzar(tk);
+      if (l.sinToken) return U.toast('Falta el token de GitHub (Cartera → Actualizar precios). Debe tener permisos Contents y Actions: Read and write.');
+      return U.toast(l.ok ? 'Pedido a la SEC. En 1–2 minutos aparecen los últimos 12 meses (recarga la pestaña).' : (l.msg || 'No se pudo lanzar la descarga'));
+    }
+    if (U.cifras12) U.cifras12(tk); else U.toast('No se pudo abrir el diálogo de cifras');   // fuera de la SEC: IA o manual (mismo flujo de Resultados)
+  }
+  function accionCal(k, ac) {
+    const d = D();
+    if (ac === 'multpropios') return calcularMult([k]);
+    if (ac === 'solofcf') return soloFcfDlg(k);
+    if (ac === 'quitarsolofcf') { L.aplicarSoloFcf(d, k, false); Store.save(); return restore(() => {}), U.toast('Vuelve el método normal en ' + k); }
+    if (ac === 'cifras12') return cifras12Accion(k);
+    sel = k; U.render(); window.scrollTo(0, 0);
+    if (ac === 'precio') precioDlg(); else if (ac === 'nuevoej') nuevoEjercicio(k);
+  }
   function informeMult(rep, titulo) {
     const ap = rep.filter(x => x.aplicado), no = rep.filter(x => !x.aplicado);
     U.dlg('<h2>' + esc(titulo) + '</h2>' + (ap.length ? '<div class="tw"><table class="tbl"><thead><tr><th>Ficha</th><th>PER</th><th>P/FCF</th><th>EV/EBITDA</th><th>EV/EBIT</th><th>Años</th><th>Rentab. 5a</th></tr></thead><tbody>' + ap.map(x => '<tr><td>' + esc(x.tk) + '</td>' + ['per', 'pfcf', 'ev_ebitda', 'ev_ebit'].map(k => '<td>' + (isN(x.mult[k]) ? nf(x.mult[k], 1) + 'x' : '<span class="mut">15/9/11x</span>') + '</td>').join('') + '<td>' + nf(Math.max.apply(null, ['per', 'pfcf'].map(k => x.n[k] || 0)), 0) + '</td><td>' + nPc(x.antes) + ' → <b>' + nPc(x.despues) + '</b></td></tr>').join('') + '</tbody></table></div><p class="small mut">Mediana de los múltiplos al cierre de cada ejercicio (hasta 10 años). Lo que no se pudo calcular conserva el genérico. Puedes deshacerlo desde la lista.</p>' : '<p>No se ha podido calcular ninguno.</p>') +
@@ -231,13 +277,13 @@
     const filas = ks.map(k => ({ k, est: estadoDe(k), v: L.valoracion(d, k, hoy()) })).filter(x => x.v);
     const grupos = [['cartera', 'En cartera'], ['watchlist', 'Watchlist'], ['candidata', 'Candidatas']];
     let h = (U.lineaPrecios ? U.lineaPrecios() : '') + '<div class="tools"><button class="btn" data-v="nueva">+ Nueva ficha</button><button class="btn sec" data-v="releer" title="Vuelve a leer el índice de informes y rehace las fichas borrador">↻ Releer informes</button><input id="v-q" type="search" placeholder="Buscar" value="' + esc(filtro) + '"></div>';
-    h += calidadHtml(d);
+    h += panelCalidad(d) + calidadHtml(d);
     grupos.forEach(([g, t]) => {
       const rows = filas.filter(x => x.est === g).sort((x, y) => (y.v.ref == null ? -9 : y.v.ref) - (x.v.ref == null ? -9 : x.v.ref));
       if (!rows.length) return;
       h += '<h3 style="margin:14px 2px 6px">' + t + ' <span class="mut small">' + rows.length + '</span></h3><div class="card">' + rows.map(({ k, v }) => {
         if (v.noSoportado || v.error) return '<div class="row click" data-v="abrir" data-k="' + esc(k) + '"><div class="main"><div class="name">' + esc(v.nombre) + '</div><div class="meta">' + esc(k) + (v.incompleta ? ' · <span class="pill warn">ficha incompleta</span> faltan ' + esc(v.incompleta.join(', ')) : v.error ? ' · error: ' + esc(v.error) : ' · tipo no soportado') + '</div></div></div>';
-        return '<div class="row click" data-v="abrir" data-k="' + esc(k) + '"><div class="main"><div class="name">' + esc(v.nombre) + (v.graves ? ' <span class="pill warn">datos dudosos</span>' : '') + ((secDe(k, d.fichas[k]) || {}).nuevo ? ' <span class="pill">ejercicio ' + secDe(k, d.fichas[k]).nuevo + ' publicado</span>' : '') + (U.etiquetasResultados ? U.etiquetasResultados(k) : '') + '</div>' +
+        return '<div class="row click" data-v="abrir" data-k="' + esc(k) + '"><div class="main"><div class="name">' + esc(v.nombre) + calPill(k) + (v.graves ? ' <span class="pill warn">datos dudosos</span>' : '') + ((secDe(k, d.fichas[k]) || {}).nuevo ? ' <span class="pill">ejercicio ' + secDe(k, d.fichas[k]).nuevo + ' publicado</span>' : '') + (U.etiquetasResultados ? U.etiquetasResultados(k) : '') + '</div>' +
           '<div class="meta">' + esc(k) + ' · ' + nf(v.precio, 2) + ' ' + esc(v.divisa) + (v.entrada ? ' · entrada ' + nf(v.entrada, 2) : '') + '</div></div>' +
           '<div class="num"><span class="pill ' + tono(v.ref, a) + '">' + (v.ref == null ? '—' : pc(v.ref)) + '</span><div class="meta">anual · 5 años</div></div></div>';
       }).join('') + '</div>';
@@ -255,13 +301,14 @@
     let h = '<button class="btn sec sm" data-v="volver">← Valoración</button>';
     if (!V.soportado(f)) return h + '<div class="alert warn" style="margin-top:10px">Este tipo de empresa (REIT) no está soportado por el método de valoración.</div>' + acciones(f);
     if (!isN(f.precio)) return h + '<h2 style="margin:12px 0 4px">' + esc(sel) + ' — ' + esc(f.nombre || '') + '</h2><div class="alert warn" style="margin-top:10px">La ficha no tiene precio. Ponlo y revisa los datos para ver la valoración.</div><div class="tools"><button class="btn" data-v="precio">Poner precio</button></div>' + acciones(f);
+    const calH = fichaCalidad(sel);
     let R, fi, act; const sc = {};
     try { if (f._borrador && !fin && f.tipo !== 'reit' && L.lineasFaltantes(f).some(x => x !== 'intereses')) throw new Error('ficha incompleta');   // un borrador sin deuda/caja/… no se valora: saldría inflado
       ESC.forEach(s => { sc[s] = escDe(f, s); R = R || {}; R[s] = V.proyectar(f, sc[s]); }); fi = V.fiabilidad(f, hoy()); act = V.actuales(f); }
     catch (e) {
       if (!(e && e.message === 'ficha incompleta')) console.warn('Valoración ' + sel + ':', e && e.stack || e);
       const falta = L.lineasFaltantes(f); cargarSEC(); const sd0 = secDe(sel, f);
-      return h + '<h2 style="margin:12px 0 4px">' + esc(sel) + ' — ' + esc(f.nombre || '') + '</h2><div class="alert warn" style="margin-top:10px">' + (falta.length ? '<b>Ficha incompleta.</b> Es un borrador y le faltan: ' + esc(falta.join(', ')) + '. Con esas líneas el motor no puede valorar la empresa.' : 'No se pudo calcular: ' + esc(e.message)) + (falta.length ? '<br>' + (sd0 && sd0.completar ? 'La SEC tiene las cuentas completas de ' + esc(sel) + '. «Completar con la SEC» rellena solo lo que falta y verifica lo que coincide; «Sustituir» reemplaza toda la ficha por la de la SEC. ' : 'Pídeselas a una IA con búsqueda web (te preparo el texto) o complétalas a mano en «Revisar datos». ') + '<button class="btn sm" data-v="lineasia">Completar con una IA</button>' + (f.divisa === 'USD' ? ' <button class="btn sm" data-v="contraste">Completar con la SEC</button>' : '') + (sd0 && sd0.completar ? ' <button class="btn sec sm" data-v="nuevoej">Sustituir por la de la SEC</button>' : '') : '') + '</div>' + (U.enlaces ? U.enlaces(sel, 'val') : '') + '<div class="tools"><button class="btn sec sm" data-v="datos">Revisar datos</button></div>' + acciones(f);
+      return h + '<h2 style="margin:12px 0 4px">' + esc(sel) + ' — ' + esc(f.nombre || '') + '</h2>' + calH + '<div class="alert warn" style="margin-top:10px">' + (falta.length ? '<b>Ficha incompleta.</b> Es un borrador y le faltan: ' + esc(falta.join(', ')) + '. Con esas líneas el motor no puede valorar la empresa.' : 'No se pudo calcular: ' + esc(e.message)) + (falta.length ? '<br>' + (sd0 && sd0.completar ? 'La SEC tiene las cuentas completas de ' + esc(sel) + '. «Completar con la SEC» rellena solo lo que falta y verifica lo que coincide; «Sustituir» reemplaza toda la ficha por la de la SEC. ' : 'Pídeselas a una IA con búsqueda web (te preparo el texto) o complétalas a mano en «Revisar datos». ') + '<button class="btn sm" data-v="lineasia">Completar con una IA</button>' + (f.divisa === 'USD' ? ' <button class="btn sm" data-v="contraste">Completar con la SEC</button>' : '') + (sd0 && sd0.completar ? ' <button class="btn sec sm" data-v="nuevoej">Sustituir por la de la SEC</button>' : '') : '') + '</div>' + (U.enlaces ? U.enlaces(sel, 'val') : '') + '<div class="tools"><button class="btn sec sm" data-v="datos">Revisar datos</button></div>' + acciones(f);
     }
     const cons = R.conservador, ref5 = cons.cagr[5].ref, pe = V.precioEntrada(f, cons, o / 100), pt = V.precioEntrada(f, cons, m / 100);
     cargarSEC(); const sd = secDe(sel, f);
@@ -288,6 +335,7 @@
       (sd && sd.doce ? '<p class="small' + (Math.abs(sd.doce.de) > 0.25 ? ' c-y' : ' mut') + '" style="margin:6px 0 0"><b>Últimos 12 meses</b> (' + esc(sd.doce.fuente === 'SEC' ? 'SEC' : 'IA, sin verificar') + ', hasta ' + esc(sd.doce.fin) + '): ventas ' + nf(sd.doce.ventas, 0) + ' M' + (isN(sd.doce.dv) ? ' (' + (sd.doce.dv >= 0 ? '+' : '') + nf(sd.doce.dv * 100, 0) + ' %)' : '') + ', EBIT ' + (isN(sd.doce.ebit) && isN(sd.doce.de) ? nf(sd.doce.ebit, 0) + ' M (' + (sd.doce.de >= 0 ? '+' : '') + nf(sd.doce.de * 100, 0) + ' %)' : 'n/d') + ' frente a ' + sd.doce.anio + '.' + (Math.abs(sd.doce.de) > 0.25 ? ' El negocio se ha movido mucho desde el año base: el objetivo a 5 años parte de cifras desfasadas.' : '') + '</p>' : '') +
       (sd && sd.nuevo ? '<div class="alert warn" style="margin-top:8px">La SEC ya tiene el ejercicio ' + sd.nuevo + ' y esta ficha llega a ' + f.anio_base + '. <button class="btn sm" data-v="nuevoej">' + (sd.nuevo - f.anio_base > 1 || f.anio_base < 2020 ? 'Sustituir por los datos de la SEC' : 'Añadir ' + sd.nuevo + ' desde la SEC') + '</button></div>' : '') + '</div>' +
       '<div class="tools"><button class="btn sm" data-v="precio">Precio</button><button class="btn sec sm" data-v="datos">Editar datos</button>' + (f.divisa === 'USD' && !fin ? '<button class="btn sec sm" data-v="contraste">Contrastar con la SEC</button>' : '') + '<button class="btn sec sm" data-v="reset">Restablecer supuestos</button></div>';
+    h += calH;
     // escenarios
     const P = fc ? [['g', 'Crecimiento del FCFA2S (%/año)', 100, .5], ['acc', 'Variación acciones (%/año)', 100, .25], ['pfcf', 'P/FCFA2S de salida (x)', 1, 1]] : fin ? [['rote', 'ROTE (%)', 100, .5], ['pdiv', 'Dividendos (% beneficio)', 100, 2.5], ['prec', 'Recompras (% beneficio)', 100, 2.5], ['per', 'PER', 1, .5], ['ptbv', 'P/TBV', 1, .1], ['ke', 'Coste del capital (%)', 100, .5], ['gt', 'Crecimiento largo plazo (%)', 100, .5]] :
       [['g', 'Crecimiento ventas (%/año)', 100, .5], ...(mo ? [['m0', 'Margen EBIT inicial (%)', 100, .5], ['m', 'Margen EBIT objetivo año 5 (%)', 100, .5]] : [['m', 'Margen EBIT (%)', 100, .5]]), ['t', 'Tipo impositivo (%)', 100, .5], ['acc', 'Variación acciones (%/año)', 100, .25], ['per', 'PER', 1, .5], ['pfcf', 'P/FCF', 1, .5], ['ev_ebitda', 'EV/EBITDA', 1, .5], ['ev_ebit', 'EV/EBIT', 1, .5]];
@@ -401,6 +449,7 @@
   U.clicks.push(e => {
     const t = e.target.closest('[data-v]'); if (!t) return false; const a = t.dataset.v, d = D();
     if (a === 'nueva') nuevaDlg();
+    else if (a === 'cal') accionCal(t.dataset.k, t.dataset.ac);
     else if (a === 'multglobal') calcularMult(null);
     else if (a === 'multpropios') calcularMult([sel]);
     else if (a === 'deshacermult') { const ks = L.deshacerMultiplos(d); Store.save(); restore(() => {}); U.toast('Deshechos los múltiplos automáticos de ' + ks.length + ' fichas'); }

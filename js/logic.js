@@ -312,6 +312,85 @@ const Logic = (function () {
     }); cache.clear(); return rep;
   }
   function deshacerMultiplos(d) { const ks = Object.keys(d.ajustes.mult_auto || {}); ks.forEach(tk => { const f = d.fichas[tk]; if (f && f.mult_hist_auto) { delete f.mult_hist; delete f.mult_hist_auto; } }); d.ajustes.mult_auto = {}; cache.clear(); return ks; }
+  /* ───── Calidad de fichas: una sola lectura de lo fiable que es cada valoración, con la acción concreta para mejorarla ─────
+     ctx = { hist (precios_anuales.json), sec: (tk,f)=>{doce,nuevo}|null, secEntrada: tk=>entrada de datos/resumen.json|undefined, secListo: bool }
+     Cada problema lleva `acc` (código de acción que la interfaz sabe ejecutar) para no tener que ir buscando por pestañas:
+       precio · abrir (revisar/completar datos) · multpropios · solofcf · quitarsolofcf · cifras12 (SEC → workflow; sin SEC → IA/manual) · nuevoej */
+  const NIVEL_Q = { r: 'poco fiable', y: 'revisar', ok: 'fiable' };
+  function distorsion(f) {
+    if (!ES_INDUSTRIAL(f) || V.isFin(f) || !f.hist) return null;
+    const h = f.hist, n = (h.ventas || []).length, g = (a, j) => (Array.isArray(a) && isN(a[j]) ? a[j] : 0), out = [];
+    for (let j = Math.max(0, n - 4); j < n; j++) {
+      const ebit = g(h.ebit, j), ni = isN((h.ni_reportado || [])[j]) ? h.ni_reportado[j] : ebit - g(h.intereses, j) - g(h.impuestos, j) - g(h.minoritarios, j) + g(h.otros, j);
+      const fcf = isN((h.fco || [])[j]) ? h.fco[j] - g(h.capex, j) - g(h.leases, j) : ebit + g(h.da, j) - g(h.capex, j) - g(h.intereses, j) - g(h.impuestos, j) - g(h.minoritarios, j) - g(h.leases, j);
+      out.push({ anio: (f.anios || [])[j], ni, fcf, ebit, ratio: ni > 0 ? fcf / ni : null, niEbit: ebit > 0 ? ni / ebit : null });
+    }
+    const raros = out.filter(x => x.ratio == null ? (x.fcf > 0 || x.ni <= 0 && x.ebit > 0) : x.ratio < 0.6 || x.ratio > 1.6), baja = out.filter(x => x.niEbit != null && x.niEbit < 0.4);
+    const fcfPos = out.length && out[out.length - 1].fcf > 0;
+    return { serie: out, raros: raros.length, baja: baja.length, distorsionada: out.length >= 3 && fcfPos && (raros.length >= 2 || baja.length >= 2) };
+  }
+  function calidadFichas(d, hoy, ctx) {
+    hoy = hoy || today(); ctx = ctx || {}; const out = [], aud = auditoriaDivisas(d, hoy).filter(x => x.nivel !== 'i');
+    Object.keys(d.fichas || {}).forEach(tk => {
+      const f = d.fichas[tk]; if (!f || !V.soportado(f)) return; const est = f.estado || null, iss = [], add = (nivel, cod, txt, acc, accTxt) => iss.push({ nivel, cod, txt, acc: acc || null, accTxt: accTxt || null });
+      let v = null; try { v = valoracion(d, tk, hoy); } catch (e) { v = { error: e.message }; }
+      /* 1 · datos y precio */
+      if (v && v.incompleta) add('r', 'incompleta', 'Ficha incompleta: faltan ' + v.incompleta.join(', ') + '.', 'abrir', 'Completar datos');
+      else if (v && v.sinPrecio) add('r', 'sinprecio', 'Sin precio de cotización.', 'precio', 'Poner precio');
+      else if (v && v.error) add('r', 'error', v.error, 'abrir', 'Abrir ficha');
+      if (v && v.graves) add('r', 'graves', v.graves + ' dato(s) dudoso(s) en la ficha' + (v.avisos && v.avisos[0] ? ': ' + v.avisos[0] : '') + '.', 'abrir', 'Revisar datos');
+      if (v && !v.error && v.diasPrecio != null && v.diasPrecio > 7) add('y', 'precioviejo', 'Precio de hace ' + v.diasPrecio + ' días.', 'precio', 'Actualizar precio');
+      if (f._borrador) add('y', 'borrador', 'Ficha borrador creada desde informes: sin verificar.', 'abrir', 'Revisar');
+      aud.filter(x => x.tk === tk).forEach(x => add(x.nivel === 'r' ? 'r' : 'y', 'divisa', x.txt, 'precio', 'Corregir precio/divisa'));
+      /* 2 · múltiplos de salida genéricos */
+      if (provisional(f)) {
+        const pr = ctx.hist ? proponerMultiplos(d, tk, ctx.hist) : null;
+        if (pr && pr.mult) add('y', 'multprov', 'Usa múltiplos genéricos (15x/15x/9x/11x); se pueden calcular propios del histórico.', 'multpropios', 'Calcular múltiplos propios');
+        else add('y', 'multprov', 'Usa múltiplos genéricos' + (pr && pr.motivo ? ' (' + pr.motivo + ')' : '') + '. Introduce los tuyos a mano en la ficha.', 'abrir', 'Poner múltiplos a mano');
+      }
+      /* 3 · contabilidad distorsionada → método de flujo */
+      const ds = distorsion(f);
+      if (f.solo_fcf) add('i', 'solofcf', 'Método alternativo activo: la salida se valora solo con el flujo de caja (P/FCF).', 'quitarsolofcf', 'Volver al método normal');
+      else if (ds && ds.distorsionada) add('y', 'distorsion', 'El beneficio contable no casa con el flujo de caja (' + ds.raros + ' de ' + ds.serie.length + ' años fuera de 0,6–1,6x FCF/beneficio' + (ds.baja >= 2 ? '; beneficio neto muy bajo frente al EBIT' : '') + '): el PER y el EV/EBITDA pueden engañar.', 'solofcf', 'Valorar solo con el flujo de caja');
+      /* 4 · base de 12 meses (TTM): SEC o, si la empresa no está en la SEC, IA/manual */
+      if (!f._borrador && f.anio_base) {
+        const fin = f.anio_base + '-' + String(f.mes_cierre || 12).padStart(2, '0') + '-28', mesesDesde = Math.floor((Date.parse(hoy) - Date.parse(fin)) / (30.44 * 864e5));
+        const sd = ctx.sec ? ctx.sec(tk, f) : null, doce = sd && sd.doce && isN(sd.doce.dv) ? sd.doce : null;
+        const ent = ctx.secEntrada ? ctx.secEntrada(tk) : undefined, enSEC = ent ? !ent.error : false, via = enSEC ? 'sec' : 'ia';
+        if (doce) {
+          const dif = Math.max(Math.abs(doce.dv), isN(doce.de) ? Math.abs(doce.de) : 0);
+          if (dif > 0.15) add('y', 'ttm_difiere', 'Los últimos 12 meses (hasta ' + doce.fin + ', ' + (doce.fuente || 'SEC') + ') se desvían un ' + Math.round(dif * 100) + ' % del último ejercicio: la ficha parte de un año que ya no representa a la empresa.', 'abrir', 'Ver últimos 12 meses');
+        } else if (mesesDesde >= 5 && mesesDesde < 30) {
+          add('y', 'ttm_falta', 'Sin cifras de 12 meses: la ficha parte del ejercicio ' + f.anio_base + ' (hace ' + mesesDesde + ' meses) y ya hay trimestres publicados. ' + (via === 'sec' ? 'Está en la SEC: se descargan solas.' : ctx.secListo ? 'No está en la SEC: se obtienen con una IA o a mano.' : ''), 'cifras12', via === 'sec' ? 'Traer cifras de la SEC' : 'Cifras con una IA');
+        }
+        if (sd && sd.nuevo) add('y', 'nuevoej', 'Ya hay un ejercicio ' + sd.nuevo + ' publicado y la ficha parte de ' + f.anio_base + '.', 'nuevoej', 'Añadir el ejercicio ' + sd.nuevo);
+      }
+      /* 5 · contraste DCF inverso vs rentabilidad por múltiplos */
+      if (v && !v.error && isN(v.ref) && !V.isFin(f) && !V.esMO(f)) {
+        try {
+          const fx = Object.assign({}, f, { precio: v.precio }), dcf = V.dcfInverso(fx, 0.10, 0.03), gE = (V.defaults(fx).conservador || {}).g;
+          if (dcf && isN(dcf.g) && isN(gE)) {
+            if (v.ref >= 0.12 && dcf.g - gE > 0.04) add('y', 'dcf', 'Contradicción: por múltiplos rinde un ' + Math.round(v.ref * 100) + ' % pero el precio ya descuenta un crecimiento del ' + Math.round(dcf.g * 100) + ' % (tu escenario: ' + Math.round(gE * 100) + ' %). Revisa si los múltiplos de salida son demasiado altos.', 'abrir', 'Ver DCF inverso');
+            else if (v.ref <= 0.05 && gE - dcf.g > 0.04) add('y', 'dcf', 'Contradicción: por múltiplos rinde solo un ' + Math.round(v.ref * 100) + ' % pero el precio solo descuenta un ' + Math.round(dcf.g * 100) + ' % de crecimiento (tu escenario: ' + Math.round(gE * 100) + ' %). Puede que los múltiplos de salida sean demasiado bajos.', 'abrir', 'Ver DCF inverso');
+          } else if (dcf && dcf.g == null && v.ref >= 0.12) add('y', 'dcf', 'Contradicción: por múltiplos rinde un ' + Math.round(v.ref * 100) + ' % pero ni con +60 % anual se justifica el precio con flujos.', 'abrir', 'Ver DCF inverso');
+        } catch (e) { }
+      }
+      const nr = iss.filter(x => x.nivel === 'r').length, ny = iss.filter(x => x.nivel === 'y').length, pf = v && isN(v.puntuacion) ? v.puntuacion : 70;
+      const score = Math.max(0, Math.min(100, Math.round(pf * 0.5 + (100 - 25 * nr - 8 * ny) * 0.5)));
+      const nivel = nr ? 'r' : ny >= 2 || (ny && pf < 60) ? 'y' : 'ok';
+      out.push({ tk, nombre: f.nombre || tk, estado: est, nivel, etiqueta: NIVEL_Q[nivel], score, problemas: iss, sumaR: nr, sumaY: ny });
+    });
+    const orden = { r: 0, y: 1, ok: 2 };
+    return out.sort((a, b) => orden[a.nivel] - orden[b.nivel] || a.score - b.score || a.tk.localeCompare(b.tk));
+  }
+  /* Método alternativo (solo flujo de caja): vista previa y aplicación; siempre reversible */
+  function previsualizarSoloFcf(d, tk) {
+    const f = d.fichas[tk]; if (!f) return null; const ant = f.solo_fcf; let a = null, b = null;
+    try { delete f.solo_fcf; cache.clear(); a = valoracion(d, tk).ref; f.solo_fcf = true; cache.clear(); b = valoracion(d, tk).ref; } catch (e) { }
+    if (ant) f.solo_fcf = ant; else delete f.solo_fcf; cache.clear();
+    return { antes: isN(a) ? a : null, despues: isN(b) ? b : null, distorsion: distorsion(f) };
+  }
+  function aplicarSoloFcf(d, tk, activar) { const f = d.fichas[tk]; if (!f) return false; if (activar) { f.solo_fcf = true; f.solo_fcf_fecha = today(); } else { delete f.solo_fcf; delete f.solo_fcf_fecha; } cache.clear(); return true; }
   const cache = new Map();
   /* Contraste entre fuentes: fuentes = [{fuente, valores:[...]}] (un valor por año, o un solo valor) y elegido = lo que se usa.
      Devuelve las diferencias de más de `umbral` (5 % por defecto) entre la fuente más baja y la más alta, y cuántas fuentes respaldan cada dato. */
@@ -510,6 +589,6 @@ const Logic = (function () {
   }
 
   return { isN, today, clone, nuevoDatos, normalizar, norm, coreName, sameCompany, findExisting, tickerDe, fxPorEur, aEur, precioPos, costeEur, mercadoEur, valorEur, variacion, diasDesde,
-    compra, venta, editar, eliminar, borrarMov, reverseMov, precioManual, precioFicha, matrizEntrada, auditoriaDivisas, provisional, proponerMultiplos, aplicarMultiplos, deshacerMultiplos, valoracion, renombrarTicker, tickerValido, claves, divisaCotizacion, mezclarManual, contrastar, lineasFaltantes, revision, precioRef, pesos, dashboard, informes, V };
+    compra, venta, editar, eliminar, borrarMov, reverseMov, precioManual, precioFicha, matrizEntrada, auditoriaDivisas, provisional, proponerMultiplos, aplicarMultiplos, deshacerMultiplos, calidadFichas, distorsion, previsualizarSoloFcf, aplicarSoloFcf, valoracion, renombrarTicker, tickerValido, claves, divisaCotizacion, mezclarManual, contrastar, lineasFaltantes, revision, precioRef, pesos, dashboard, informes, V };
 })();
 if (typeof module !== 'undefined') module.exports = Logic;

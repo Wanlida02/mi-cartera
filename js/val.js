@@ -160,11 +160,12 @@ const Val = (function () {
     [3, 5].forEach(n0 => {
       const n = n0, ne = tt ? n0 - (tt.ajuste == null ? 0.85 : tt.ajuste) : n0; res.hor[n0] = ne;
       const q = rows[n - 1];
-      const pp = fc ? q.po.pfcf : Math.max(q.po.per, q.po.pfcf);   // M14: el más alto entre PER y P/FCF (FCFA2S: solo P/FCFA2S)
-      const ref = fc ? pp : (pp + q.po.ev_ebitda) / 2;               // referencia: PER/P·FCF elegido + EV/EBITDA (EV/EBIT aporta poco); FCFA2S: solo el flujo
-      const bajo = fc ? pp : Math.min(pp, q.po.ev_ebitda);
+      const sf = !fc && !!f.solo_fcf && q.po.pfcf > 0;               // método alternativo (contabilidad distorsionada): solo el flujo de caja, sin PER ni EV/EBITDA
+      const pp = fc || sf ? q.po.pfcf : Math.max(q.po.per, q.po.pfcf);   // M14: el más alto entre PER y P/FCF (FCFA2S: solo P/FCFA2S)
+      const ref = fc || sf ? pp : (pp + q.po.ev_ebitda) / 2;               // referencia: PER/P·FCF elegido + EV/EBITDA (EV/EBIT aporta poco); FCFA2S: solo el flujo
+      const bajo = fc || sf ? pp : Math.min(pp, q.po.ev_ebitda);
       res.po[n] = { per: q.po.per, pfcf: q.po.pfcf, perpfcf: pp, ev_ebitda: q.po.ev_ebitda, ev_ebit: q.po.ev_ebit, ref, bajo,
-        eligio: fc ? 'FCFA2S' : q.po.per >= q.po.pfcf ? 'PER' : 'P/FCF' };
+        eligio: fc ? 'FCFA2S' : sf ? 'P/FCF (solo flujo)' : q.po.per >= q.po.pfcf ? 'PER' : 'P/FCF' };
       res.cagr[n] = { per: fc ? null : c(q.po.per, ne), pfcf: c(q.po.pfcf, ne), perpfcf: c(pp, ne), ev_ebitda: fc ? null : c(q.po.ev_ebitda, ne), ev_ebit: fc ? null : c(q.po.ev_ebit, ne), ref: c(ref, ne), bajo: c(bajo, ne) };
     });
     return res;

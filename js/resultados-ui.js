@@ -312,5 +312,12 @@
     if (!r) { r = nuevoReg(tk, { fecha: null, periodo, confirmada: true }); d.resultados.push(r); Store.save(); }
     U.render(); revisar(r.id);
   };
+  /* Desde Valoración → Calidad de fichas: abre el diálogo de cifras de 12 meses (IA / manual) de una empresa que no está en la SEC; usa el trimestre pendiente o crea uno */
+  U.cifras12 = function (tk) {
+    const d = D(); d.resultados = d.resultados || [];
+    let r = d.resultados.filter(x => x.tk === tk && x.estado !== 'revisado').sort((x, y) => String(y.fecha || '').localeCompare(String(x.fecha || '')))[0];
+    if (!r) { r = nuevoReg(tk, { fecha: null, periodo: null, confirmada: true }); d.resultados.push(r); Store.save(); }
+    dialogoIA(r, av => { const dl = document.getElementById('dlg'); if (dl && dl.open) dl.close(); U.render(); if (Array.isArray(av)) U.toast('Cifras de 12 meses guardadas' + (av.length ? ' (con avisos)' : '')); });
+  };
   U._resultados = { publico, doceDe, promptIA, parseIA, revDe, sincronizar, parseFechasIA, promptFechas };
 })();
