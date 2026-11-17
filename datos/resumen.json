@@ -1,5 +1,5 @@
 {
- "generado": "2026-11-15T13:56:48.863Z",
+ "generado": "2026-11-17T12:23:50.219Z",
  "nota": "Últimos 12 meses (10-Q) y último ejercicio anual (10-K) de la SEC. Solo empresas de EE. UU. con cuentas US-GAAP.",
  "empresas": {
   "ACMR": {
@@ -1572,6 +1572,58 @@
   },
   "CSU": {
    "error": "«CSU» no está en la lista de la SEC: solo cubre empresas de EE. UU. Para otras, usa los informes anuales."
+  },
+  "NVDA": {
+   "nombre": "NVIDIA CORP",
+   "ultimo_ejercicio": {
+    "anio": 2025,
+    "fin": "2026-01-25"
+   },
+   "ttm": {
+    "fin": "2026-07-26",
+    "ventas": 302969,
+    "ebit": 197579,
+    "ni_reportado": 192879,
+    "da": 3687
+   },
+   "anual": {
+    "anios": [
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ],
+    "ventas": [
+     6910,
+     9714,
+     11716,
+     10918,
+     16675,
+     26914,
+     26974,
+     60922,
+     130497,
+     215938
+    ],
+    "ebit": [
+     1934,
+     3210,
+     3804,
+     2846,
+     4532,
+     10041,
+     4224,
+     32972,
+     81453,
+     130387
+    ]
+   }
   }
  }
 }
