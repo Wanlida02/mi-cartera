@@ -31,7 +31,10 @@ const Logic = (function () {
     'Intereses: ingreso financiero neto (signo negativo = ingreso). No incluye las diferencias de cambio (−87 M en 2025, +27 M en 2026), que se tratan como no recurrentes.',
     'D&A 2026 (218 M) incluye «svalutazioni» (saneamientos) que el comunicado no desglosa. Capex 2026 no está en el comunicado: estimado (≈ 2025). Acciones: 71,6 M en circulación (ordinarias 36,4 M + ahorro 35,2 M, calculadas con el total del dividendo); NO son las 81,3 M del capital, que incluyen autocartera.',
     'Acciones ordinarias (DAN) y de ahorro (DANR) comparten beneficio por acción; la de ahorro cotiza con descuento (sin voto) y paga más dividendo (0,3353 € frente a 0,3146 €).'];
+  /* Nombres de cribado que son solo el ticker: con el nombre real se enlazan solas las carpetas de informes */
+  const NOMBRES = { CSU: 'Constellation Software' };
   function aplicarParches(d) {
+    Object.keys(NOMBRES).forEach(k => { const c = d.cribado && d.cribado[k]; if (c && (!c.nombre || c.nombre === k) && !(d.fichas && d.fichas[k])) c.nombre = NOMBRES[k]; });
     d.ajustes = d.ajustes || {}; const ya = d.ajustes.parches = Array.isArray(d.ajustes.parches) ? d.ajustes.parches : [];
     PARCHES.forEach(p => {
       if (ya.indexOf(p.id) >= 0) return; const f = d.fichas && d.fichas[p.tk];
@@ -362,6 +365,7 @@ const Logic = (function () {
       const f = d.fichas[tk], estado = enCartera.has(tk) ? 'cartera' : f.estado === 'watchlist' ? 'watchlist' : f._borrador ? 'otra' : null;
       if (estado) objetivos.push({ tk, nombre: f.nombre || tk, estado });
     });
+    Object.keys(d.cribado || {}).forEach(tk => { if (!d.fichas[tk] && !objetivos.some(o => o.tk === tk) && !d.posiciones.some(p => tickerDe(d, p) === tk)) objetivos.push({ tk, nombre: (d.cribado[tk] || {}).nombre || tk, estado: 'watchlist' }); });
     d.posiciones.forEach(p => { const tk = tickerDe(d, p); if (!tk || !d.fichas[tk]) objetivos.push({ tk: tk || (p.ticker || ''), nombre: p.empresa, estado: 'cartera' }); });
     const sin = [];
     objetivos.forEach(o => {

@@ -61,14 +61,18 @@
   function cargarSimb() { if (SIMB || simbCarga) return; simbCarga = true; DatosWeb.leerArchivo('simbolos.json').then(j => { SIMB = (j && j.simbolos) || {}; simbCarga = false; U.render(); }).catch(() => { simbCarga = false; }); }
   /* Descartadas fuera de cartera y fuera de watchlist → pausa; pasa/vigilar fuera de cartera → activas */
   function deseadosSimb() {
-    const d = D(), out = {};
+    const d = D(), out = {}, enCart = new Set(d.posiciones.map(p => L.tickerDe(d, p)).filter(Boolean));
     Object.keys(d.cribado || {}).forEach(k => {
-      if (d.posiciones.some(p => L.tickerDe(d, p) === k)) return;
+      if (enCart.has(k)) return;
       const c = catVer(k), wl = d.fichas[k] && d.fichas[k].estado === 'watchlist';
       out[k] = { pausa: c === 'descartar' && !wl };
     });
+    /* Lo que tienes en cartera (aunque sea una compra de hoy) y tus fichas de seguimiento siempre necesitan precio, calendario y datos */
+    enCart.forEach(k => { out[k] = { pausa: false }; });
+    Object.keys(d.fichas || {}).forEach(k => { if (d.fichas[k].estado === 'watchlist') out[k] = { pausa: false }; });
     return out;
   }
+  U.simbPend = () => { cargarSimb(); return SIMB ? DatosWeb.planSimbolos(SIMB, deseadosSimb()).anadir : []; };
   function simbolosCard() {
     cargarSimb(); if (!SIMB) return '';
     const p = DatosWeb.planSimbolos(SIMB, deseadosSimb()); if (!p.cambios) return '<p class="small mut">Precios de las candidatas al día: las que pasan o vigilas se actualizan solas; las descartadas no.</p>';

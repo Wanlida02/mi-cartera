@@ -12,11 +12,12 @@
   const pc = v => (v == null ? '—' : (v > 0 ? '+' : '') + nf(v * 100, 1) + ' %'), pc0 = v => (v == null ? '—' : nf(v * 100, 1) + ' %');
   U.abrirResultados = tk => { U.irA('resultados'); };
   const enCartera = tk => D().posiciones.some(p => L.tickerDe(D(), p) === tk);
-  const nombre = tk => (D().fichas[tk] || {}).nombre || tk;
+  const nombre = tk => (D().fichas[tk] || {}).nombre || ((D().posiciones.find(p => L.tickerDe(D(), p) === tk) || {}).empresa) || tk;
   const trimestre = f => { const t = new Date(f || hoy()); let q = Math.floor(t.getUTCMonth() / 3), y = t.getUTCFullYear(); if (--q < 0) { q = 3; y--; } return 'T' + (q + 1) + ' ' + y; };   // se publica el trimestre anterior
   const finTrim = p => { const m = /T([1-4]) (\d{4})/.exec(p || ''); return m ? new Date(Date.UTC(+m[2], +m[1] * 3, 0)).toISOString().slice(0, 10) : null; };
   const dif = f => Math.round((Date.parse(f) - Date.parse(hoy())) / 864e5);
-  const seguidas = () => Object.keys(D().fichas).filter(k => enCartera(k) || D().fichas[k].estado !== 'candidata').sort((a, b) => (enCartera(b) - enCartera(a)) || a.localeCompare(b));
+  /* Seguidas = fichas en cartera o que no son candidatas + posiciones aunque aún no tengan ficha (p. ej. una compra recién hecha) */
+  const seguidas = () => { const set = new Set(Object.keys(D().fichas).filter(k => enCartera(k) || D().fichas[k].estado !== 'candidata')); D().posiciones.forEach(p => { const k = L.tickerDe(D(), p); if (k) set.add(k); }); return [...set].sort((a, b) => (enCartera(b) - enCartera(a)) || a.localeCompare(b)); };
   const precioDe = tk => { try { const p = L.precioFicha(D(), tk); return isN(p.precio) ? p : null; } catch (e) { return null; } };
 
   let CAL = null, calCargando = false;
@@ -108,6 +109,10 @@
       const tag = pub ? 'ya publicó' : n == null ? 'sin fecha' : n < 0 ? 'hace ' + (-n) + ' d: ¿ya publicó?' : n === 0 ? 'hoy' : 'en ' + n + ' d';
       return '<div class="row click" data-r="rev" data-id="' + esc(r.id) + '"><div class="main"><div class="name">' + esc(nombre(r.tk)) + '</div><div class="meta">' + (v ? pillVer(v) + ' ' : '') + esc(r.tk) + ' · ' + esc(r.periodo || '') + ' · ' + (enCartera(r.tk) ? 'cartera' : 'watchlist') + (v && !v.error && isN(v.antes) && isN(v.despues) ? ' · rentab. ' + pc0(v.antes) + ' → ' + pc0(v.despues) : '') + '</div></div><div class="num"><span class="pill ' + (pub ? 'warn' : n != null && n < 0 ? 'warn' : n != null && n <= 7 ? 'ok' : '') + '">' + esc(r.fecha || '—') + '</span><div class="meta">' + tag + (r.estimada ? ' · estimada' : '') + '</div></div></div>';
     }).join('') : '<div class="empty">Ninguna fecha anotada. Añade la de las empresas que quieras seguir.</div>') + '</div>';
+    const simP = U.simbPend ? U.simbPend() : [];
+    if (simP.length) h += '<div class="alert warn"><b>' + simP.map(esc).join(', ') + '</b>: sin símbolo en la lista de precios. Sin él no hay precio automático, ni calendario de resultados, ni datos de la SEC. <div class="acts" style="margin-top:6px"><button class="btn sm" data-c="simbolos">Añadir y actualizar precios</button></div></div>';
+    const sinFicha = seguidas().filter(k => !D().fichas[k]);
+    if (sinFicha.length) h += '<div class="alert warn"><b>' + sinFicha.map(esc).join(', ') + '</b>: en cartera pero sin ficha de valoración, así que no se puede comparar el resultado con lo esperado. Créala desde Informes («Crear ficha») o en Valoración.</div>';
     const sug = sugeridas(sin, conFecha);
     if (sug.length) h += '<div class="card"><div class="row"><div class="main"><div class="name">Calendario público</div><div class="meta">' + sug.length + ' fechas para tus empresas · «estimada» = según el año anterior</div></div><button class="btn sm" data-r="calall">Añadir todas</button></div>' + sug.map(([k, c]) => '<div class="row"><div class="main"><div class="name">' + esc(nombre(k)) + '</div><div class="meta">' + esc(k) + ' · ' + esc(c.fecha) + (c.confirmada ? ' · confirmada' : ' · estimada') + '</div></div><button class="btn sec sm" data-r="cal" data-k="' + esc(k) + '">Añadir</button></div>').join('') + '</div>';
     if (sin.length) h += '<div class="card"><div class="row"><div class="main"><div class="name">Sin fecha: ' + sin.length + ' empresas</div><div class="meta">Fuera de EE. UU. (o sin historial en la SEC) no hay calendario público fiable: una IA con internet te las busca de una vez.</div></div><button class="btn sm" data-r="iafechas">Pedir fechas a una IA</button></div></div>';
@@ -245,6 +250,7 @@
   const fila3 = (t, a, b, c) => '<tr><td>' + t + '</td><td>' + a + '</td><td>' + b + '</td><td>' + c + '</td></tr>';
   function revisar(id, avisosExtra) {
     const d = D(), r = d.resultados.find(x => x.id === id); if (!r) return;
+    if (!d.fichas[r.tk]) { U.dlg('<h2>' + esc(nombre(r.tk)) + ' · ' + esc(r.periodo || '') + '</h2><div class="alert warn">Aún no hay ficha de valoración de ' + esc(r.tk) + ', así que no puedo comparar estos resultados con lo que esperabas. Créala desde Informes («Crear ficha desde informes») o en Valoración y vuelve aquí.</div><div class="acts">' + (r.id ? '<button class="btn sec" id="r-del">Quitar esta fecha</button>' : '') + '<button class="btn" data-a="cerrar">Cerrar</button></div>', dd => { const b = dd.querySelector('#r-del'); if (b) b.onclick = () => { d.resultados.splice(d.resultados.indexOf(r), 1); U.guardar({ ok: true, msg: 'Eliminado' }); }; }); return; }
     const f = d.fichas[r.tk], v = L.valoracion(d, r.tk, hoy()), ok = v && v.ref != null, dc = doceDe(r), rv = dc ? L.revision(d, r.tk, dc, hoy()) : null, tieneRv = rv && !rv.error, pub = publico(r);
     const cartera = enCartera(r.tk), esp = tieneRv && rv.ebitEsp != null;
     let cuerpo = '';
