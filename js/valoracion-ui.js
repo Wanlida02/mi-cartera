@@ -100,23 +100,56 @@
       dd.querySelector('#bd-ok').onclick = () => { if (L.lineasFaltantes(f).length) return; delete f._borrador; f.notas = (f.notas || []).concat(['Verificada a mano el ' + hoy()]); U.guardar({ ok: true, msg: 'Ficha marcada como verificada' }); cerrar(); };
     });
   }
+  /* Múltiplos de salida sin histórico propio: 1) copiar el prompt, 2) pegar la respuesta de la IA (la app saca las medianas y rellena), 3) revisar y guardar */
   function multGuiaDlg(tk) {
     const d = D(), f = d.fichas[tk], m = f.mult_hist || {}, g = { per: 15, pfcf: 15, ev_ebitda: 9, ev_ebit: 11 };
-    const prompt = 'Necesito los múltiplos que el mercado pagó por ' + (f.nombre || tk) + ' (' + tk + ') al cierre de cada ejercicio de los últimos 8-10 años: PER, P/FCF, EV/EBITDA y EV/EBIT. Busca tú en páginas financieras (informes anuales, Macrotrends, Morningstar, Investing, la propia web de la empresa) y calcula con precio de cierre del ejercicio y cifras reportadas. Devuelve SOLO un JSON {"per":[...],"pfcf":[...],"ev_ebitda":[...],"ev_ebit":[...],"anios":[...],"fuentes":["url"],"dudas":[]} con null donde no puedas verificarlo. No inventes ningún valor.';
-    U.dlg('<h2>Múltiplos de salida · ' + esc(tk) + '</h2><p class="small">El valor a 5 años multiplica por lo que el mercado suele pagar por esta empresa. <b>No hay que inventarlo</b>: tres vías, de mejor a peor:</p><ol class="small"><li><b>Histórico propio</b>: se calcula solo con los cierres de ejercicio. ' + esc(tk) + ' aún no tiene histórico de precios descargado; entra al reactivarse el símbolo en la lista de precios (workflow del domingo) y entonces aparece «Calcular múltiplos propios».</li>' +
-      '<li><b>Medianas de una IA con fuentes</b>: copia este prompt, pega luego los valores abajo (usa la mediana, no el último año).</li><li><b>Dejar los genéricos</b> (15x PER · 15x P/FCF · 9x EV/EBITDA · 11x EV/EBIT): son prudentes para una empresa media de calidad; para una cíclica o de bajo crecimiento, mejor bajar 2-3 puntos, nunca subirlos sin un histórico que lo apoye.</li></ol>' +
-      '<textarea id="mg-p" readonly rows="5" style="width:100%" class="small">' + esc(prompt) + '</textarea><div class="acts"><button class="btn sec sm" id="mg-cp">Copiar prompt</button></div>' +
-      '<p class="small"><b>Introducir medianas</b> (déjalo vacío para mantener genéricos)</p><div class="tools">' + [['per', 'PER'], ['pfcf', 'P/FCF'], ['ev_ebitda', 'EV/EBITDA'], ['ev_ebit', 'EV/EBIT']].map(([k, n]) => U.campo('mg-' + k, n + ' (genérico ' + g[k] + 'x)', m[k] != null ? m[k] : '')).join('') + '</div>' +
-      '<div class="acts"><button class="btn sec" data-a="cerrar">Cerrar</button><button class="btn" id="mg-ok">Guardar múltiplos</button></div>', dd => {
-      dd.querySelector('#mg-cp').onclick = () => { try { navigator.clipboard.writeText(prompt); U.toast('Prompt copiado'); } catch (e) { dd.querySelector('#mg-p').select(); } };
+    const K = [['per', 'PER'], ['pfcf', 'P/FCF'], ['ev_ebitda', 'EV/EBITDA'], ['ev_ebit', 'EV/EBIT']];
+    const prompt = 'Necesito los múltiplos que el mercado pagó por ' + (f.nombre || tk) + ' (' + tk + ') al cierre de cada ejercicio de los últimos 8-10 años: PER, P/FCF, EV/EBITDA y EV/EBIT. Busca tú en páginas financieras (informes anuales, Macrotrends, Morningstar, Investing, la propia web de la empresa) y calcula con precio de cierre del ejercicio y cifras reportadas. ' +
+      'Devuelve al final un bloque JSON {"anios":[...],"per":[...],"pfcf":[...],"ev_ebitda":[...],"ev_ebit":[...],"fuentes":["url"],"dudas":[]}, con un valor por año en el mismo orden que "anios" y null donde no puedas verificarlo. No inventes ningún valor.';
+    let ia = null;   // lo último leído de la respuesta pegada
+    const pista = ia => K.filter(([k]) => ia.mult[k]).map(([k, n]) => { const x = ia.mult[k]; return '<span class="mg-chip"><b>' + n + ' ' + nf(x.mediana, 1) + 'x</b>' + (x.serie && x.n ? '<span>' + x.n + ' año' + (x.n > 1 ? 's' : '') + (x.n > 1 ? ' · ' + nf(x.min, 1) + '–' + nf(x.max, 1) : '') + '</span>' : '<span>mediana dada</span>') + '</span>'; }).join('');
+    const avisos = ia => {
+      const a = [], pocos = K.filter(([k]) => ia.mult[k] && ia.mult[k].serie && ia.mult[k].n < 4).map(x => x[1]), falta = K.filter(([k]) => !ia.mult[k]).map(x => x[1]), desc = K.filter(([k]) => ia.mult[k] && ia.mult[k].descartados).map(([k, n]) => n + ' (' + ia.mult[k].descartados + ')');
+      if (falta.length) a.push('Sin dato de ' + falta.join(', ') + ': se queda el genérico.');
+      if (pocos.length) a.push('Pocos años en ' + pocos.join(', ') + ': la mediana es poco fiable.');
+      if (desc.length) a.push('Descartados por negativos o absurdos: ' + desc.join(', ') + '.');
+      if (K.some(([k]) => ia.mult[k] && ia.mult[k].mediana > 40)) a.push('Hay un múltiplo por encima de 40x: revísalo antes de guardar.');
+      if (!ia.fuentes.length) a.push('La respuesta no trae enlaces a sus fuentes: compruébalos.');
+      ia.dudas.slice(0, 4).forEach(x => a.push('La IA avisa: ' + x));
+      return a.length ? '<ul class="mg-av">' + a.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>' : '';
+    };
+    U.dlg('<div class="aj-cab"><div><h2>Múltiplos de salida</h2><span class="mut small">' + esc(tk) + (f.nombre ? ' · ' + esc(f.nombre) : '') + '</span></div><button type="button" class="icon-x" data-a="cerrar" aria-label="Cerrar">✕</button></div>' +
+      '<p class="aj-ayuda">Lo que el mercado suele pagar por la empresa: el valor a 5 años sale de multiplicar por ellos. Se usan <b>medianas de varios años</b>, no el último.' + (HIST && HIST.simbolos && HIST.simbolos[tk] ? '' : ' Con histórico de precios de ' + esc(tk) + ', la app los calculará sola.') + '</p>' +
+      '<section class="aj"><h3><span class="paso">1</span>Pide los datos a una IA</h3><p class="aj-ayuda">Una que busque en internet (Claude, ChatGPT…).</p>' +
+        '<div class="aj-bt"><button class="btn" id="mg-cp">Copiar prompt</button></div><details class="mg-txt small"><summary><span>Ver el texto</span></summary><textarea id="mg-p" readonly rows="6">' + esc(prompt) + '</textarea></details></section>' +
+      '<section class="aj"><h3><span class="paso">2</span>Pega su respuesta</h3><p class="aj-ayuda">Toda, aunque traiga texto: la app busca los múltiplos y calcula las medianas.</p>' +
+        (navigator.clipboard && navigator.clipboard.readText ? '<div class="aj-bt"><button class="btn" id="mg-pg">Pegar respuesta</button></div>' : '') + '<textarea id="mg-r" rows="3" placeholder="…o pégala aquí a mano"></textarea><div id="mg-res" aria-live="polite"></div></section>' +
+      '<section class="aj"><h3><span class="paso">3</span>Revisa y guarda</h3><div class="f2">' + K.map(([k, n]) => U.campo('mg-' + k, n, m[k] != null && m[k] !== g[k] ? String(m[k]).replace('.', ',') : '', 'text', 'inputmode="decimal" autocomplete="off" placeholder="' + g[k] + ' (genérico)"')).join('') + '</div>' +
+        '<p class="aj-ayuda">Vacío = se queda el genérico. Son prudentes para una empresa media; en una cíclica o de bajo crecimiento, mejor 2–3 puntos menos, nunca más sin un histórico que lo apoye.</p></section>' +
+      '<div class="aj-pie"><button class="btn sec" data-a="cerrar">Cancelar</button><button class="btn" id="mg-ok">Guardar</button></div>', dd => {
+      const res = dd.querySelector('#mg-res');
+      const leer = () => {
+        const t = dd.querySelector('#mg-r').value; if (!t.trim()) { ia = null; res.innerHTML = ''; return; }
+        try { ia = L.multiplosDeIA(t); } catch (e) { ia = null; res.innerHTML = '<p class="mg-err">' + esc(e.message) + '</p>'; return; }
+        K.forEach(([k]) => { const inp = dd.querySelector('#mg-' + k); if (ia.mult[k]) { inp.value = String(ia.mult[k].mediana).replace('.', ','); inp.classList.add('mg-auto'); } });
+        res.innerHTML = '<p class="mg-ok">✓ Rellenado abajo con las medianas' + (ia.anios.length ? ' de ' + ia.anios.length + ' ejercicios (' + esc(ia.anios[0]) + '–' + esc(ia.anios[ia.anios.length - 1]) + ')' : '') + (ia.fuentes.length ? ' · ' + ia.fuentes.length + ' fuente' + (ia.fuentes.length > 1 ? 's' : '') : '') + '</p><div class="mg-chips">' + pista(ia) + '</div>' + avisos(ia);
+      };
+      dd.querySelector('#mg-r').addEventListener('input', leer);
+      K.forEach(([k]) => dd.querySelector('#mg-' + k).addEventListener('input', e => e.target.classList.remove('mg-auto')));
+      const pg = dd.querySelector('#mg-pg'); if (pg) pg.onclick = async () => { try { const t = await navigator.clipboard.readText(); if (!t) return U.toast('El portapapeles está vacío'); dd.querySelector('#mg-r').value = t; leer(); } catch (e) { U.toast('No se pudo leer el portapapeles: pégala a mano en la caja'); dd.querySelector('#mg-r').focus(); } };
+      dd.querySelector('#mg-cp').onclick = async () => { try { await navigator.clipboard.writeText(prompt); U.toast('Prompt copiado: pégalo en la IA'); } catch (e) { const det = dd.querySelector('.mg-txt'); det.open = true; dd.querySelector('#mg-p').select(); U.toast('Selecciona el texto y cópialo'); } };
       dd.querySelector('#mg-ok').onclick = () => {
-        const o = {}; ['per', 'pfcf', 'ev_ebitda', 'ev_ebit'].forEach(k => { const v = parseFloat(String(U.val('mg-' + k)).replace(',', '.')); if (v > 0) o[k] = v; });
-        if (!Object.keys(o).length) return U.toast('Escribe al menos un múltiplo');
+        const o = {}; for (const [k, n] of K) { const t = String(U.val('mg-' + k)).trim(); if (!t) continue; const v = parseFloat(t.replace(',', '.')); if (!(v > 0)) return U.toast(n + ': no es un número válido'); o[k] = v; }
+        if (!Object.keys(o).length) return U.toast('Escribe al menos un múltiplo o pega la respuesta de la IA');
         if (Object.keys(o).some(k => o[k] > 60)) return U.toast('Hay un múltiplo por encima de 60x: revísalo');
-        f.mult_hist = Object.assign({}, g, f.mult_hist || {}, o); f.mult_hist_manual = { fecha: hoy(), fuente: 'introducidos a mano (medianas con fuente)' }; U.guardar({ ok: true, msg: 'Múltiplos guardados' });
+        const deIA = ia && K.some(([k]) => o[k] != null && ia.mult[k] && Math.abs(ia.mult[k].mediana - o[k]) < 1e-9);
+        f.mult_hist = Object.assign({}, g, f.mult_hist || {}, o);
+        f.mult_hist_manual = Object.assign({ fecha: hoy(), fuente: deIA ? 'medianas de una IA' + (ia.anios.length ? ' (' + ia.anios[0] + '–' + ia.anios[ia.anios.length - 1] + ')' : '') : 'introducidos a mano (medianas con fuente)' }, deIA && ia.fuentes.length ? { fuentes: ia.fuentes.slice(0, 20) } : {});
+        U.guardar({ ok: true, msg: 'Múltiplos guardados' });
       };
     });
   }
+  U.multGuia = multGuiaDlg;   // también lo usan los tests
   function informeMult(rep, titulo) {
     const ap = rep.filter(x => x.aplicado), no = rep.filter(x => !x.aplicado);
     U.dlg('<h2>' + esc(titulo) + '</h2>' + (ap.length ? '<div class="tw"><table class="tbl"><thead><tr><th>Ficha</th><th>PER</th><th>P/FCF</th><th>EV/EBITDA</th><th>EV/EBIT</th><th>Años</th><th>Rentab. 5a</th></tr></thead><tbody>' + ap.map(x => '<tr><td>' + esc(x.tk) + '</td>' + ['per', 'pfcf', 'ev_ebitda', 'ev_ebit'].map(k => '<td>' + (isN(x.mult[k]) ? nf(x.mult[k], 1) + 'x' : '<span class="mut">15/9/11x</span>') + '</td>').join('') + '<td>' + nf(Math.max.apply(null, ['per', 'pfcf'].map(k => x.n[k] || 0)), 0) + '</td><td>' + nPc(x.antes) + ' → <b>' + nPc(x.despues) + '</b></td></tr>').join('') + '</tbody></table></div><p class="small mut">Mediana de los múltiplos al cierre de cada ejercicio (hasta 10 años). Lo que no se pudo calcular conserva el genérico. Puedes deshacerlo desde la lista.</p>' : '<p>No se ha podido calcular ninguno.</p>') +

@@ -185,7 +185,8 @@ const Logic = (function () {
       'FORMATO DE RESPUESTA (obligatorio: una respuesta sin los tres bloques se considera incompleta)\nA) JSON, sin texto dentro:\n{"anios":[' + an.join(',') + '],\n "datos":{' + jsonDatos + '},\n "confianza":{"da":[...], ...},\n "fuentes":{"da":{"' + an[n - 1] + '":"https://...#página"}, ...},\n "pendiente":[{"linea":"capex","anio":' + an[0] + ',"motivo":"..."}, ...]}\n' +
       'B) Tabla de FUENTES USADAS: línea, año, documento, URL exacta, página o nota del PDF, fecha de publicación. Incluye las páginas que intentaste abrir y no pudiste.\nC) AVISOS: desgloses, discrepancias (con ambas cifras y URL), definiciones distintas y cifras calculadas con su cuenta.';
   }
-  function extraerJSON(txt) {   // primer objeto JSON válido con «datos» (tolera texto y bloques de código alrededor)
+  function extraerJSON(txt) { return objetosJSON(txt).find(o => o && typeof o === 'object' && o.datos) || null; }   // primer objeto JSON válido con «datos»
+  function objetosJSON(txt) {   // todos los objetos JSON válidos de un texto (tolera texto y bloques de código alrededor)
     txt = String(txt || ''); const out = [];
     for (let i = 0; i < txt.length; i++) if (txt[i] === '{') {
       let dep = 0, str = false, esc = false;
@@ -194,7 +195,39 @@ const Logic = (function () {
         else if (c === '"') str = true; else if (c === '{') dep++;
         else if (c === '}') { dep--; if (dep === 0) { try { out.push(JSON.parse(txt.slice(i, j + 1))); i = j; } catch (e) { /* no era JSON */ } break; } } }
     }
-    return out.find(o => o && typeof o === 'object' && o.datos) || null;
+    return out;
+  }
+  /* Respuesta de una IA con los múltiplos de cada cierre → medianas. Acepta el JSON del prompt ({"per":[…],"anios":[…],…}), medianas sueltas ({"per":18.2})
+     o, si no hay JSON, líneas de texto con «mediana» («PER mediana: 18,4x»). Ignora null, negativos (pérdidas) y valores absurdos (> 150x). */
+  const MULT_K = { per: ['per', 'pe', 'p/e', 'pe_ratio'], pfcf: ['pfcf', 'p/fcf', 'p_fcf', 'price_fcf'], ev_ebitda: ['ev_ebitda', 'ev/ebitda'], ev_ebit: ['ev_ebit', 'ev/ebit'] };
+  function multiplosDeIA(txt) {
+    const num = x => { const n = typeof x === 'number' ? x : typeof x === 'string' ? Number(x.replace(/[x×\s]/gi, '').replace(',', '.')) : NaN; return isFinite(n) ? n : null; };
+    const mediana = a => { const v = a.slice().sort((x, y) => x - y), m = v.length >> 1; return v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2; };
+    const clave = (o, k) => { const ks = Object.keys(o), al = MULT_K[k]; const c = ks.find(x => al.indexOf(x.toLowerCase().replace(/\s/g, '')) >= 0); return c == null ? undefined : o[c]; };
+    const objs = objetosJSON(txt).map(o => (o && o.multiplos && typeof o.multiplos === 'object' ? Object.assign({}, o, o.multiplos) : o)).filter(o => o && typeof o === 'object' && Object.keys(MULT_K).some(k => clave(o, k) !== undefined));
+    const res = { mult: {}, anios: [], fuentes: [], dudas: [], origen: null };
+    if (objs.length) {
+      const o = objs.sort((a, b) => Object.keys(MULT_K).filter(k => clave(b, k) !== undefined).length - Object.keys(MULT_K).filter(k => clave(a, k) !== undefined).length)[0];
+      res.origen = 'json'; res.anios = Array.isArray(o.anios) ? o.anios : [];
+      res.fuentes = (Array.isArray(o.fuentes) ? o.fuentes : o.fuentes && typeof o.fuentes === 'object' ? Object.values(o.fuentes) : []).filter(u => typeof u === 'string' && /^https?:\/\//.test(u.trim()));
+      res.dudas = (Array.isArray(o.dudas) ? o.dudas : []).map(String);
+      Object.keys(MULT_K).forEach(k => {
+        const v = clave(o, k); if (v == null) return;
+        const lista = (Array.isArray(v) ? v : [v]).map(num), ok = lista.filter(x => x != null && x > 0 && x <= 150), fuera = lista.filter(x => x != null && (x <= 0 || x > 150)).length;
+        if (!ok.length) return;
+        const par = res.anios.length === lista.length ? res.anios.map((a, i) => [a, lista[i]]).filter(p => p[1] != null && p[1] > 0 && p[1] <= 150) : [];
+        res.mult[k] = { mediana: Math.round(mediana(ok) * 10) / 10, n: ok.length, min: Math.min.apply(null, ok), max: Math.max.apply(null, ok), descartados: fuera, serie: Array.isArray(v), anios: par.map(p => p[0]) };
+      });
+    } else {
+      const ET = { per: /\b(PER|P\/E)\b/i, pfcf: /P\s*\/\s*FCF/i, ev_ebitda: /EV\s*\/\s*EBITDA/i, ev_ebit: /EV\s*\/\s*EBIT(?!DA)/i };
+      String(txt || '').split(/\n/).forEach(l => {
+        if (!/median/i.test(l)) return;
+        Object.keys(ET).forEach(k => { if (res.mult[k] || !ET[k].test(l)) return; const m = l.replace(ET[k], ' ').match(/(\d+(?:[.,]\d+)?)\s*[x×]?/); const v = m && num(m[1]); if (v > 0 && v <= 150) res.mult[k] = { mediana: Math.round(v * 10) / 10, n: null, serie: false }; });
+      });
+      if (Object.keys(res.mult).length) res.origen = 'texto';
+    }
+    if (!res.origen) throw new Error('No encuentro los múltiplos en lo que has pegado. Pega la respuesta completa de la IA (con el bloque JSON).');
+    return res;
   }
   const numB = x => (isN(x) ? x : typeof x === 'string' && x.trim() !== '' && isFinite(Number(x.replace(/\s/g, '').replace(',', '.'))) ? Number(x.replace(/\s/g, '').replace(',', '.')) : null);
   const urlOk = u => typeof u === 'string' && (/^https?:\/\/\S+/.test(u.trim()) || /\.pdf\b.*(#p|\bp\.?\s?|pág|page)\s?\d+/i.test(u.trim()));   // URL, o documento de tus informes con página (URD2025.pdf#p79)
@@ -831,7 +864,7 @@ const Logic = (function () {
     };
   }
 
-  return { fotoDiaria, unirHistorico, isN, today, clone, nuevoDatos, normalizar, norm, coreName, sameCompany, findExisting, tickerDe, fxPorEur, aEur, precioPos, costeEur, mercadoEur, valorEur, variacion, diasDesde,
+  return { multiplosDeIA, objetosJSON, fotoDiaria, unirHistorico, isN, today, clone, nuevoDatos, normalizar, norm, coreName, sameCompany, findExisting, tickerDe, fxPorEur, aEur, precioPos, costeEur, mercadoEur, valorEur, variacion, diasDesde,
     compra, venta, editar, eliminar, borrarMov, reverseMov, precioManual, precioFicha, matrizEntrada, auditoriaDivisas, provisional, promptBusqueda, extraerJSON, aplicarBusqueda, pendientesBusqueda, deshacerBusqueda, promptFase2, proponerMultiplos, aplicarMultiplos, deshacerMultiplos, calidadFichas, distorsion, previsualizarSoloFcf, aplicarSoloFcf, valoracion, renombrarTicker, tickerValido, claves, divisaCotizacion, mezclarManual, contrastar, lineasFaltantes, revision, precioRef, pesos, dashboard, informes, V };
 })();
 if (typeof module !== 'undefined') module.exports = Logic;

@@ -183,3 +183,14 @@ body:has(.fab) .toast{bottom:calc(80px + env(safe-area-inset-bottom))}   /* el a
 .aj-ver ul{margin:6px 0 0;padding-left:18px}.aj-ver li{margin:3px 0}
 .aj-pie{position:sticky;bottom:-16px;display:flex;gap:8px;justify-content:flex-end;margin:14px -16px -16px;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:var(--card);border-top:1px solid var(--line)}
 .aj-pie .btn{flex:1 1 0;max-width:200px}
+/* Múltiplos de salida (v70): pasos, respuesta pegada y medianas leídas */
+.paso{display:inline-grid;place-items:center;width:22px;height:22px;margin-right:8px;border-radius:50%;background:var(--pri);color:var(--pri-ink);font-size:12px;font-weight:700;vertical-align:1px}
+.mg-txt{margin-top:8px}.mg-txt summary{font-weight:600;color:var(--mut);padding:4px 0}.mg-txt textarea{margin-top:6px;font-size:13px;color:var(--mut)}
+#mg-r{margin-top:10px;min-height:64px;max-height:140px;font-size:13px}
+.mg-ok{margin:10px 0 6px;font-size:13px;color:var(--ok);font-weight:600}
+.mg-err{margin:10px 0 0;font-size:13px;color:var(--bad)}
+.mg-chips{display:flex;flex-wrap:wrap;gap:6px}
+.mg-chip{display:inline-flex;flex-direction:column;background:var(--chip);border-radius:10px;padding:6px 10px;font-size:13px;line-height:1.3}
+.mg-chip b{font-variant-numeric:tabular-nums}.mg-chip span{font-size:11px;color:var(--mut)}
+.mg-av{margin:8px 0 0;padding-left:18px;font-size:12.5px;color:var(--warn)}.mg-av li{margin:2px 0}
+input.mg-auto{border-color:var(--ok);background:var(--ok-bg)}
