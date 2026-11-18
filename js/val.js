@@ -20,7 +20,11 @@ const Val = (function () {
      Se valora SOLO por el flujo libre para el accionista tras minoritarios (ficha.hist.fcfa2s, ya neto de intereses, arrendamientos y minoritarios) × múltiplo de salida.
      No hay PER, EV/EBIT ni EV/EBITDA en la referencia. Precio y cifras, siempre en la misma divisa (la de la ficha). */
   const esFC = f => !!f && f.metodo === 'fcfa2s';
-  const CFG = { crisis: 'ventas', ancho: true, gpre: false };   // gpre y el aviso de trampa de valor se probaron y NO mejoraron en la muestra de validación   // mejoras del backtest (21/10/2026): normalizar años de crisis y escenarios más anchos
+  const CFG = { crisis: 'ventas', ancho: true, gpre: false };
+  /* EXP: variantes EXPERIMENTALES para backtests (todas apagadas: la app no las usa). tests/backtest_mejoras.js las prueba una a una.
+     cicMed: margen de las cíclicas = mediana (no media) · cicG: tope al crecimiento de las cíclicas · ventana: 'sinPrevio' (ignora el año previo a la caída) | 'post2021' (crecimiento desde 2021)
+     dyn: deuda neta y gasto financiero dinámicos · capPer: tope de PER/P·FCF de salida si g_5 < 10 % (EV/EBITDA y EV/EBIT escalados) · capex: {ratio, fin}: capex/ventas converge a 1,15×D&A/ventas si capex > ratio×D&A (no flotas) */
+  const EXP = {};   // gpre y el aviso de trampa de valor se probaron y NO mejoraron en la muestra de validación   // mejoras del backtest (21/10/2026): normalizar años de crisis y escenarios más anchos
   const median = a => { const x = a.filter(isN).sort((p, q) => p - q); return x.length ? (x.length % 2 ? x[(x.length - 1) / 2] : (x[x.length / 2 - 1] + x[x.length / 2]) / 2) : null; };
   /* Años de crisis †: ventas más de un 10 % por debajo del año anterior, o margen EBIT recurrente por debajo de la mitad de la mediana del resto de años */
   function crisisYears(h) {
@@ -53,12 +57,14 @@ const Val = (function () {
     const m3 = cr.slice(-3).some(Boolean) && mOk.length ? avg(mOk.slice(-3)) : avg(margen.slice(-3));
     const mUlt = cr[n - 1] && mOk.length ? last(mOk) : last(margen);
     let v0 = null; if (CFG.crisis === 'ventas' && cr[n - 1]) { for (let j = n - 2; j >= 0; j--) if (!cr[j]) { if (h.ventas[j] > h.ventas[n - 1]) v0 = h.ventas[j]; break; } }   // ventas de antes de la crisis
-    const ih = f.crec_desde_previo === false ? -1 : inicioHundido(h), gAlt = ih >= 0 ? cagr(h.ventas.slice(ih), n) : null;   // por defecto: crecimiento desde el año previo a la caída (el año del COVID se deja aparte); se desactiva con ficha.crec_desde_previo = false
+    const ih = f.crec_desde_previo === false ? -1 : inicioHundido(h), gAlt0 = ih >= 0 ? cagr(h.ventas.slice(ih), n) : null;
+    const i21 = (f.anios || []).findIndex(a => a >= 2021), gPost = EXP.ventana === 'post2021' && ih >= 0 && i21 >= 0 && n - i21 >= 3 ? cagr(h.ventas.slice(i21), n) : null;
+    const gAlt = EXP.ventana === 'sinPrevio' ? null : gPost != null ? gPost : gAlt0;   // por defecto: crecimiento desde el año previo a la caída (el año del COVID se deja aparte); se desactiva con ficha.crec_desde_previo = false
     const cic = !!f.ciclica && !esMO(f), gCic = cic ? cagr(h.ventas, n) : null;   // cíclica †: crecimiento de toda la serie y margen medio del ciclo
     let jPre = -1; if (CFG.crisis === 'ventas' && cr[n - 1]) for (let j = n - 2; j >= 0; j--) if (!cr[j]) { jPre = j; break; }
     const gPre = CFG.gpre && jPre > 0 ? cagr(h.ventas.slice(0, jPre + 1), 5) : null;   // año base en crisis: crecimiento histórico hasta el año previo a la crisis
-    const gBase = gPre != null ? clamp(gPre, 0, 0.25) : cic ? (gCic == null ? 0.03 : clamp(gCic, 0, 0.25)) : g5 == null ? 0.03 : clamp(gAlt != null ? Math.min(g5, gAlt) : g5, 0, 0.25);
-    const mBase = cic ? (avg(margen) == null ? 0.1 : avg(margen)) : m3 == null ? 0.1 : Math.min(m3, mUlt == null ? m3 : mUlt);
+    const gBase = gPre != null ? clamp(gPre, 0, 0.25) : cic ? (gCic == null ? 0.03 : Math.min(clamp(gCic, 0, 0.25), EXP.cicG != null ? EXP.cicG : 1)) : g5 == null ? 0.03 : clamp(gAlt != null ? Math.min(g5, gAlt) : g5, 0, 0.25);
+    const mBase = cic ? ((EXP.cicMed ? median(margen) : avg(margen)) == null ? 0.1 : (EXP.cicMed ? median(margen) : avg(margen))) : m3 == null ? 0.1 : Math.min(m3, mUlt == null ? m3 : mUlt);
     const mo = esMO(f) ? (f.margen_objetivo || {}) : null, mc = mo ? (f.mult_comp || {}) : null;   // margen objetivo †: empresas sin beneficio
     const tBase = avg(tasa.slice(-3).filter(t => t != null && t > 0.05 && t < 0.4)); // media últimos 3 años, sin atípicos
     const mh = (mo ? mc : f.mult_hist) || {};
@@ -131,6 +137,10 @@ const Val = (function () {
     const fc = esFC(f); let fcb = fc ? last(h.fcfa2s) : null;
     const tt = fc && f.base_ttm && f.base_ttm.fcfa2s > 0 ? f.base_ttm : null, fr = tt ? (tt.fraccion == null ? 0.25 : tt.fraccion) : 1; let prod = 1;   // base TTM: arranca de los últimos 12 meses (cierre T3) y llega a dic-2030 con 4,25 años de crecimiento
     let fv0 = 1;   // factor acumulado de crecimiento (para la recuperación tras crisis)
+    const cr0 = p.capex / p.ventas, dar0 = p.da / p.ventas, fadeCapex = EXP.capex && !f.flota && cr0 > EXP.capex.ratio * dar0;
+    let debB = z(last(h.deuda)) + z(last(h.leases_deuda)), cajB = z(last(h.caja)), ndD = nd0;
+    const kd = Math.min(0.08, Math.max(0.02, debB > 0 ? z(last(h.intereses)) / debB : 0.04)), kc = 0.03, rep0 = isN(f.reparto0) ? f.reparto0 : (f.dividend_yield || 0) * (precio || 0) * z(last(h.acciones));
+    const capF = EXP.capPer && gAnio(sc, 5) < 0.10 && sc.per > EXP.capPer ? EXP.capPer / sc.per : 1, perE = sc.per * capF, pfcfE = Math.min(sc.pfcf, EXP.capPer && gAnio(sc, 5) < 0.10 ? EXP.capPer : 1e9), evdE = sc.ev_ebitda * capF, evtE = sc.ev_ebit * capF;
     for (let k = 1; k <= 5; k++) {
       const q = {}, gk = gAnio(sc, k); fv0 *= 1 + gk; q.g = gk;
       q.ventas = isN(sc.v0) && sc.v0 > last(h.ventas) ? (k >= 2 ? sc.v0 * fv0 : (last(h.ventas) + sc.v0 * (1 + gk)) / 2) : p.ventas * (1 + gk);   // tras un año de crisis, recupera las ventas de antes en 2 años
@@ -138,20 +148,21 @@ const Val = (function () {
       q.margen = isN(sc.m0) ? sc.m0 + (sc.m - sc.m0) * k / 5 : sc.m;   // margen objetivo: rampa lineal desde el margen actual hasta el del año 5
       q.ebit = q.ventas * q.margen;
       q.ebitda = q.ebit + q.da;
-      q.interes = p.interes * (1 + gk);
+      q.interes = EXP.dyn ? kd * debB - kc * cajB : p.interes * (1 + gk);
       const pretax = q.ebit - q.interes;
       q.impuestos = Math.max(0, pretax) * sc.t;
       q.min = p.min * (1 + gk);
       q.ni = pretax - q.impuestos - q.min + otros;
-      q.capex = p.capex * (1 + gk);                 // Excel: capex crece con las ventas
+      q.capex = fadeCapex ? q.ventas * (cr0 + (1.15 * dar0 - cr0) * k / 5) : p.capex * (1 + gk);                 // Excel: capex crece con las ventas
       q.leases = p.leases * (1 + gk);
       q.fcf = q.ebitda - q.capex - q.interes - q.impuestos - q.min - q.leases;
       if (fc) { if (tt) { q.fcf = tt.fcfa2s * prod * Math.pow(1 + gk, fr); prod *= 1 + gk; } else { fcb = fcb * (1 + gk); q.fcf = fcb; } }   // FCFA2S: crece a g (ya es neto de minoritarios, intereses y arrendamientos)
       q.acc = opts.accPath ? opts.accPath[k - 1] : p.acc * (1 + sc.acc);
-      q.nd = ndPath ? ndPath[k - 1] : nd0;            // Excel: deuda neta introducida a mano; por defecto constante
+      if (EXP.dyn) { cajB += q.fcf - rep0 * Math.pow(1 + Math.max(0, gk), k); if (cajB < 0) { debB -= cajB; cajB = 0; } ndD = debB - cajB; }
+      q.nd = ndPath ? ndPath[k - 1] : EXP.dyn ? ndD : nd0;            // Excel: deuda neta introducida a mano; por defecto constante
       const cash = (x, m) => (q.nd < 0 ? x * m - q.nd : x * m) / q.acc;   // caja neta se suma; deuda no se resta en PER/P·FCF
       const ev = (x, m) => (x * m - q.nd) / q.acc;
-      q.po = fc ? { per: null, pfcf: cash(q.fcf, sc.pfcf), ev_ebitda: null, ev_ebit: null } : { per: cash(q.ni, sc.per), pfcf: cash(q.fcf, sc.pfcf), ev_ebitda: ev(q.ebitda, sc.ev_ebitda), ev_ebit: ev(q.ebit, sc.ev_ebit) };
+      q.po = fc ? { per: null, pfcf: cash(q.fcf, sc.pfcf), ev_ebitda: null, ev_ebit: null } : { per: cash(q.ni, perE), pfcf: cash(q.fcf, pfcfE), ev_ebitda: ev(q.ebitda, evdE), ev_ebit: ev(q.ebit, evtE) };
       q.anio = f.anio_base + k;
       rows.push(q); p = q;
     }
@@ -498,7 +509,7 @@ const Val = (function () {
   const M14 = { defaults, proyectar, dcfInverso, actuales, realismo, fiabilidad, margenImplicito, trampa, valorMultiplo };
   const pick = nombre => function (f) { return (isFin(f) ? Fin : M14)[nombre].apply(null, arguments); };
 
-  return { CFG, crisisYears, gAnio, valorMultiplo: (f, aj) => (isFin(f) || esMO(f) || esFC(f) ? null : valorMultiplo(f, aj)), defaults: pick('defaults'), proyectar: pick('proyectar'), precioEntrada, dcfInverso: pick('dcfInverso'), actuales: pick('actuales'), realismo: pick('realismo'), margenImplicito: pick('margenImplicito'), trampa: f => (isFin(f) ? [] : trampa(f)), esMO, esFC, matrizEntrada, multiplosHistoricos, accAjustadas, inferirSplits, fiabilidad: pick('fiabilidad'), cagr, avg, isN, isFin, Fin,
+  return { CFG, EXP, crisisYears, gAnio, valorMultiplo: (f, aj) => (isFin(f) || esMO(f) || esFC(f) ? null : valorMultiplo(f, aj)), defaults: pick('defaults'), proyectar: pick('proyectar'), precioEntrada, dcfInverso: pick('dcfInverso'), actuales: pick('actuales'), realismo: pick('realismo'), margenImplicito: pick('margenImplicito'), trampa: f => (isFin(f) ? [] : trampa(f)), esMO, esFC, matrizEntrada, multiplosHistoricos, accAjustadas, inferirSplits, fiabilidad: pick('fiabilidad'), cagr, avg, isN, isFin, Fin,
     soportado: f => !(f && f.tipo === 'reit') };
 })();
 if (typeof module !== 'undefined') module.exports = Val;
