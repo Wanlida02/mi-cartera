@@ -1,3 +1,4 @@
+if (!process.argv[2] || !require('fs').existsSync(process.argv[2])) { console.log('OMITIDO contraste_sec.test.js: necesita tu archivo de datos (node tests/contraste_sec.test.js datos.json)'); process.exit(0); }
 /* Contrastar una ficha de informes con la SEC: rellena lo que falta, verifica lo que coincide y sube la fiabilidad. Uso: node tests/contraste_sec.test.js datos.json (necesita PRDO en el fichero y datos/PRDO.json) */
 const assert = require('assert'), { chromium } = require('playwright'), http = require('http'), fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..'), mime = { html: 'text/html', js: 'text/javascript', css: 'text/css', json: 'application/json', png: 'image/png', svg: 'image/svg+xml', webmanifest: 'application/json' };

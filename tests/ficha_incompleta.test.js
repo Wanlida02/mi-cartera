@@ -1,3 +1,4 @@
+if (!process.argv[2] || !require('fs').existsSync(process.argv[2])) { console.log('OMITIDO ficha_incompleta.test.js: necesita tu archivo de datos (node tests/ficha_incompleta.test.js datos.json)'); process.exit(0); }
 /* Fichas borrador (desde informes) no se pueden valorar: se explica y, si es de EE. UU., se completa con la SEC. Una ficha completa no se pisa con un borrador. Uso: node tests/ficha_incompleta.test.js datos.json (con AAPL borrador) */
 const assert = require('assert'), { chromium } = require('playwright'), http = require('http'), fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..'), mime = { html: 'text/html', js: 'text/javascript', css: 'text/css', json: 'application/json', png: 'image/png', svg: 'image/svg+xml', webmanifest: 'application/json' };

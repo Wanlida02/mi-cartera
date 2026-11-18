@@ -158,3 +158,7 @@ body:has(.fab) .toast{bottom:calc(80px + env(safe-area-inset-bottom))}   /* el a
 .grp{display:flex;justify-content:space-between;align-items:baseline;padding:12px 0 4px;border-top:1px solid var(--line);font-size:13px;color:var(--mut)}
 .grp:first-child{border-top:0;padding-top:0}.grp b{color:var(--ink);font-size:14px}
 .grp+.row{border-top:0}
+/* Aviso con botón (Deshacer) */
+.toast.acc{pointer-events:auto;display:flex;align-items:center;gap:12px;padding:8px 8px 8px 16px}
+.toast-b{background:none;border:0;color:#8cc4ff;font:inherit;font-weight:700;padding:6px 10px;min-height:36px;border-radius:8px;cursor:pointer;white-space:nowrap}
+.toast-b:hover,.toast-b:focus-visible{background:rgba(255,255,255,.12)}

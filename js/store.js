@@ -4,7 +4,7 @@
 const Store = (function () {
   const KEY = 'mi-cartera:datos:v1', BK = 'mi-cartera:copia-previa', META = 'mi-cartera:meta';
   const INFO = 'mi-cartera:precios-info';
-  let data = null, aviso = '', info = null;
+  let data = null, aviso = '', info = null, gen = 0;   // gen: sube cuando los datos se sustituyen desde fuera (Drive, importar); invalida un «Deshacer» pendiente
   try { info = JSON.parse(localStorage.getItem(INFO) || 'null'); } catch (e) { info = null; }
   const subs = [];
 
@@ -33,18 +33,20 @@ const Store = (function () {
   function importar(texto) {
     const o = validar(JSON.parse(texto));
     try { const prev = localStorage.getItem(KEY); if (prev) localStorage.setItem(BK, prev); } catch (e) { /* sin copia previa */ }
-    data = Logic.normalizar(o);
+    data = Logic.normalizar(o); gen++;
     return save();
   }
   /* Adopta datos que vienen de Drive sin tocar su updatedAt (así no se vuelven a subir) */
   function adopt(o) {
     const previo = data && data.historico;
     data = Logic.normalizar(validar(o));
-    data.historico = Logic.unirHistorico(previo, data.historico);   // las fotos diarias de este dispositivo no se pierden al traer los datos de Drive
+    data.historico = Logic.unirHistorico(previo, data.historico); gen++;   // las fotos diarias de este dispositivo no se pierden al traer los datos de Drive
     try { localStorage.setItem(KEY, JSON.stringify(data)); aviso = ''; } catch (e) { aviso = 'No se pudo guardar en este dispositivo.'; }
   }
   /* Foto del día del valor de la cartera (no cuenta como edición tuya: viaja a Drive con la siguiente) */
   function foto() { if (data && Logic.fotoDiaria(data)) save(true); }
+  /* Vuelve a una copia tomada con exportar() (botón «Deshacer»): cuenta como edición tuya, así que también se sincroniza */
+  function restaurar(texto) { data = Logic.normalizar(JSON.parse(texto)); return save(); }
   function exportar() { return JSON.stringify(data); }
   function marcarCopia() { try { localStorage.setItem(META, JSON.stringify({ copia: Date.now() })); } catch (e) { } }
   function ultimaCopia() { try { return (JSON.parse(localStorage.getItem(META) || '{}')).copia || null; } catch (e) { return null; } }
@@ -74,5 +76,5 @@ const Store = (function () {
       return n;
     } catch (e) { return false; }
   }
-  return { foto, load, save, adopt, importar, exportar, marcarCopia, ultimaCopia, cargarPreciosAuto, get: () => data, preciosInfo: () => info, aviso: () => aviso, onChange: f => subs.push(f) };
+  return { restaurar, generacion: () => gen, foto, load, save, adopt, importar, exportar, marcarCopia, ultimaCopia, cargarPreciosAuto, get: () => data, preciosInfo: () => info, aviso: () => aviso, onChange: f => subs.push(f) };
 })();

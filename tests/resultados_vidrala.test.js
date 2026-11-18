@@ -1,3 +1,4 @@
+if (!process.argv[2] || !require('fs').existsSync(process.argv[2])) { console.log('OMITIDO resultados_vidrala.test.js: necesita tu archivo de datos (node tests/resultados_vidrala.test.js datos.json)'); process.exit(0); }
 /* Caso real: Vidrala (europea, ficha borrador incompleta) con las cifras del 9M 2026 publicadas el 28-oct-2026. Uso: node tests/resultados_vidrala.test.js datos.json */
 const assert = require('assert'), { chromium } = require('playwright'), http = require('http'), fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..'), mime = { html: 'text/html', js: 'text/javascript', css: 'text/css', json: 'application/json', png: 'image/png', svg: 'image/svg+xml', webmanifest: 'application/json' };

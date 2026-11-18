@@ -11,7 +11,23 @@
   const urlSegura = u => (/^https?:\/\//i.test(String(u || '').trim()) ? String(u).trim() : null);   // solo http(s): un «javascript:…» en un archivo importado no se convierte en enlace
   let tab = 'inicio', filtro = '', orden = 'peso', toastT;
 
-  function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 3200); }
+  /* Aviso flotante; con «acc» lleva un botón (p. ej. Deshacer) y dura más */
+  function toast(m, acc) {
+    const t = $('#toast'); t.textContent = ''; const sp = document.createElement('span'); sp.textContent = m; t.appendChild(sp);
+    if (acc) { const b = document.createElement('button'); b.type = 'button'; b.className = 'toast-b'; b.textContent = acc.txt; b.onclick = () => { t.classList.remove('on', 'acc'); clearTimeout(toastT); acc.fn(); }; t.appendChild(b); }
+    t.classList.toggle('acc', !!acc); t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on', 'acc'), acc ? 7000 : 3200);
+  }
+  /* Borra (o cambia) al momento y ofrece «Deshacer» unos segundos, en vez de preguntar antes. fn() hace el cambio y devuelve {ok, msg}.
+     Si mientras tanto llegan datos de Drive o se importa un archivo, ya no se deshace (no se pisa lo nuevo). */
+  function conDeshacer(fn) {
+    const copia = Store.exportar(), g = Store.generacion(), res = fn();
+    if (!guardar(res)) return false;
+    toast(Store.aviso() || res.msg, { txt: 'Deshacer', fn: () => {
+      if (Store.generacion() !== g) return toast('Ya no se puede deshacer: los datos han cambiado desde Drive');
+      Store.restaurar(copia); cerrar(); render(); toast('Deshecho');
+    } });
+    return true;
+  }
   function dlg(html, onReady) {
     const d = $('#dlg'); d.innerHTML = '<div class="dlg-in">' + html + '</div>';
     if (!d.open) d.showModal();
@@ -292,7 +308,7 @@
   }
 
   /* ───── Ajustes ───── */
-  const APP_VERSION = '67 · Inicio más rápido, evolución del valor, medidor de la watchlist, cartera por broker y por rentab. esperada · 66 · Inicio con plusvalía y reparto, pestañas abajo en el móvil · 65 · Arreglos: precio manual, precios al importar, fecha local, divisas en Ajustes, caché · 64 · Cifras de 12 meses: la IA busca sola y da fuentes · 63 · Caja de calidad: cada botón hace algo (avisos, verificar, guía de múltiplos, precio del feed) · 62 · Informes: una empresa con dos nombres comparte carpeta · 61 · Completar fichas con una IA que busca sola en los informes (con fuentes, fase 2 y deshacer)';
+  const APP_VERSION = '68 · Borrar con «Deshacer», filas usables con teclado · 67 · Inicio más rápido, evolución del valor, medidor de la watchlist, cartera por broker y por rentab. esperada · 66 · Inicio con plusvalía y reparto, pestañas abajo en el móvil · 65 · Arreglos: precio manual, precios al importar, fecha local, divisas en Ajustes, caché · 64 · Cifras de 12 meses: la IA busca sola y da fuentes · 63 · Caja de calidad: cada botón hace algo (avisos, verificar, guía de múltiplos, precio del feed) · 62 · Informes: una empresa con dos nombres comparte carpeta · 61 · Completar fichas con una IA que busca sola en los informes (con fuentes, fase 2 y deshacer)';
   function ajustes() {
     const d = Store.get(), A = d.ajustes, cp = Store.ultimaCopia();
     const DIVS = [...new Set(Object.keys(A.fx).concat(d.posiciones.map(p => p.moneda)).filter(k => k && /^[A-Z]{3}$/.test(k) && k !== 'EUR'))].sort();   // todas las divisas del feed y de tus posiciones (antes solo USD, CNY y TWD)
@@ -455,8 +471,7 @@
     if (t.dataset.tab) { tab = t.dataset.tab; render(); window.scrollTo(0, 0); return; }
     if (t.dataset.pos) return detalle(+t.dataset.pos);
     if (t.dataset.undo) {
-      if (!confirm('¿Deshacer esta operación?')) return;
-      return guardar(L.borrarMov(Store.get(), t.dataset.undo));
+      return conDeshacer(() => L.borrarMov(Store.get(), t.dataset.undo));
     }
     const i = +t.dataset.i;
     switch (t.dataset.a) {
@@ -468,8 +483,15 @@
       case 'vender': formVenta(i); break;
       case 'editar': formEditar(i); break;
       case 'precio': formPrecio(i); break;
-      case 'eliminar': if (confirm('¿Eliminar la ficha sin registrar venta? Para vender usa «Vender».')) guardar(L.eliminar(Store.get(), i)); break;
+      case 'eliminar': conDeshacer(() => L.eliminar(Store.get(), i)); break;   // sin registrar venta (para vender, «Vender»)
     }
+  });
+  /* Filas clicables también con teclado y lector de pantalla: foco con Tab, se abren con Intro o Espacio */
+  const pulsables = () => document.querySelectorAll('.row.click:not([tabindex])').forEach(el => { el.tabIndex = 0; el.setAttribute('role', 'button'); });
+  new MutationObserver(pulsables).observe(document.body, { childList: true, subtree: true }); pulsables();
+  document.addEventListener('keydown', e => {
+    const t = e.target; if ((e.key !== 'Enter' && e.key !== ' ') || !t.matches || !t.matches('.row.click[role="button"]')) return;
+    e.preventDefault(); t.click();
   });
   document.addEventListener('input', e => { if (e.target.id === 'q') { filtro = e.target.value; render(); } if (e.target.id === 'qi') { filtroInf = e.target.value; render(); } });
   document.addEventListener('change', e => {
@@ -482,7 +504,7 @@
   $('#btn-ajustes').onclick = ajustes;
   $('#btn-sync').onclick = () => { const e = Drive.estado(); if (!e.conectado) ajustes(); else if (e.estado === 'conflicto' || e.estado === 'reconectar' || e.estado === 'error') Drive.ahora(); else toast(textoDrive()); };
 
-  Object.assign(UI, { urlSegura, lineaPrecios: () => lineaPrecios(), dlg, cerrar, toast, esc, nf, pct, money, eur, guardar, render, campo, val, cls, irA: t => { tab = t; render(); window.scrollTo(0, 0); },
+  Object.assign(UI, { conDeshacer, urlSegura, lineaPrecios: () => lineaPrecios(), dlg, cerrar, toast, esc, nf, pct, money, eur, guardar, render, campo, val, cls, irA: t => { tab = t; render(); window.scrollTo(0, 0); },
     abrirPosicion: tk => { const d = Store.get(), i = d.posiciones.findIndex(p => L.tickerDe(d, p) === tk); if (i < 0) return; tab = 'cartera'; render(); window.scrollTo(0, 0); detalle(i); },
     abrirInforme: tk => { const I = L.informes(Store.get()), i = I ? I.lista.findIndex(e => (e.tk || '').toUpperCase() === String(tk).toUpperCase()) : -1; tab = 'informes'; render(); window.scrollTo(0, 0); if (i >= 0) detalleInforme(i); } });
   Store.load(); render();

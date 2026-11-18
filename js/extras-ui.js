@@ -21,7 +21,7 @@
       dd.querySelector('#o-ok').onclick = () => { const n = U.val('o-n').trim(); if (!n) return U.toast('Pon un nombre'); a.nombre = n; a.tipo = U.val('o-t'); a.notas = U.val('o-no');
         const v = parseFloat(U.val('o-v').replace(',', '.')); if (isFinite(v) && (!u || u.valor !== v)) a.historial.push({ fecha: L.today(), valor: v });
         if (!id) d.otras.accounts.push(a); U.guardar({ ok: true, msg: 'Guardado' }); };
-      const del = dd.querySelector('#o-del'); if (del) del.onclick = () => { if (confirm('¿Eliminar ' + a.nombre + '?')) { d.otras.accounts.splice(d.otras.accounts.indexOf(a), 1); U.guardar({ ok: true, msg: 'Eliminada' }); } };
+      const del = dd.querySelector('#o-del'); if (del) del.onclick = () => { U.conDeshacer(() => { d.otras.accounts.splice(d.otras.accounts.indexOf(a), 1); return { ok: true, msg: a.nombre + ' eliminada' }; }); };
     });
   }
 

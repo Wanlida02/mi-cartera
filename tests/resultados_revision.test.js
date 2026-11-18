@@ -1,3 +1,4 @@
+if (!process.argv[2] || !require('fs').existsSync(process.argv[2])) { console.log('OMITIDO resultados_revision.test.js: necesita tu archivo de datos (node tests/resultados_revision.test.js datos.json)'); process.exit(0); }
 /* Revisión de resultados frente a la valoración: SEC (EE. UU.), cifras de IA (resto), avisos en Inicio/Valoración/Cartera. Uso: node tests/resultados_revision.test.js datos.json */
 const assert = require('assert'), { chromium } = require('playwright'), http = require('http'), fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..'), mime = { html: 'text/html', js: 'text/javascript', css: 'text/css', json: 'application/json', png: 'image/png', svg: 'image/svg+xml', webmanifest: 'application/json' };

@@ -1,3 +1,4 @@
+if (!process.argv[2] || !require('fs').existsSync(process.argv[2])) { console.log('OMITIDO danr_parche.test.js: necesita tu archivo de datos (node tests/danr_parche.test.js datos.json)'); process.exit(0); }
 /* Parche DANR: ficha corregida con los comunicados (7 años, 2026 incluido), precio de la acción de ahorro, no se repite ni pisa ediciones posteriores. Uso: node tests/danr_parche.test.js datos.json */
 const assert = require('assert'), { chromium } = require('playwright'), http = require('http'), fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..'), mime = { html: 'text/html', js: 'text/javascript', css: 'text/css', json: 'application/json', png: 'image/png', svg: 'image/svg+xml', webmanifest: 'application/json' };

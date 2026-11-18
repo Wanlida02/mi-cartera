@@ -402,7 +402,7 @@
     else if (a === 'cribartodas') { const d = D(); let n = 0; Object.keys(d.fichas).filter(k => !d.cribado[k] && !d.posiciones.some(p => L.tickerDe(d, p) === k)).forEach(k => { d.cribado[k] = { ticker: k, nombre: d.fichas[k].nombre, origen: 'ficha' }; if (desdeFicha(k, true).ok) n++; else delete d.cribado[k]; }); Store.save(); U.render(); U.toast(n + ' candidatas cribadas'); }
     else if (a === 'ficha') { const r = desdeFicha(sel); if (r.ok) { Store.save(); U.render(); } U.toast(r.msg); }
     else if (a === 'verif') { const c = D().cribado[sel]; if (confirm('¿Confirmas que has contrastado estos datos con el informe anual o una fuente fiable? Pasarán a «verificados» con fecha de hoy.')) { c.origen = 'verificado'; c.fecha_verificacion = hoy(); U.guardar({ ok: true, msg: 'Marcados como verificados hoy' }); } }
-    else if (a === 'borrar') { if (confirm('¿Eliminar el cribado de ' + sel + '? (La ficha de valoración no se toca)')) { delete D().cribado[sel]; sel = null; U.guardar({ ok: true, msg: 'Cribado eliminado' }); } }
+    else if (a === 'borrar') { U.conDeshacer(() => { const k = sel; delete D().cribado[k]; sel = null; return { ok: true, msg: 'Cribado de ' + k + ' eliminado (la ficha de valoración no se toca)' }; }); }
     else return false;
     return true;
   });

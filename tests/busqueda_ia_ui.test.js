@@ -1,3 +1,4 @@
+if (!process.argv[2] || !require('fs').existsSync(process.argv[2])) { console.log('OMITIDO busqueda_ia_ui.test.js: necesita tu archivo de datos (node tests/busqueda_ia_ui.test.js datos.json)'); process.exit(0); }
 /* Interfaz del completado con IA que busca sola (usa el JSON real de Neurones como respuesta). Uso: node tests/busqueda_ia_ui.test.js datos.json */
 const assert = require('assert'), { chromium } = require('playwright'), http = require('http'), fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..'), mime = { html: 'text/html', js: 'text/javascript', css: 'text/css', json: 'application/json', png: 'image/png', svg: 'image/svg+xml', webmanifest: 'application/json' };
