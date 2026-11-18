@@ -1,5 +1,5 @@
 {
- "generado": "2026-11-17",
+ "generado": "2026-11-18",
  "nota": "Fechas públicas de próximos resultados. confirmada=true: anunciada por la empresa. false: estimada (Nasdaq, o misma presentación del año anterior según la SEC); verifícala en la web de la empresa.",
  "fechas": {
   "ESEA": {
@@ -224,7 +224,7 @@
    "fecha": "2026-11-18",
    "confirmada": false,
    "fuente": "SEC: misma fecha del año anterior",
-   "ultima": "2026-08-26"
+   "ultima": "2026-11-17"
   }
  }
 }
