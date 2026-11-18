@@ -4,7 +4,7 @@
 const Logic = (function () {
   const V = typeof Val !== 'undefined' ? Val : require('./val.js');
   const isN = v => typeof v === 'number' && isFinite(v);
-  const today = () => new Date().toISOString().slice(0, 10);
+  const today = () => { const t = new Date(), z = n => String(n).padStart(2, '0'); return t.getFullYear() + '-' + z(t.getMonth() + 1) + '-' + z(t.getDate()); };   // fecha LOCAL (en UTC, entre las 00:00 y las 02:00 en España salía el día anterior)
   const round8 = x => Math.round(x * 1e8) / 1e8;
   const clone = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
 
@@ -434,7 +434,7 @@ const Logic = (function () {
   /* Precio manual de un valor: se guarda por ticker (lo leen cartera y valoración) o, sin ticker, en la propia posición */
   function precioManual(d, pos, precio, hoy) {
     const p = Number(precio); if (!(p > 0)) return false;
-    const tk = (pos.ticker || '').trim().toUpperCase();
+    const tk = tickerDe(d, pos);   // la misma clave con la que lo lee precioPos (la ficha a la que se asocia la posición), no el ticker tal cual
     if (tk) d.precios[tk] = { ticker: tk, precio: p, divisa: pos.moneda, fecha_precio: hoy || today(), fuente: 'manual', actualizado: new Date().toISOString() };
     else { pos.precio_actual = p; pos.fecha_precio = hoy || today(); }
     return true;
