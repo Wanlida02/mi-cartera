@@ -21,6 +21,9 @@ jobs:
           node-version: 22
       - name: Descargar cuentas de la SEC
         run: node scripts/datos_sec.js --todos
+      - name: Entorno de tipos (FRED)
+        run: node scripts/macro.js
+        continue-on-error: true
       - name: Guardar
         run: |
           git config user.name "mi-cartera-bot"
