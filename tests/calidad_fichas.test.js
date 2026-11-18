@@ -18,8 +18,8 @@ const cod = (c, k) => c.problemas.filter(p => p.cod === k);
   assert(A && B); assert(cod(A, 'distorsion').length === 1 && cod(A, 'distorsion')[0].acc === 'solofcf', 'distorsionada → ofrece método de flujo');
   assert(!cod(B, 'distorsion').length, 'ficha normal: sin distorsión'); assert(cod(B, 'multprov').length === 0, 'con múltiplos propios no es provisional');
   const C = r.find(x => x.tk === 'CCC'); assert(cod(C, 'multprov')[0].acc === 'multpropios', 'con histórico válido: acción calcular múltiplos propios');
-  assert.deepEqual(cod(A, 'multprov').map(p => p.acc), ['abrir'], 'P/FCF de 65x: no se aplica solo, pide ponerlos a mano'); assert(/muy alto/.test(cod(A, 'multprov')[0].txt));
-  assert.deepEqual(cod(L.calidadFichas(d, HOY, { sec: () => null }).find(x => x.tk === 'CCC'), 'multprov').map(p => p.acc), ['abrir'], 'sin histórico: pide ponerlos a mano');
+  assert.deepEqual(cod(A, 'multprov').map(p => p.acc), ['multguia'], 'P/FCF de 65x: no se aplica solo, pide ponerlos a mano'); assert(/muy alto/.test(cod(A, 'multprov')[0].txt));
+  assert.deepEqual(cod(L.calidadFichas(d, HOY, { sec: () => null }).find(x => x.tk === 'CCC'), 'multprov').map(p => p.acc), ['multguia'], 'sin histórico: pide ponerlos a mano');
   assert(r.indexOf(A) < r.indexOf(B), 'ordenadas por fiabilidad (peor primero)');
   // ── 12 meses: SEC / no SEC ──
   assert.equal(cod(A, 'ttm_falta')[0].acc, 'cifras12'); assert(/IA/.test(cod(A, 'ttm_falta')[0].accTxt), 'no está en la SEC → IA/manual');

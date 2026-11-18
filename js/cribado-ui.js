@@ -69,9 +69,14 @@
     });
     /* Lo que tienes en cartera (aunque sea una compra de hoy) y tus fichas de seguimiento siempre necesitan precio, calendario y datos */
     enCart.forEach(k => { out[k] = { pausa: false }; });
-    Object.keys(d.fichas || {}).forEach(k => { if (d.fichas[k].estado === 'watchlist') out[k] = { pausa: false }; });
+    Object.keys(d.fichas || {}).forEach(k => { out[k] = { pausa: false }; });   // cualquier ficha necesita su precio del feed (no a mano)
     return out;
   }
+  U.actualizarPrecios = async () => {
+    cargarSimb(); if (SIMB && DatosWeb.planSimbolos(SIMB, deseadosSimb()).cambios) return aplicarSimb();
+    const r = await DatosWeb.lanzarWorkflow('precios.yml', { forzar: 'true' });
+    U.toast(r.sinToken ? 'Falta el token de GitHub (Cartera → Actualizar precios). Debe tener permisos Contents y Actions: Read and write.' : r.ok ? 'Precios pedidos; llegan en 1–2 min (Cartera → Actualizar precios → Traer lo último)' : (r.msg || 'No se pudo lanzar'));
+  };
   U.simbPend = () => { cargarSimb(); return SIMB ? DatosWeb.planSimbolos(SIMB, deseadosSimb()).anadir : []; };
   function simbolosCard() {
     cargarSimb(); if (!SIMB) return '';

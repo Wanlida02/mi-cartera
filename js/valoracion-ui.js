@@ -75,8 +75,47 @@
     if (ac === 'solofcf') return soloFcfDlg(k);
     if (ac === 'quitarsolofcf') { L.aplicarSoloFcf(d, k, false); Store.save(); return restore(() => {}), U.toast('Vuelve el método normal en ' + k); }
     if (ac === 'cifras12') return cifras12Accion(k);
+    if (ac === 'precioauto') return precioAuto(k);
     sel = k; U.render(); window.scrollTo(0, 0);
+    if (ac === 'avisos') { abiertos.dat = 1; U.render(); const e = document.querySelector('[data-v-sec="dat"]'); if (e) e.scrollIntoView({ block: 'start' }); return; }
+    if (ac === 'borrador') return borradorDlg(k);
+    if (ac === 'multguia') return multGuiaDlg(k);
     if (ac === 'precio') precioDlg(); else if (ac === 'nuevoej') nuevoEjercicio(k);
+  }
+  /* El precio sale del feed automático: aquí solo se reactiva el símbolo si estaba en pausa y se pide refrescar; a mano solo si no hay forma */
+  async function precioAuto(k) {
+    if (U.actualizarPrecios) return U.actualizarPrecios(k);
+    sel = k; U.render(); precioDlg();
+  }
+  function borradorDlg(tk) {
+    const d = D(), f = d.fichas[tk], falta = L.lineasFaltantes(f), conf = f.conf || {}, ks = Object.keys(conf), noA = ks.filter(x => conf[x] !== 'A').length;
+    U.dlg('<h2>Verificar ' + esc(tk) + '</h2><p class="small">La ficha se creó leyendo los informes y nadie la ha contrastado. Para quitarle el aviso de borrador:</p><ol class="small">' +
+      '<li><b>Completar lo que falta</b>: ' + (falta.length ? esc(falta.join(', ')) : 'nada, todas las series están') + '.</li>' +
+      '<li><b>Contrastar</b> las cifras con una segunda fuente (SEC si cotiza en EE. UU.; si no, una IA que busque en páginas financieras y devuelva las fuentes).</li>' +
+      '<li><b>Marcar como verificada</b> cuando estés conforme' + (ks.length ? ' (' + (ks.length - noA) + ' de ' + ks.length + ' líneas ya tienen fuente primaria)' : '') + '.</li></ol>' +
+      '<div class="acts"><button class="btn sec" data-a="cerrar">Cerrar</button>' + (f.divisa === 'USD' ? '<button class="btn sec" id="bd-sec">Contrastar con la SEC</button>' : '') + '<button class="btn sec" id="bd-ia">Completar con una IA</button><button class="btn" id="bd-ok"' + (falta.length ? ' disabled title="Faltan series"' : '') + '>Marcar verificada</button></div>', dd => {
+      const cerrar = () => dd.querySelector('[data-a="cerrar"]').click();
+      const a = dd.querySelector('#bd-sec'); if (a) a.onclick = () => { cerrar(); sel = tk; U.render(); contrasteSEC(tk); };
+      dd.querySelector('#bd-ia').onclick = () => { cerrar(); sel = tk; U.render(); lineasIA(tk); };
+      dd.querySelector('#bd-ok').onclick = () => { if (L.lineasFaltantes(f).length) return; delete f._borrador; f.notas = (f.notas || []).concat(['Verificada a mano el ' + hoy()]); U.guardar({ ok: true, msg: 'Ficha marcada como verificada' }); cerrar(); };
+    });
+  }
+  function multGuiaDlg(tk) {
+    const d = D(), f = d.fichas[tk], m = f.mult_hist || {}, g = { per: 15, pfcf: 15, ev_ebitda: 9, ev_ebit: 11 };
+    const prompt = 'Necesito los múltiplos que el mercado pagó por ' + (f.nombre || tk) + ' (' + tk + ') al cierre de cada ejercicio de los últimos 8-10 años: PER, P/FCF, EV/EBITDA y EV/EBIT. Busca tú en páginas financieras (informes anuales, Macrotrends, Morningstar, Investing, la propia web de la empresa) y calcula con precio de cierre del ejercicio y cifras reportadas. Devuelve SOLO un JSON {"per":[...],"pfcf":[...],"ev_ebitda":[...],"ev_ebit":[...],"anios":[...],"fuentes":["url"],"dudas":[]} con null donde no puedas verificarlo. No inventes ningún valor.';
+    U.dlg('<h2>Múltiplos de salida · ' + esc(tk) + '</h2><p class="small">El valor a 5 años multiplica por lo que el mercado suele pagar por esta empresa. <b>No hay que inventarlo</b>: tres vías, de mejor a peor:</p><ol class="small"><li><b>Histórico propio</b>: se calcula solo con los cierres de ejercicio. ' + esc(tk) + ' aún no tiene histórico de precios descargado; entra al reactivarse el símbolo en la lista de precios (workflow del domingo) y entonces aparece «Calcular múltiplos propios».</li>' +
+      '<li><b>Medianas de una IA con fuentes</b>: copia este prompt, pega luego los valores abajo (usa la mediana, no el último año).</li><li><b>Dejar los genéricos</b> (15x PER · 15x P/FCF · 9x EV/EBITDA · 11x EV/EBIT): son prudentes para una empresa media de calidad; para una cíclica o de bajo crecimiento, mejor bajar 2-3 puntos, nunca subirlos sin un histórico que lo apoye.</li></ol>' +
+      '<textarea id="mg-p" readonly rows="5" style="width:100%" class="small">' + esc(prompt) + '</textarea><div class="acts"><button class="btn sec sm" id="mg-cp">Copiar prompt</button></div>' +
+      '<p class="small"><b>Introducir medianas</b> (déjalo vacío para mantener genéricos)</p><div class="tools">' + [['per', 'PER'], ['pfcf', 'P/FCF'], ['ev_ebitda', 'EV/EBITDA'], ['ev_ebit', 'EV/EBIT']].map(([k, n]) => U.campo('mg-' + k, n + ' (genérico ' + g[k] + 'x)', m[k] != null ? m[k] : '')).join('') + '</div>' +
+      '<div class="acts"><button class="btn sec" data-a="cerrar">Cerrar</button><button class="btn" id="mg-ok">Guardar múltiplos</button></div>', dd => {
+      dd.querySelector('#mg-cp').onclick = () => { try { navigator.clipboard.writeText(prompt); U.toast('Prompt copiado'); } catch (e) { dd.querySelector('#mg-p').select(); } };
+      dd.querySelector('#mg-ok').onclick = () => {
+        const o = {}; ['per', 'pfcf', 'ev_ebitda', 'ev_ebit'].forEach(k => { const v = parseFloat(String(U.val('mg-' + k)).replace(',', '.')); if (v > 0) o[k] = v; });
+        if (!Object.keys(o).length) return U.toast('Escribe al menos un múltiplo');
+        if (Object.keys(o).some(k => o[k] > 60)) return U.toast('Hay un múltiplo por encima de 60x: revísalo');
+        f.mult_hist = Object.assign({}, g, f.mult_hist || {}, o); f.mult_hist_manual = { fecha: hoy(), fuente: 'introducidos a mano (medianas con fuente)' }; U.guardar({ ok: true, msg: 'Múltiplos guardados' });
+      };
+    });
   }
   function informeMult(rep, titulo) {
     const ap = rep.filter(x => x.aplicado), no = rep.filter(x => !x.aplicado);

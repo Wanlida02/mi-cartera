@@ -91,6 +91,7 @@ const Logic = (function () {
       pisa: { caja: { 2021: 62639, 2022: 48304, 2023: 61555, 2024: 65171, 2025: 54697, 2026: 56722 } } },
     { id: 'v60-strl', tk: 'STRL', conf: 'A', fuente: 'Sterling Infrastructure, 10-K (SEC)', nota: 'Caja 2020-2021 = efectivo + inversiones a corto (SEC).', pisa: { caja: { 2020: 66.2, 2021: 81.8 } } },
     { id: 'v60-mips', tk: 'MIPS', conf: 'A', fuente: 'MIPS, informe anual 2025 (SEK M)', nota: 'Amortización 2024-2025 y deuda financiera 2024 (0) y 2025 (304) del informe anual.', pone: { da: { 2024: 20, 2025: 19 }, deuda: { 2024: 0, 2025: 304 } } },
+    { id: 'v63-mips-2025', tk: 'MIPS', conf: 'A', fuente: 'MIPS, informe anual 2025 (SEK M)', nota: 'Rellena amortización y deuda financiera 2025 que la ficha regenerada dejó vacías.', pone: { da: { 2025: 19 }, deuda: { 2025: 304 } } },
     { id: 'v60-che', tk: 'CHE', conf: 'A', fuente: 'Chemed, 10-K (SEC)', nota: 'Sin deuda financiera a cierre de 2024 y 2025 (10-K).', pone: { deuda: { 2024: 0, 2025: 0 } } },
     { id: 'v60-belfa', tk: 'BELFA', conf: 'A', fuente: 'Bel Fuse, comunicado de resultados (acciones A + B en circulación)', nota: 'Acciones (millones) 2024 y 2025 del comunicado de resultados.', pone: { acciones: { 2024: 12.615, 2025: 12.661 } } },
     { id: 'v60-sol', tk: 'BIT:SOL', conf: 'P', fuente: 'Balance consolidado de SOL (vía StockAnalysis; contrasta con el informe anual 2025)', nota: 'Deuda financiera bruta sin arrendamientos = deuda a largo + parte corriente + corto plazo (544 / 587 / 733 M en 2023 / 2024 / 2025). Arrendamientos aparte. Fuente secundaria: confirmar con el informe anual.', pone: { deuda: { 2023: 546.4, 2024: 587.3, 2025: 733.3 } } }
@@ -533,15 +534,15 @@ const Logic = (function () {
       if (v && v.incompleta) add('r', 'incompleta', 'Ficha incompleta: faltan ' + v.incompleta.join(', ') + '.', 'abrir', 'Completar datos');
       else if (v && v.sinPrecio) add('r', 'sinprecio', 'Sin precio de cotización.', 'precio', 'Poner precio');
       else if (v && v.error) add('r', 'error', v.error, 'abrir', 'Abrir ficha');
-      if (v && v.graves) add('r', 'graves', v.graves + ' dato(s) dudoso(s) en la ficha' + (v.avisos && v.avisos[0] ? ': ' + v.avisos[0] : '') + '.', 'abrir', 'Revisar datos');
-      if (v && !v.error && v.diasPrecio != null && v.diasPrecio > 7) add('y', 'precioviejo', 'Precio de hace ' + v.diasPrecio + ' días.', 'precio', 'Actualizar precio');
-      if (f._borrador) add('y', 'borrador', 'Ficha borrador creada desde informes: sin verificar.', 'abrir', 'Revisar');
-      aud.filter(x => x.tk === tk).forEach(x => add(x.nivel === 'r' ? 'r' : 'y', 'divisa', x.txt, 'precio', 'Corregir precio/divisa'));
+      if (v && v.graves) add('r', 'graves', v.graves + ' dato(s) dudoso(s) en la ficha' + (v.avisos && v.avisos[0] ? ': ' + v.avisos[0] : '') + '.', 'avisos', 'Ver qué datos dudan');
+      if (v && !v.error && v.diasPrecio != null && v.diasPrecio > 7) add('y', 'precioviejo', 'Precio de hace ' + v.diasPrecio + ' días.', 'precioauto', 'Actualizar precio');
+      if (f._borrador) add('y', 'borrador', 'Ficha borrador creada desde informes: sin verificar.', 'borrador', 'Verificar la ficha');
+      aud.filter(x => x.tk === tk).forEach(x => { const viejo = /^Precio de hace|^El precio no tiene fecha/.test(x.txt); if (viejo && v && v.diasPrecio != null && v.diasPrecio > 7) return; add(x.nivel === 'r' ? 'r' : 'y', 'divisa', x.txt, viejo ? 'precioauto' : 'precio', viejo ? 'Actualizar precio' : 'Revisar divisa del precio'); });
       /* 2 · múltiplos de salida genéricos */
       if (provisional(f)) {
         const pr = ctx.hist ? proponerMultiplos(d, tk, ctx.hist) : null;
         if (pr && pr.mult) add('y', 'multprov', 'Usa múltiplos genéricos (15x/15x/9x/11x); se pueden calcular propios del histórico.', 'multpropios', 'Calcular múltiplos propios');
-        else add('y', 'multprov', 'Usa múltiplos genéricos' + (pr && pr.motivo ? ' (' + pr.motivo + ')' : '') + '. Introduce los tuyos a mano en la ficha.', 'abrir', 'Poner múltiplos a mano');
+        else add('y', 'multprov', 'Usa múltiplos genéricos' + (pr && pr.motivo ? ' (' + pr.motivo + ')' : '') + '. Hay que sacarlos de lo que el mercado pagó por la empresa, no inventarlos.', 'multguia', 'Cómo elegir múltiplos');
       }
       /* 3 · contabilidad distorsionada → método de flujo */
       const ds = distorsion(f);

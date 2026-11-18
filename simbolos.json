@@ -61,8 +61,7 @@
     "FDX": {
       "y": [
         "FDX"
-      ],
-      "pausa": true
+      ]
     },
     "FSLR": {
       "y": [
@@ -234,8 +233,7 @@
     "NRO": {
       "y": [
         "NRO.PA"
-      ],
-      "pausa": true
+      ]
     },
     "FTDR": {
       "y": [
@@ -250,8 +248,7 @@
     "MIPS": {
       "y": [
         "MIPS.ST"
-      ],
-      "pausa": true
+      ]
     },
     "AVAV": {
       "y": [
