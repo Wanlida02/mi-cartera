@@ -69,6 +69,20 @@
     }
     if (U.cifras12) U.cifras12(tk); else U.toast('No se pudo abrir el diálogo de cifras');   // fuera de la SEC: IA o manual (mismo flujo de Resultados)
   }
+  /* Abre la ficha, despliega la sección (o busca el elemento v-<id>), baja hasta ella y la resalta un momento */
+  const SECCION_DE = { dcf: 'real' };   // elementos que viven dentro de una sección plegable
+  let destino = null;   // {k, id, hasta}: si la ficha se redibuja al llegar datos (SEC, histórico), se vuelve a llevar ahí
+  const buscaDestino = id => document.getElementById('v-' + id) || document.querySelector('[data-v-sec="' + (SECCION_DE[id] || id) + '"]');
+  function marcaDestino(suave) {
+    const e = destino && sel === destino.k && buscaDestino(destino.id); if (!e) return false;
+    if (e.tagName === 'DETAILS') e.open = true; else { const p = e.closest('details'); if (p) p.open = true; }
+    e.scrollIntoView({ block: 'center', behavior: suave ? 'smooth' : 'auto' }); e.classList.add('resalta'); return true;
+  }
+  U.trasRender.push(() => { if (destino && Date.now() < destino.hasta) marcaDestino(false); else destino = null; });
+  function irA(k, id) {
+    sel = k; abiertos[SECCION_DE[id] || id] = 1; destino = { k, id, hasta: Date.now() + 4000 }; U.render();
+    if (!marcaDestino(true)) { destino = null; window.scrollTo(0, 0); U.toast('Esa parte no aparece ahora en la ficha de ' + k); }
+  }
   function accionCal(k, ac) {
     const d = D();
     if (ac === 'multpropios') return calcularMult([k]);
@@ -76,8 +90,8 @@
     if (ac === 'quitarsolofcf') { L.aplicarSoloFcf(d, k, false); Store.save(); return restore(() => {}), U.toast('Vuelve el método normal en ' + k); }
     if (ac === 'cifras12') return cifras12Accion(k);
     if (ac === 'precioauto') return precioAuto(k);
+    if (ac.indexOf('ver:') === 0 || ac === 'avisos') return irA(k, ac === 'avisos' ? 'dat' : ac.slice(4));   // ir a una parte de la ficha (sección plegable o línea concreta)
     sel = k; U.render(); window.scrollTo(0, 0);
-    if (ac === 'avisos') { abiertos.dat = 1; U.render(); const e = document.querySelector('[data-v-sec="dat"]'); if (e) e.scrollIntoView({ block: 'start' }); return; }
     if (ac === 'borrador') return borradorDlg(k);
     if (ac === 'multguia') return multGuiaDlg(k);
     if (ac === 'precio') precioDlg(); else if (ac === 'nuevoej') nuevoEjercicio(k);
@@ -434,7 +448,7 @@
       (vm && vm.sinBeneficio ? ' <b>¿Chollo ahora?</b> No hay lectura: en los últimos 12 meses (hasta ' + esc(vm.doce.fin) + ') el EBIT es negativo.' : '') +
       (vm && !vm.sinBeneficio ? ' <b>¿Chollo ahora?</b> Con las cifras ' + (vm.doce ? 'de los últimos 12 meses (hasta ' + esc(vm.doce.fin) + ')' : 'del último año') + ' a sus múltiplos de siempre valdría ' + nf(vm.valor, 2) + ': cotiza ' + nf(Math.abs(vm.descuento) * 100, 0) + ' % ' + (vm.descuento >= 0 ? 'por debajo' : 'por encima') + '. Lectura a corto plazo: supone que esas cifras se mantienen y el múltiplo vuelve a su media.' +
         (vm.raro ? ' <span class="c-y">Ojo: su múltiplo de siempre es ' + nf(vm.ratioHist, 1) + ' veces el de hoy' + (vm.raro === 'alto' ? ' (años de rampa o de euforia en la media): la lectura exagera el chollo.' : ' (años más baratos en la media): la lectura exagera lo cara.') + '</span>' : '') : '') + '</p>' +
-      (sd && sd.doce ? '<p class="small' + (Math.abs(sd.doce.de) > 0.25 ? ' c-y' : ' mut') + '" style="margin:6px 0 0"><b>Últimos 12 meses</b> (' + esc(sd.doce.fuente === 'SEC' ? 'SEC' : 'IA, sin verificar') + ', hasta ' + esc(sd.doce.fin) + '): ventas ' + nf(sd.doce.ventas, 0) + ' M' + (isN(sd.doce.dv) ? ' (' + (sd.doce.dv >= 0 ? '+' : '') + nf(sd.doce.dv * 100, 0) + ' %)' : '') + ', EBIT ' + (isN(sd.doce.ebit) && isN(sd.doce.de) ? nf(sd.doce.ebit, 0) + ' M (' + (sd.doce.de >= 0 ? '+' : '') + nf(sd.doce.de * 100, 0) + ' %)' : 'n/d') + ' frente a ' + sd.doce.anio + '.' + (Math.abs(sd.doce.de) > 0.25 ? ' El negocio se ha movido mucho desde el año base: el objetivo a 5 años parte de cifras desfasadas.' : '') + (c12 && isN(c12.antes) && isN(c12.despues) ? ' <b>Contraste</b>: partiendo de esas cifras la rentabilidad esperada a 5 años saldría ' + nf(c12.despues * 100, 1) + ' % frente a ' + nf(c12.antes * 100, 1) + ' % con el año base (solo informativo; la valoración sigue usando el año base).' : '') + '</p>' : '') +
+      (sd && sd.doce ? '<p id="v-doce" class="small' + (Math.abs(sd.doce.de) > 0.25 ? ' c-y' : ' mut') + '" style="margin:6px 0 0"><b>Últimos 12 meses</b> (' + esc(sd.doce.fuente === 'SEC' ? 'SEC' : 'IA, sin verificar') + ', hasta ' + esc(sd.doce.fin) + '): ventas ' + nf(sd.doce.ventas, 0) + ' M' + (isN(sd.doce.dv) ? ' (' + (sd.doce.dv >= 0 ? '+' : '') + nf(sd.doce.dv * 100, 0) + ' %)' : '') + ', EBIT ' + (isN(sd.doce.ebit) && isN(sd.doce.de) ? nf(sd.doce.ebit, 0) + ' M (' + (sd.doce.de >= 0 ? '+' : '') + nf(sd.doce.de * 100, 0) + ' %)' : 'n/d') + ' frente a ' + sd.doce.anio + '.' + (Math.abs(sd.doce.de) > 0.25 ? ' El negocio se ha movido mucho desde el año base: el objetivo a 5 años parte de cifras desfasadas.' : '') + (c12 && isN(c12.antes) && isN(c12.despues) ? ' <b>Contraste</b>: partiendo de esas cifras la rentabilidad esperada a 5 años saldría ' + nf(c12.despues * 100, 1) + ' % frente a ' + nf(c12.antes * 100, 1) + ' % con el año base (solo informativo; la valoración sigue usando el año base).' : '') + '</p>' : '') +
       avisoTipos(f) + (sd && sd.nuevo ? '<div class="alert warn" style="margin-top:8px">La SEC ya tiene el ejercicio ' + sd.nuevo + ' y esta ficha llega a ' + f.anio_base + '. <button class="btn sm" data-v="nuevoej">' + (sd.nuevo - f.anio_base > 1 || f.anio_base < 2020 ? 'Sustituir por los datos de la SEC' : 'Añadir ' + sd.nuevo + ' desde la SEC') + '</button></div>' : '') + '</div>' +
       '<div class="tools"><button class="btn sm" data-v="precio">Precio</button><button class="btn sec sm" data-v="datos">Editar datos</button>' + (f.divisa === 'USD' && !fin ? '<button class="btn sec sm" data-v="contraste">Contrastar con la SEC</button>' : '') + '<button class="btn sec sm" data-v="reset">Restablecer supuestos</button></div>';
     h += calH;
@@ -457,7 +471,7 @@
     let extra = '';
     if (!fin) {
       const dcf = V.dcfInverso(f, 0.10, 0.03), gh = V.cagr(f.hist.ventas, 5);
-      if (dcf) extra += '<li class="y"><b>DCF inverso</b>: con 10 % exigido y 3 % a perpetuidad, el precio descuenta un crecimiento del FCF de ' + (dcf.g == null ? 'más de un 60 %' : pc(dcf.g)) + ' anual 10 años. Ventas históricas a 5 años: ' + pc(gh) + '. Solo contraste.</li>';
+      if (dcf) extra += '<li id="v-dcf" class="y"><b>DCF inverso</b>: con 10 % exigido y 3 % a perpetuidad, el precio descuenta un crecimiento del FCF de ' + (dcf.g == null ? 'más de un 60 %' : pc(dcf.g)) + ' anual 10 años. Ventas históricas a 5 años: ' + pc(gh) + '. Solo contraste.</li>';
       if (vm && !vm.sinBeneficio) extra += '<li class="y"><b>Valor a su múltiplo histórico</b>: ' + [['per', 'PER'], ['pfcf', 'P/FCF'], ['ev_ebitda', 'EV/EBITDA'], ['ev_ebit', 'EV/EBIT']].filter(([k]) => isN(vm.porMetodo[k])).map(([k, n]) => n + ' ' + nf(vm.porMetodo[k], 2)).join(' · ') + ' → mediana ' + nf(vm.valor, 2) + '. Si el último ejercicio fue excepcional (bueno o malo) o los múltiplos históricos son de años raros, esta lectura engaña: mira el objetivo a 5 años.</li>';
       const mio = V.margenImplicito(f, sc.conservador, o / 100);
       extra += '<li class="y"><b>Margen implícito</b>: para ganar un ' + nf(o, 0) + ' % anual el margen EBIT tendría que ser ' + (mio == null ? 'imposible (>95 %)' : pc(mio)) + '. Solo contraste.</li>';

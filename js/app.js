@@ -35,7 +35,7 @@
     return d;
   }
   const cerrar = () => { const d = $('#dlg'); if (d.open) d.close(); };
-  const UI = window.UI = { vistas: {}, clicks: [], changes: [], pies: {} };   // enganches para módulos que añaden pestañas (cribado, valoración…)
+  const UI = window.UI = { vistas: {}, clicks: [], changes: [], pies: {}, trasRender: [] };   // enganches para módulos que añaden pestañas (cribado, valoración…)
   function guardar(res, ok) {
     if (!res.ok) { toast(res.msg); return false; }
     Store.save(); const av = Store.aviso(); cerrar(); render(); toast(av || res.msg); if (ok) ok(); return true;
@@ -308,7 +308,7 @@
   }
 
   /* ───── Ajustes ───── */
-  const APP_VERSION = '73 · Nunca en blanco al abrir: aviso de rescate y datos raros que se limpian · 72 · Respuestas de IA: fuentes agrupadas por bloques de años o por documento, JSON con texto alrededor o comas de más · 71 · Múltiplos de salida: pega la respuesta de la IA y rellena las medianas · 70 · La IA puede citar documentos con página (URD2025.pdf#p79) como fuente · 69 · Ajustes más claros en el móvil · 68 · Borrar con «Deshacer», filas usables con teclado · 67 · Inicio más rápido, evolución del valor, medidor de la watchlist, cartera por broker y por rentab. esperada · 66 · Inicio con plusvalía y reparto, pestañas abajo en el móvil · 65 · Arreglos: precio manual, precios al importar, fecha local, divisas en Ajustes, caché · 64 · Cifras de 12 meses: la IA busca sola y da fuentes · 63 · Caja de calidad: cada botón hace algo (avisos, verificar, guía de múltiplos, precio del feed) · 62 · Informes: una empresa con dos nombres comparte carpeta · 61 · Completar fichas con una IA que busca sola en los informes (con fuentes, fase 2 y deshacer)';
+  const APP_VERSION = '74 · Botones «Ver …» llevan a su sitio (DCF inverso), cuentas sin id editables, el aviso de Deshacer no tapa la última fila · 73 · Nunca en blanco al abrir: aviso de rescate y datos raros que se limpian · 72 · Respuestas de IA: fuentes agrupadas por bloques de años o por documento, JSON con texto alrededor o comas de más · 71 · Múltiplos de salida: pega la respuesta de la IA y rellena las medianas · 70 · La IA puede citar documentos con página (URD2025.pdf#p79) como fuente · 69 · Ajustes más claros en el móvil · 68 · Borrar con «Deshacer», filas usables con teclado · 67 · Inicio más rápido, evolución del valor, medidor de la watchlist, cartera por broker y por rentab. esperada · 66 · Inicio con plusvalía y reparto, pestañas abajo en el móvil · 65 · Arreglos: precio manual, precios al importar, fecha local, divisas en Ajustes, caché · 64 · Cifras de 12 meses: la IA busca sola y da fuentes · 63 · Caja de calidad: cada botón hace algo (avisos, verificar, guía de múltiplos, precio del feed) · 62 · Informes: una empresa con dos nombres comparte carpeta · 61 · Completar fichas con una IA que busca sola en los informes (con fuentes, fase 2 y deshacer)';
   function ajustes() {
     const d = Store.get(), A = d.ajustes, cp = Store.ultimaCopia();
     const DIVS = [...new Set(Object.keys(A.fx).concat(d.posiciones.map(p => p.moneda)).filter(k => k && /^[A-Z]{3}$/.test(k) && k !== 'EUR'))].sort();   // todas las divisas del feed y de tus posiciones (antes solo USD, CNY y TWD)
@@ -462,6 +462,7 @@
     } catch (err) {   // un fallo al dibujar una pestaña no debe dejarla en blanco sin explicación
       console.error(err); v.innerHTML = '<div class="alert bad"><b>Error al mostrar esta pestaña:</b> ' + esc(err && err.message || String(err)) + '<br><small>Tus datos están intactos. Cuéntame este mensaje y la pestaña (versión ' + esc(APP_VERSION) + ').</small></div>';
     }
+    (UI.trasRender || []).forEach(fn => { try { fn(); } catch (e) { console.error(e); } });   // p. ej. volver a resaltar el destino de un botón «Ver …» si la vista se redibuja al llegar datos
     (UI.pies[tab] || []).forEach(fn => { try { v.insertAdjacentHTML('beforeend', fn()); } catch (e) { console.error(e); } });
     pintaSub();
     if (keep) { const q = $('#q'); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }
