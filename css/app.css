@@ -162,3 +162,24 @@ body:has(.fab) .toast{bottom:calc(80px + env(safe-area-inset-bottom))}   /* el a
 .toast.acc{pointer-events:auto;display:flex;align-items:center;gap:12px;padding:8px 8px 8px 16px}
 .toast-b{background:none;border:0;color:#8cc4ff;font:inherit;font-weight:700;padding:6px 10px;min-height:36px;border-radius:8px;cursor:pointer;white-space:nowrap}
 .toast-b:hover,.toast-b:focus-visible{background:rgba(255,255,255,.12)}
+/* Ajustes (v69): cabecera con ✕, secciones, divisas plegables y botones fijos abajo */
+.aj-cab{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px}
+.aj-cab h2{margin:0 0 2px;font-size:18px}
+.icon-x{flex:none;width:40px;height:40px;margin:-6px -6px 0 0;border:0;border-radius:10px;background:none;color:var(--mut);font-size:18px;cursor:pointer}
+.icon-x:hover,.icon-x:focus-visible{background:var(--chip);color:var(--ink)}
+.aj{border-top:1px solid var(--line);padding:14px 0 4px;margin-top:10px}
+.aj h3,.aj summary{font-size:15px;margin:0}
+.aj-ayuda{font-size:13px;color:var(--mut);margin:4px 0 0;line-height:1.45}
+.aj .f2 label{margin-top:10px}
+.aj details summary{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:2px 0;list-style:none}
+.aj details summary::-webkit-details-marker{display:none}
+.aj details summary span:first-child::after{content:"›";display:inline-block;margin-left:8px;color:var(--mut);transition:transform .15s}
+.aj details[open] summary span:first-child::after{transform:rotate(90deg)}
+@media(min-width:480px){.f3{grid-template-columns:repeat(3,1fr)}}
+.aj-bt{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.aj-bt .btn{flex:1 1 auto}
+.aj-bt label.btn{display:inline-flex;align-items:center;justify-content:center;margin:0;color:var(--ink);font-size:15px}
+.aj-ver{margin:16px 0 4px;color:var(--mut)}.aj-ver summary{font-weight:600;font-size:13px}
+.aj-ver ul{margin:6px 0 0;padding-left:18px}.aj-ver li{margin:3px 0}
+.aj-pie{position:sticky;bottom:-16px;display:flex;gap:8px;justify-content:flex-end;margin:14px -16px -16px;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:var(--card);border-top:1px solid var(--line)}
+.aj-pie .btn{flex:1 1 0;max-width:200px}

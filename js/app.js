@@ -308,21 +308,24 @@
   }
 
   /* ───── Ajustes ───── */
-  const APP_VERSION = '68 · Borrar con «Deshacer», filas usables con teclado · 67 · Inicio más rápido, evolución del valor, medidor de la watchlist, cartera por broker y por rentab. esperada · 66 · Inicio con plusvalía y reparto, pestañas abajo en el móvil · 65 · Arreglos: precio manual, precios al importar, fecha local, divisas en Ajustes, caché · 64 · Cifras de 12 meses: la IA busca sola y da fuentes · 63 · Caja de calidad: cada botón hace algo (avisos, verificar, guía de múltiplos, precio del feed) · 62 · Informes: una empresa con dos nombres comparte carpeta · 61 · Completar fichas con una IA que busca sola en los informes (con fuentes, fase 2 y deshacer)';
+  const APP_VERSION = '69 · Ajustes más claros en el móvil · 68 · Borrar con «Deshacer», filas usables con teclado · 67 · Inicio más rápido, evolución del valor, medidor de la watchlist, cartera por broker y por rentab. esperada · 66 · Inicio con plusvalía y reparto, pestañas abajo en el móvil · 65 · Arreglos: precio manual, precios al importar, fecha local, divisas en Ajustes, caché · 64 · Cifras de 12 meses: la IA busca sola y da fuentes · 63 · Caja de calidad: cada botón hace algo (avisos, verificar, guía de múltiplos, precio del feed) · 62 · Informes: una empresa con dos nombres comparte carpeta · 61 · Completar fichas con una IA que busca sola en los informes (con fuentes, fase 2 y deshacer)';
   function ajustes() {
     const d = Store.get(), A = d.ajustes, cp = Store.ultimaCopia();
     const DIVS = [...new Set(Object.keys(A.fx).concat(d.posiciones.map(p => p.moneda)).filter(k => k && /^[A-Z]{3}$/.test(k) && k !== 'EUR'))].sort();   // todas las divisas del feed y de tus posiciones (antes solo USD, CNY y TWD)
-    dlg('<h2>Ajustes</h2><p class="small mut">Versión de la app: ' + APP_VERSION + '</p><h3>Umbrales del Inicio (rentabilidad anual esperada a 5 años)</h3><div class="f2">' + campo('a-b', 'Barata ≥ %', A.umbral_barata, 'number') + campo('a-c', 'Cara ≤ %', A.umbral_cara, 'number') + '</div>' +
-      '<h3 style="margin-top:14px">Límites de cartera</h3><div class="f2">' + campo('a-le', 'Máx. por empresa %', A.lim_empresa, 'number') + campo('a-ls', 'Máx. por sector %', A.lim_sector, 'number') + '</div>' +
-      '<h3 style="margin-top:14px">Divisas (unidades por 1 €) <span class="mut small">' + esc(A.fx.fecha || '') + '</span></h3><div class="f2">' + DIVS.map(k => campo('a-fx-' + k, k, A.fx[k], 'number')).join('') + '</div>' +
-      '<div class="acts" style="justify-content:flex-start"><button class="btn" id="a-ok">Guardar ajustes</button></div>' +
-      '<h3 style="margin-top:18px">Google Drive</h3><p class="small mut" id="dr-t">' + textoDrive() + '</p><div class="acts" style="justify-content:flex-start">' +
-      (Drive.estado().conectado ? '<button class="btn" id="dr-now">Sincronizar ahora</button><button class="btn sec" id="dr-off">Desconectar</button>' : '<button class="btn" id="dr-on">Conectar con Drive</button>') + '</div>' +
-      '<h3 style="margin-top:18px">Datos</h3><p class="small mut">Ahora se guardan en este dispositivo. Última copia exportada: ' + (cp ? new Date(cp).toLocaleString('es-ES') : 'nunca') + '.</p>' +
-      '<div class="acts" style="justify-content:flex-start"><button class="btn sec" id="a-exp">Exportar copia</button><label class="btn sec" style="margin:0;color:var(--ink)">Importar archivo<input id="a-imp" type="file" accept=".json,application/json" hidden></label></div>' +
-      '<h3 style="margin-top:18px">Informes anuales</h3><p class="small mut">Carga el <code>indice_informes.json</code> que genera <code>herramientas/indice_informes.py</code> en tu PC.</p>' +
-      '<div class="acts" style="justify-content:flex-start"><label class="btn sec" style="margin:0;color:var(--ink)">Cargar índice de informes<input id="a-inf" type="file" accept=".json,application/json" hidden></label></div>' +
-      '<div class="acts"><button class="btn sec" data-a="cerrar">Cerrar</button></div>',
+    const fCorta = f => (f && /^\d{4}-\d\d-\d\d/.test(f) ? f.slice(8, 10) + '/' + f.slice(5, 7) + '/' + f.slice(2, 4) : '—');
+    const conectado = Drive.estado().conectado, ver = APP_VERSION.split(/ · (?=\d+ · )/);
+    dlg('<div class="aj-cab"><div><h2>Ajustes</h2><span class="mut small">Versión ' + esc(ver[0].split(' · ')[0]) + '</span></div><button type="button" class="icon-x" data-a="cerrar" aria-label="Cerrar">✕</button></div>' +
+      '<section class="aj"><h3>Umbrales del Inicio</h3><p class="aj-ayuda">Rentabilidad anual esperada a 5 años.</p><div class="f2">' + campo('a-b', 'Barata desde (%)', A.umbral_barata, 'number') + campo('a-c', 'Cara hasta (%)', A.umbral_cara, 'number') + '</div></section>' +
+      '<section class="aj"><h3>Límites de cartera</h3><div class="f2">' + campo('a-le', 'Máx. por empresa (%)', A.lim_empresa, 'number') + campo('a-ls', 'Máx. por sector (%)', A.lim_sector, 'number') + '</div></section>' +
+      '<section class="aj"><details id="a-fx"' + (A.fx.manual ? ' open' : '') + '><summary><span>Divisas</span><span class="mut small">' + (A.fx.manual ? 'ajuste manual' : 'automáticas') + ' · ' + fCorta(A.fx.fecha) + '</span></summary>' +
+        '<p class="aj-ayuda">Unidades de cada divisa por 1 €. Se actualizan solas con los precios; si cambias alguna, se mantiene hasta el día siguiente.</p><div class="f2 f3">' + DIVS.map(k => campo('a-fx-' + k, k, A.fx[k], 'number')).join('') + '</div></details></section>' +
+      '<section class="aj"><h3>Google Drive</h3><p class="aj-ayuda" id="dr-t">' + textoDrive() + '</p><div class="aj-bt">' +
+        (conectado ? '<button class="btn sec" id="dr-now">Sincronizar ahora</button><button class="btn sec" id="dr-off">Desconectar</button>' : '<button class="btn sec" id="dr-on">Conectar con Drive</button>') + '</div></section>' +
+      '<section class="aj"><h3>Copia de tus datos</h3><p class="aj-ayuda">Se guardan en este dispositivo' + (conectado ? ' y en tu Drive' : '') + '. Última copia exportada: ' + (cp ? new Date(cp).toLocaleDateString('es-ES') : 'nunca') + '.</p>' +
+        '<div class="aj-bt"><button class="btn sec" id="a-exp">Exportar copia</button><label class="btn sec">Importar archivo<input id="a-imp" type="file" accept=".json,application/json" hidden></label></div></section>' +
+      '<section class="aj"><h3>Informes anuales</h3><p class="aj-ayuda">El <code>indice_informes.json</code> que genera <code>herramientas/indice_informes.py</code> en tu PC.</p><div class="aj-bt"><label class="btn sec">Cargar índice de informes<input id="a-inf" type="file" accept=".json,application/json" hidden></label></div></section>' +
+      '<details class="aj-ver small"><summary>Novedades de cada versión</summary><ul>' + ver.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul></details>' +
+      '<div class="aj-pie"><button class="btn sec" data-a="cerrar">Cancelar</button><button class="btn" id="a-ok">Guardar</button></div>',
       dd => {
         dd.querySelector('#a-ok').onclick = () => {
           const n = id => Number(val(id));

@@ -65,7 +65,7 @@ const srv = http.createServer((q, r) => {
     for (const k of ['USD', 'GBP', 'CNY', 'TWD']) assert(await pg.$('#a-fx-' + k), 'campo de divisa ' + k);
     await pg.fill('#a-b', '16'); await pg.click('#a-ok'); await pg.waitForTimeout(200);
     r = await pg.evaluate(() => Store.get().ajustes); assert.equal(r.umbral_barata, 16); assert(!r.fx.manual, 'un umbral no congela las divisas');
-    await pg.click('#btn-ajustes'); await pg.fill('#a-fx-GBP', '0.9'); await pg.click('#a-ok'); await pg.waitForTimeout(200);
+    await pg.click('#btn-ajustes'); await pg.click('#a-fx summary'); await pg.fill('#a-fx-GBP', '0.9'); await pg.click('#a-ok'); await pg.waitForTimeout(200);
     r = await pg.evaluate(() => Store.get().ajustes.fx); assert.equal(r.GBP, 0.9); assert.equal(r.manual, true, 'tocar una divisa sí es ajuste manual');
     /* Aviso de posiciones sin tipo de cambio */
     await pg.evaluate(() => { delete Store.get().ajustes.fx.GBP; UI.render(); });
