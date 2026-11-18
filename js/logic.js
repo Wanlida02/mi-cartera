@@ -634,7 +634,7 @@ const Logic = (function () {
       const f = d.fichas[tk]; if (!f || !V.soportado(f)) return; const est = f.estado || null, iss = [], add = (nivel, cod, txt, acc, accTxt) => iss.push({ nivel, cod, txt, acc: acc || null, accTxt: accTxt || null });
       let v = null; try { v = valoracion(d, tk, hoy); } catch (e) { v = { error: e.message }; }
       /* 1 · datos y precio */
-      if (v && v.incompleta) add('r', 'incompleta', 'Ficha incompleta: faltan ' + v.incompleta.join(', ') + '.', 'abrir', 'Completar datos');
+      if (v && v.incompleta) add('r', 'incompleta', 'Ficha incompleta: faltan ' + v.incompleta.join(', ') + '.', 'borrador', 'Completar datos');
       else if (v && v.sinPrecio) add('r', 'sinprecio', 'Sin precio de cotización.', 'precio', 'Poner precio');
       else if (v && v.error) add('r', 'error', v.error, 'abrir', 'Abrir ficha');
       if (v && v.graves) add('r', 'graves', v.graves + ' dato(s) dudoso(s) en la ficha' + (v.avisos && v.avisos[0] ? ': ' + v.avisos[0] : '') + '.', 'avisos', 'Ver qué datos dudan');
@@ -658,7 +658,7 @@ const Logic = (function () {
         const ent = ctx.secEntrada ? ctx.secEntrada(tk) : undefined, enSEC = ent ? !ent.error : false, via = enSEC ? 'sec' : 'ia';
         if (doce) {
           const dif = Math.max(Math.abs(doce.dv), isN(doce.de) ? Math.abs(doce.de) : 0);
-          if (dif > 0.15) add('y', 'ttm_difiere', 'Los últimos 12 meses (hasta ' + doce.fin + ', ' + (doce.fuente || 'SEC') + ') se desvían un ' + Math.round(dif * 100) + ' % del último ejercicio: la ficha parte de un año que ya no representa a la empresa.', 'abrir', 'Ver últimos 12 meses');
+          if (dif > 0.15) add('y', 'ttm_difiere', 'Los últimos 12 meses (hasta ' + doce.fin + ', ' + (doce.fuente || 'SEC') + ') se desvían un ' + Math.round(dif * 100) + ' % del último ejercicio: la ficha parte de un año que ya no representa a la empresa.', 'ver:doce', 'Ver últimos 12 meses');
         } else if (mesesDesde >= 5 && mesesDesde < 30) {
           add('y', 'ttm_falta', 'Sin cifras de 12 meses: la ficha parte del ejercicio ' + f.anio_base + ' (hace ' + mesesDesde + ' meses) y ya hay trimestres publicados. ' + (via === 'sec' ? 'Está en la SEC: se descargan solas.' : ctx.secListo ? 'No está en la SEC: se obtienen con una IA o a mano.' : ''), 'cifras12', via === 'sec' ? 'Traer cifras de la SEC' : 'Cifras con una IA');
         }
@@ -669,11 +669,11 @@ const Logic = (function () {
         try {
           const fx = Object.assign({}, f, { precio: v.precio }), dcf = V.dcfInverso(fx, 0.10, 0.03), gE = (V.defaults(fx).conservador || {}).g;
           const ac = V.actuales(fx), fcfDeprimido = ac && isN(ac.pfcf) && isN(ac.per) && ac.per > 0 && ac.pfcf > 2.5 * ac.per;   // inversión récord (capex de IA…): el flujo libre de hoy no representa el beneficio y el DCF inverso exagera el crecimiento exigido
-          if (fcfDeprimido) { if (dcf && isN(dcf.g) && isN(gE) && Math.abs(dcf.g - gE) > 0.04) add('i', 'dcf_fcf', 'El DCF inverso por flujo libre no es comparable aquí: hoy paga ' + Math.round(ac.pfcf) + 'x flujo libre frente a ' + Math.round(ac.per) + 'x beneficio (inversión elevada); no se contrasta.', 'abrir', 'Ver ficha'); }
+          if (fcfDeprimido) { if (dcf && isN(dcf.g) && isN(gE) && Math.abs(dcf.g - gE) > 0.04) add('i', 'dcf_fcf', 'El DCF inverso por flujo libre no es comparable aquí: hoy paga ' + Math.round(ac.pfcf) + 'x flujo libre frente a ' + Math.round(ac.per) + 'x beneficio (inversión elevada); no se contrasta.', 'ver:real', 'Ver control de realismo'); }
           else if (dcf && isN(dcf.g) && isN(gE)) {
-            if (v.ref >= 0.12 && dcf.g - gE > 0.04) add('y', 'dcf', 'Contradicción: por múltiplos rinde un ' + Math.round(v.ref * 100) + ' % pero el precio ya descuenta un crecimiento del ' + Math.round(dcf.g * 100) + ' % (tu escenario: ' + Math.round(gE * 100) + ' %). Revisa si los múltiplos de salida son demasiado altos.', 'abrir', 'Ver DCF inverso');
-            else if (v.ref <= 0.05 && gE - dcf.g > 0.04) add('y', 'dcf', 'Contradicción: por múltiplos rinde solo un ' + Math.round(v.ref * 100) + ' % pero el precio solo descuenta un ' + Math.round(dcf.g * 100) + ' % de crecimiento (tu escenario: ' + Math.round(gE * 100) + ' %). Puede que los múltiplos de salida sean demasiado bajos.', 'abrir', 'Ver DCF inverso');
-          } else if (dcf && dcf.g == null && v.ref >= 0.12) add('y', 'dcf', 'Contradicción: por múltiplos rinde un ' + Math.round(v.ref * 100) + ' % pero ni con +60 % anual se justifica el precio con flujos.', 'abrir', 'Ver DCF inverso');
+            if (v.ref >= 0.12 && dcf.g - gE > 0.04) add('y', 'dcf', 'Contradicción: por múltiplos rinde un ' + Math.round(v.ref * 100) + ' % pero el precio ya descuenta un crecimiento del ' + Math.round(dcf.g * 100) + ' % (tu escenario: ' + Math.round(gE * 100) + ' %). Revisa si los múltiplos de salida son demasiado altos.', 'ver:dcf', 'Ver DCF inverso');
+            else if (v.ref <= 0.05 && gE - dcf.g > 0.04) add('y', 'dcf', 'Contradicción: por múltiplos rinde solo un ' + Math.round(v.ref * 100) + ' % pero el precio solo descuenta un ' + Math.round(dcf.g * 100) + ' % de crecimiento (tu escenario: ' + Math.round(gE * 100) + ' %). Puede que los múltiplos de salida sean demasiado bajos.', 'ver:dcf', 'Ver DCF inverso');
+          } else if (dcf && dcf.g == null && v.ref >= 0.12) add('y', 'dcf', 'Contradicción: por múltiplos rinde un ' + Math.round(v.ref * 100) + ' % pero ni con +60 % anual se justifica el precio con flujos.', 'ver:dcf', 'Ver DCF inverso');
         } catch (e) { }
       }
       const nr = iss.filter(x => x.nivel === 'r').length, ny = iss.filter(x => x.nivel === 'y').length, pf = v && isN(v.puntuacion) ? v.puntuacion : 70;

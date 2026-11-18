@@ -34,7 +34,7 @@ const cod = (c, k) => c.problemas.filter(p => p.cod === k);
   L.aplicarSoloFcf(d, 'AAA', true); assert.equal(L.valoracion(d, 'AAA', HOY).ref, pv.despues); const A2 = L.calidadFichas(d, HOY, ctx).find(x => x.tk === 'AAA'); assert(!cod(A2, 'distorsion').length && cod(A2, 'solofcf')[0].acc === 'quitarsolofcf', 'activo: ofrece volver');
   L.aplicarSoloFcf(d, 'AAA', false); assert.equal(L.valoracion(d, 'AAA', HOY).ref, ref0, 'deshacer devuelve el valor exacto'); assert(d.fichas.AAA.solo_fcf === undefined);
   // fichas sanas y bancos no se tocan; ficha incompleta es poco fiable con acción
-  const inc = L.normalizar(mk({ ZZZ: Object.assign(ficha(), { _borrador: true, hist: Object.assign(ficha().hist, { caja: undefined }) }) })); const z = L.calidadFichas(inc, HOY, {})[0]; assert.equal(z.nivel, 'r'); assert(cod(z, 'incompleta')[0].acc === 'abrir');
+  const inc = L.normalizar(mk({ ZZZ: Object.assign(ficha(), { _borrador: true, hist: Object.assign(ficha().hist, { caja: undefined }) }) })); const z = L.calidadFichas(inc, HOY, {})[0]; assert.equal(z.nivel, 'r'); assert(cod(z, 'incompleta')[0].acc === 'borrador', 'Completar datos abre la ventana de completar, no solo la ficha');
 }
 // ── Pantalla ──
 const root = path.join(__dirname, '..'), mime = { html: 'text/html', js: 'text/javascript', css: 'text/css', json: 'application/json', png: 'image/png', svg: 'image/svg+xml', webmanifest: 'application/json' };

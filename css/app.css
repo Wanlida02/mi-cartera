@@ -194,3 +194,7 @@ body:has(.fab) .toast{bottom:calc(80px + env(safe-area-inset-bottom))}   /* el a
 .mg-chip b{font-variant-numeric:tabular-nums}.mg-chip span{font-size:11px;color:var(--mut)}
 .mg-av{margin:8px 0 0;padding-left:18px;font-size:12.5px;color:var(--warn)}.mg-av li{margin:2px 0}
 input.mg-auto{border-color:var(--ok);background:var(--ok-bg)}
+/* Destino de un botón «Ver …»: se resalta un momento para que se vea a dónde ha llevado */
+@keyframes resalta{0%{box-shadow:0 0 0 3px var(--pri)}100%{box-shadow:0 0 0 3px transparent}}
+.resalta{animation:resalta 1.6s ease-out;border-radius:var(--r)}
+.crl li:not(:has(.bdg)){display:block}   /* líneas de texto sin icono (DCF inverso, margen implícito): un solo párrafo, no columnas */
