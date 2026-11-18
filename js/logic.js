@@ -197,7 +197,7 @@ const Logic = (function () {
     return out.find(o => o && typeof o === 'object' && o.datos) || null;
   }
   const numB = x => (isN(x) ? x : typeof x === 'string' && x.trim() !== '' && isFinite(Number(x.replace(/\s/g, '').replace(',', '.'))) ? Number(x.replace(/\s/g, '').replace(',', '.')) : null);
-  const urlOk = u => typeof u === 'string' && /^https?:\/\/\S+/.test(u.trim());
+  const urlOk = u => typeof u === 'string' && (/^https?:\/\/\S+/.test(u.trim()) || /\.pdf\b.*(#p|\bp\.?\s?|pág|page)\s?\d+/i.test(u.trim()));   // URL, o documento de tus informes con página (URD2025.pdf#p79)
   const RANGO = { A: 3, P: 2, E: 1 };
   function aplicarBusqueda(d, tk, txt) {
     const f = d.fichas[tk]; if (!f) throw new Error('No existe la ficha ' + tk + '.');
