@@ -372,6 +372,9 @@ const Logic = (function () {
     ['fichas', 'precios', 'cribado'].forEach(k => { if (!out[k] || typeof out[k] !== 'object' || Array.isArray(out[k])) out[k] = {}; else Object.keys(out[k]).forEach(t => { if (!out[k][t] || typeof out[k][t] !== 'object') delete out[k][t]; }); });
     out.posiciones.forEach(p => { if (p.ticker != null && typeof p.ticker !== 'string') p.ticker = String(p.ticker); if (p.empresa != null && typeof p.empresa !== 'string') p.empresa = String(p.empresa); if (p.broker != null && typeof p.broker !== 'string') p.broker = String(p.broker); });   // un ticker guardado como número (2330) rompía todo
     if (!out.otras || !Array.isArray(out.otras.accounts)) out.otras = { accounts: [] };
+    out.otras.accounts = out.otras.accounts.filter(a => a && typeof a === 'object');
+    out.otras.accounts.forEach((a, i) => { if (!a.id) a.id = 'o' + i + '_' + coreName(a.nombre || '').replace(/ /g, '').slice(0, 12); if (!Array.isArray(a.historial)) a.historial = [];   // sin id no se podía abrir para editar (cuentas de versiones antiguas)
+    });
     out.historico = Array.isArray(out.historico) ? out.historico.filter(x => x && /^\d{4}-\d\d-\d\d$/.test(x.f) && isN(x.v) && isN(x.c)) : [];   // fotos diarias del valor de la cartera: [{f:'AAAA-MM-DD', v: valor €, c: coste €}]
     const limpia = o => { if (o && typeof o.divisa === 'string') { const t = o.divisa.trim().toUpperCase(); if (t !== o.divisa) o.divisa = t; } };   // «EUR » con un espacio rompía la comparación de divisas (BIT:SOL@ficha)
     Object.keys(out.fichas).forEach(k => limpia(out.fichas[k])); Object.keys(out.precios).forEach(k => limpia(out.precios[k]));

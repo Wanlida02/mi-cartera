@@ -198,3 +198,6 @@ input.mg-auto{border-color:var(--ok);background:var(--ok-bg)}
 @keyframes resalta{0%{box-shadow:0 0 0 3px var(--pri)}100%{box-shadow:0 0 0 3px transparent}}
 .resalta{animation:resalta 1.6s ease-out;border-radius:var(--r)}
 .crl li:not(:has(.bdg)){display:block}   /* líneas de texto sin icono (DCF inverso, margen implícito): un solo párrafo, no columnas */
+/* El aviso con «Deshacer» solo captura el toque en su botón: no tapa la fila de debajo durante esos segundos */
+.toast.acc{pointer-events:none}.toast.acc .toast-b{pointer-events:auto}
+@media(max-width:520px){body:has(.fab) main{padding-bottom:calc(200px + env(safe-area-inset-bottom))}}   /* la última fila puede quedar por encima del aviso y de «+ Compra» */
