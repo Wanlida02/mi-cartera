@@ -726,15 +726,20 @@ const Logic = (function () {
     });
     Object.keys(d.cribado || {}).forEach(tk => { if (!d.fichas[tk] && !objetivos.some(o => o.tk === tk) && !d.posiciones.some(p => tickerDe(d, p) === tk)) objetivos.push({ tk, nombre: (d.cribado[tk] || {}).nombre || tk, estado: 'watchlist' }); });
     d.posiciones.forEach(p => { const tk = tickerDe(d, p); if (!tk || !d.fichas[tk]) objetivos.push({ tk: tk || (p.ticker || ''), nombre: p.empresa, estado: 'cartera' }); });
-    const sin = [];
+    const sin = [], orden = { cartera: 0, watchlist: 1, otra: 2 };
+    /* Una misma empresa puede estar con dos nombres (ficha NRO y watchlist «NEURONES»): comparte la carpeta que ya tiene otra entrada si hay una señal segura (vínculo manual, mismo ticker o mismo nombre completo); el estado que se muestra es el más relevante */
+    const mismaCarpeta = o => idx.empresas.findIndex((e, i) => usados.has(i) && ((o.tk && alias[o.tk] && e.carpeta === alias[o.tk]) || (o.tk && baseTk(e.ticker) && baseTk(e.ticker) === baseTk(o.tk)) || (norm(e.nombre).trim() && norm(e.nombre).trim() === norm(o.nombre).trim()) || (coreName(e.nombre) && coreName(e.nombre) === coreName(o.nombre))));
     objetivos.forEach(o => {
       const i = buscar(o.tk, o.nombre);
-      if (i < 0) { sin.push(o); return; }
+      if (i < 0) {
+        const j = mismaCarpeta(o), ent = j >= 0 && lista.find(x => x.carpeta === idx.empresas[j].carpeta);
+        if (ent) { if (orden[o.estado] < orden[ent.estado]) ent.estado = o.estado; ent.alt = (ent.alt || []).concat(o.tk && o.tk !== ent.tk ? [o.tk] : []); return; }
+        sin.push(o); return;
+      }
       usados.add(i); const e = idx.empresas[i];
       lista.push(Object.assign({ tk: o.tk, estado: o.estado, desactualizado: e.ultimo_anio != null && e.ultimo_anio < anioHoy - 1 }, e));
     });
     idx.empresas.forEach((e, i) => { if (!usados.has(i)) lista.push(Object.assign({ tk: baseTk(e.ticker), estado: 'otra', desactualizado: false }, e)); });
-    const orden = { cartera: 0, watchlist: 1, otra: 2 };
     lista.sort((a, b) => orden[a.estado] - orden[b.estado] || a.nombre.localeCompare(b.nombre));
     sin.sort((a, b) => (orden[a.estado] - orden[b.estado]) || a.nombre.localeCompare(b.nombre));
     return { generado: idx.generado, lista, sin, avisos: Array.isArray(idx.avisos) ? idx.avisos : [] };
