@@ -5,3 +5,6 @@ assert(!/'abrir', 'Revisar datos'|'abrir', 'Revisar'\)|Corregir precio\/divisa/.
 const s = JSON.parse(fs.readFileSync(__dirname + '/../simbolos.json', 'utf8')).simbolos;
 ['NRO', 'MIPS'].forEach(k => assert(!s[k] || !s[k].pausa, k + ' sigue en pausa'));
 console.log('calidad_acciones ok');
+const ui = fs.readFileSync(__dirname + '/../js/resultados-ui.js', 'utf8');
+assert(/value="busca">busca sola/.test(ui) && /modo === 'busca'/.test(ui), 'cifras 12m sin modo de búsqueda');
+console.log('cifras12 busca ok');
