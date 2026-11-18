@@ -26,12 +26,20 @@
   }
 
   /* ───── Inicio ───── */
+  /* Medidor de la watchlist: dónde está el precio frente al de entrada (rentab. objetivo) y al máximo (rentab. mínima) */
+  function medidor(v) {
+    if (!(v.precio > 0) || !(v.entrada > 0) || !(v.max > v.entrada)) return '';
+    const lo = Math.min(v.precio, v.entrada) * 0.85, hi = Math.max(v.precio, v.max) * 1.1, x = n => ((n - lo) / (hi - lo) * 100).toFixed(2) + '%';
+    const zona = v.precio <= v.entrada ? 'en precio de entrada' : v.precio <= v.max ? 'entre entrada y máximo' : 'por encima del máximo';
+    return '<div class="med" role="img" aria-label="Precio ' + esc(money(v.precio, v.divisa)) + ', ' + zona + '" title="Precio ' + esc(money(v.precio, v.divisa)) + ' · entrada ' + esc(money(v.entrada, v.divisa)) + ' · máximo ' + esc(money(v.max, v.divisa)) + '">' +
+      '<i class="z1" style="width:' + x(v.entrada) + '"></i><i class="z2" style="left:' + x(v.entrada) + ';width:calc(' + x(v.max) + ' - ' + x(v.entrada) + ')"></i><b style="left:' + x(v.precio) + '"></b></div>';
+  }
   function filaVal(v, extra) {
     const peso = v.peso != null ? ' · ' + nf(v.peso * 100, 1) + '% cartera' : '';
     const aviso = v.graves ? ' <span class="pill warn" title="' + esc((v.avisos || []).join(' | ')) + '">datos dudosos</span>' : '';
     const viejo = v.diasPrecio != null && v.diasPrecio > Store.get().ajustes.dias_precio_viejo ? ' <span class="pill">precio de hace ' + v.diasPrecio + ' d</span>' : '';
     return '<div class="row click" data-go="val" data-tk="' + esc(v.tk) + '"><div class="main"><div class="name">' + esc(v.nombre) + '</div><div class="meta">' + esc(v.tk) + peso + '</div>' +
-      '<div class="meta">Precio ' + money(v.precio, v.divisa) + ' · entrada ' + money(v.entrada, v.divisa) + '</div>' + (aviso || viejo ? '<div class="chips">' + aviso + viejo + '</div>' : '') + '</div>' +
+      '<div class="meta">Precio ' + money(v.precio, v.divisa) + ' · entrada ' + money(v.entrada, v.divisa) + (v.estado === 'watchlist' && v.max != null ? ' · máx. ' + money(v.max, v.divisa) : '') + '</div>' + (v.estado === 'watchlist' ? medidor(v) : '') + (aviso || viejo ? '<div class="chips">' + aviso + viejo + '</div>' : '') + '</div>' +
       '<div class="num">' + extra + '</div></div>';
   }
   function vistaInicio() {
@@ -50,6 +58,7 @@
     const sinFx = [...new Set(d.posiciones.filter(p => p.moneda && L.fxPorEur(d, p.moneda) == null).map(p => p.moneda))];
     if (sinFx.length) h += '<div class="alert warn">Sin tipo de cambio para ' + esc(sinFx.join(', ')) + ': esas posiciones no cuentan en el valor ni en los pesos. Añádelo en ⚙ Ajustes o pulsa «Actualizar precios».</div>';
     if (R.preciosViejos) h += '<div class="alert warn">' + R.preciosViejos + ' posición(es) con precio de hace más de ' + d.ajustes.dias_precio_viejo + ' días.</div>';
+    h += vistaEvolucion(d);
     h += vistaReparto(D);
     if (UI.cargarSEC) UI.cargarSEC();
     if (UI.avisosResultados) h += UI.avisosResultados();
@@ -59,9 +68,10 @@
       (D.baratas.length ? D.baratas.map(v => filaVal(v, '<span class="pill ok">' + nf(v.ref * 100, 1) + '%</span>')).join('') : '<div class="empty">Ninguna posición supera el umbral.</div>') + '</div>';
     h += '<div class="sec-t"><h2>Caras <span class="mut small">≤ ' + A.umbral_cara + '% anual</span></h2></div><div class="card">' +
       (D.caras.length ? D.caras.map(v => filaVal(v, '<span class="pill bad">' + nf(v.ref * 100, 1) + '%</span>')).join('') : '<div class="empty">Ninguna posición está cara.</div>') + '</div>';
-    h += '<div class="sec-t"><h2>Watchlist en precio de entrada</h2></div><div class="card">' +
+    const leyMed = '<p class="med-ley mut small"><span><i class="z1"></i>hasta el precio de entrada</span><span><i class="z2"></i>hasta el máximo</span><span><b></b>precio actual</span></p>';
+    h += '<div class="sec-t"><h2>Watchlist en precio de entrada</h2></div><div class="card">' + (D.watch.length ? leyMed : '') +
       (D.watch.length ? D.watch.map(v => filaVal(v, '<span class="pill ok">' + pct(v.distEntrada, 0) + '</span><div class="meta">vs entrada</div>')).join('') : '<div class="empty">Ninguna llega aún a su precio de entrada.</div>') + '</div>';
-    if (D.watchResto.length) h += '<details class="card"><summary>Watchlist: el resto (' + D.watchResto.length + ')</summary>' +
+    if (D.watchResto.length) h += '<details class="card"><summary>Watchlist: el resto (' + D.watchResto.length + ')</summary>' + leyMed +
       D.watchResto.map(v => filaVal(v, '<span class="pill">' + pct(v.distEntrada, 0) + '</span><div class="meta">vs entrada</div>')).join('') + '</details>';
     const aparte = D.sinFicha.concat(D.sinCalcular);
     h += '<p class="mut small">' + D.ocultas + ' posiciones en zona intermedia (ocultas).' + (aparte.length ? ' Sin valorar: ' + aparte.map(x => esc(x.nombre)).join(', ') + '.' : '') + '</p>';
@@ -73,6 +83,59 @@
     }
     return h;
   }
+
+  /* Evolución del valor de la cartera (fotos diarias) frente a lo invertido; la distancia entre las dos líneas es la plusvalía */
+  const EVO_K = 'mi-cartera:evolucion', EVO_T = { m1: ['1 M', 31], m3: ['3 M', 92], a1: ['1 A', 366], todo: ['Todo', 0] };
+  let evo = (() => { try { return EVO_T[localStorage.getItem(EVO_K)] ? localStorage.getItem(EVO_K) : 'm3'; } catch (e) { return 'm3'; } })(), evoPts = [], evoXY = [];
+  const fLarga = f => { const [a, m, dd] = f.split('-'); return +dd + ' ' + ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'][+m - 1] + ' ' + a.slice(2); };
+  function escala(lo, hi) {   // 3–5 marcas «redondas»
+    const paso0 = (hi - lo) / 4 || Math.abs(hi) / 4 || 1, p10 = Math.pow(10, Math.floor(Math.log10(paso0))), paso = [1, 2, 2.5, 5, 10].map(k => k * p10).find(k => k >= paso0);
+    const a = Math.floor(lo / paso) * paso, b = Math.ceil(hi / paso) * paso, t = []; for (let x = a; x <= b + paso / 2; x += paso) t.push(x); return { a, b, t };
+  }
+  function vistaEvolucion(d) {
+    const H = d.historico || []; if (!H.length) return '';
+    const dias = EVO_T[evo][1], desde = dias ? new Date(Date.parse(L.today()) - dias * 864e5).toISOString().slice(0, 10) : '';
+    const P = evoPts = H.filter(x => x.f >= desde);
+    let h = '<div class="sec-t"><h2>Evolución</h2><div class="seg" role="group" aria-label="Periodo">' + Object.keys(EVO_T).map(k => '<button type="button" data-evo="' + k + '" aria-pressed="' + (k === evo) + '">' + EVO_T[k][0] + '</button>').join('') + '</div></div><div class="card evo">';
+    if (P.length < 2) { evoXY = []; return h + '<p class="mut small" style="margin:0">La app guarda una foto del valor de tu cartera cada día que la abres (' + H.length + ' hasta ahora, desde el ' + fLarga(H[0].f) + '). El gráfico aparece en cuanto haya dos días' + (dias && H.length >= 2 ? ' en este periodo' : '') + '.</p></div>'; }
+    const u = P[P.length - 1], p0 = P[0], plus = u.v - u.c, dPlus = plus - (p0.v - p0.c);
+    const vals = P.flatMap(x => [x.v, x.c]), E = escala(Math.min.apply(null, vals), Math.max.apply(null, vals));
+    const t0 = Date.parse(p0.f), t1 = Date.parse(u.f), X = f => (Date.parse(f) - t0) / (t1 - t0 || 1) * 100, Y = n => (1 - (n - E.a) / (E.b - E.a || 1)) * 100;
+    evoXY = P.map(x => ({ x: X(x.f), v: Y(x.v), c: Y(x.c) }));
+    const linea = k => evoXY.map((q, i) => (i ? 'L' : 'M') + q.x.toFixed(2) + ' ' + q[k].toFixed(2)).join(' ');
+    const sg = n => (n > 0 ? '+' : '') + eur(n);
+    h += '<div class="evo-top"><div><b>' + eur(u.v) + '</b> <span class="mut small">valor el ' + fLarga(u.f) + '</span></div><div class="small">Plusvalía <b class="' + cls(plus) + '">' + sg(plus) + '</b> · <span class="' + cls(dPlus) + '">' + sg(dPlus) + '</span> <span class="mut">en el periodo</span></div></div>';
+    h += '<div class="evo-ley small"><span><i class="sw v"></i>Valor</span><span><i class="sw c"></i>Invertido (coste)</span></div>';
+    h += '<div class="evo-g"><div class="evo-y">' + E.t.map(x => '<span style="top:' + Y(x).toFixed(2) + '%">' + (Math.abs(E.b) >= 1e4 ? nf(x / 1000, x % 1000 ? 1 : 0) + ' k' : nf(x, 0)) + '</span>').join('') + '</div>' +
+      '<div class="evo-plot" tabindex="0" aria-label="Gráfico de evolución: usa las flechas para recorrer los días">' + E.t.map(x => '<i class="gl" style="top:' + Y(x).toFixed(2) + '%"></i>').join('') +
+      '<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path class="lc" d="' + linea('c') + '"/><path class="lv" d="' + linea('v') + '"/></svg>' +
+      '<i class="evo-x" hidden></i><b class="evo-p v" hidden></b><b class="evo-p c" hidden></b><div class="evo-tip" hidden></div></div></div>' +
+      '<div class="evo-f mut small"><span>' + fLarga(p0.f) + '</span><span>' + fLarga(u.f) + '</span></div>';
+    h += '<details class="small evo-tabla"><summary>Ver datos (' + P.length + ' días)</summary><div class="tw"><table class="tbl"><tr><th>Día</th><th>Valor</th><th>Invertido</th><th>Plusvalía</th></tr>' +
+      P.slice().reverse().map(x => '<tr><td>' + fLarga(x.f) + '</td><td>' + eur(x.v) + '</td><td>' + eur(x.c) + '</td><td class="' + cls(x.v - x.c) + '">' + sg(x.v - x.c) + '</td></tr>').join('') + '</table></div></details>';
+    return h + '</div>';
+  }
+  let evoI = -1;
+  function evoMarca(plot, i) {
+    const P = evoPts; if (!plot || P.length < 2 || evoXY.length !== P.length) return; i = Math.max(0, Math.min(P.length - 1, i)); evoI = i;
+    const q = evoXY[i], p = P[i], x = plot.querySelector('.evo-x'), pv = plot.querySelector('.evo-p.v'), pc = plot.querySelector('.evo-p.c'), tip = plot.querySelector('.evo-tip');
+    [x, pv, pc, tip].forEach(n => { n.hidden = false; }); x.style.left = pv.style.left = pc.style.left = q.x + '%'; pv.style.top = q.v + '%'; pc.style.top = q.c + '%';
+    tip.innerHTML = '<b>' + fLarga(p.f) + '</b><br>Valor ' + eur(p.v) + '<br>Invertido ' + eur(p.c) + '<br>Plusvalía <span class="' + cls(p.v - p.c) + '">' + (p.v - p.c > 0 ? '+' : '') + eur(p.v - p.c) + '</span>';
+    const izq = q.x > 55; tip.style.left = izq ? '' : 'calc(' + q.x + '% + 10px)'; tip.style.right = izq ? 'calc(' + (100 - q.x) + '% + 10px)' : '';
+  }
+  function evoOculta(plot) { if (plot) plot.querySelectorAll('.evo-x,.evo-p,.evo-tip').forEach(n => { n.hidden = true; }); evoI = -1; }
+  document.addEventListener('pointermove', e => {
+    const plot = e.target.closest && e.target.closest('.evo-plot'); if (!plot || evoXY.length < 2) return;
+    const r = plot.getBoundingClientRect(), fx = (e.clientX - r.left) / r.width * 100;
+    let best = 0; evoXY.forEach((q, i) => { if (Math.abs(q.x - fx) < Math.abs(evoXY[best].x - fx)) best = i; }); evoMarca(plot, best);
+  });
+  document.addEventListener('pointerout', e => { const plot = e.target.closest && e.target.closest('.evo-plot'); if (plot && !plot.contains(e.relatedTarget)) evoOculta(plot); });
+  document.addEventListener('keydown', e => {
+    const plot = e.target.closest && e.target.closest('.evo-plot'); if (!plot) return;
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); evoMarca(plot, (evoI < 0 ? evoPts.length - 1 : evoI) + (evoI < 0 ? 0 : e.key === 'ArrowLeft' ? -1 : 1)); }
+    else if (e.key === 'Escape') evoOculta(plot);
+  });
+  document.addEventListener('focusout', e => { if (e.target.classList && e.target.classList.contains('evo-plot')) evoOculta(e.target); });
 
   /* Reparto por empresa / sector / divisa: barras horizontales con la línea del límite */
   const REP_K = 'mi-cartera:reparto', REP_T = { empresa: 'Empresa', sector: 'Sector', divisa: 'Divisa' };
@@ -97,7 +160,8 @@
   /* ───── Cartera ───── */
   const fcorta = f => (f && /^\d{4}-\d\d-\d\d/.test(f) ? f.slice(8, 10) + '/' + f.slice(5, 7) : '');
   function fechaPrecio(pp) {
-    if (!pp || !pp.fecha) return ' · <span class="pill warn">sin fecha</span>';
+    if (!pp) return '';   // sin precio: lo dice un único aviso encima de la lista
+    if (!pp.fecha) return ' · <span class="mut" title="Precio sin fecha (fuente: ' + esc(pp.fuente || '') + ')">s/f</span>';
     const dd = L.diasDesde(pp.fecha), viejo = dd != null && dd > Store.get().ajustes.dias_precio_viejo;
     return ' · <span class="' + (viejo ? 'pill warn' : 'mut') + '" title="Fuente: ' + esc(pp.fuente || '') + '">' + (dd === 0 ? 'hoy' : fcorta(pp.fecha) || esc(pp.fecha)) + '</span>';
   }
@@ -144,15 +208,22 @@
   function vistaCartera() {
     const d = Store.get(), W = L.pesos(d), q = L.norm(filtro);
     let filas = W.filas.map((r, i) => Object.assign({ i }, r)).filter(r => !q || L.norm(r.p.empresa + ' ' + (r.p.ticker || '') + ' ' + (r.p.broker || '')).includes(q));
-    const key = { peso: r => -(r.eur || 0), nombre: r => L.norm(r.p.empresa), var: r => -(L.variacion(d, r.p) ?? -9) }[orden];
-    filas.sort((a, b) => { const x = key(a), y = key(b); return x < y ? -1 : x > y ? 1 : 0; });
+    const refDe = {}; if (orden === 'ref') filas.forEach(r => { if (r.tk && d.fichas[r.tk] && !(r.tk in refDe)) { const v = L.valoracion(d, r.tk); refDe[r.tk] = v && v.ref != null ? v.ref : null; } });
+    const key = { peso: r => -(r.eur || 0), nombre: r => L.norm(r.p.empresa), var: r => -(L.variacion(d, r.p) ?? -9), ref: r => -(refDe[r.tk] ?? -9), broker: r => L.norm(r.p.broker || '~') }[orden];
+    filas.sort((a, b) => { const x = key(a), y = key(b); return x < y ? -1 : x > y ? 1 : orden === 'broker' ? (b.eur || 0) - (a.eur || 0) : 0; });
+    const sinPrecio = filas.filter(r => !L.precioPos(d, r.p)).length;
     let h = '<div class="tools"><input id="q" type="search" placeholder="Buscar empresa, ticker o broker" value="' + esc(filtro) + '">' +
-      '<select id="ord"><option value="peso"' + (orden === 'peso' ? ' selected' : '') + '>Mayor peso</option><option value="nombre"' + (orden === 'nombre' ? ' selected' : '') + '>Nombre</option><option value="var"' + (orden === 'var' ? ' selected' : '') + '>Mejor rentab.</option></select></div>';
+      '<select id="ord"><option value="peso"' + (orden === 'peso' ? ' selected' : '') + '>Mayor peso</option><option value="nombre"' + (orden === 'nombre' ? ' selected' : '') + '>Nombre</option><option value="var"' + (orden === 'var' ? ' selected' : '') + '>Mejor rentab.</option><option value="ref"' + (orden === 'ref' ? ' selected' : '') + '>Rentab. esperada</option><option value="broker"' + (orden === 'broker' ? ' selected' : '') + '>Por broker</option></select></div>';
     h += lineaPrecios();
+    if (sinPrecio) h += '<div class="alert warn">' + sinPrecio + (sinPrecio > 1 ? ' posiciones sin precio: cuentan' : ' posición sin precio: cuenta') + ' a su precio de compra. Pulsa «Actualizar precios» o abre la posición y usa «Precio».</div>';
+    const subt = {}; if (orden === 'broker') filas.forEach(r => { const k = r.p.broker || 'Sin broker'; subt[k] = (subt[k] || 0) + (r.eur || 0); });
+    let brAnt = null;
     h += '<div class="card">' + (filas.length ? filas.map(r => {
+      const brk = r.p.broker || 'Sin broker', cab = orden === 'broker' && brk !== brAnt ? '<div class="grp"><b>' + esc(brk) + '</b><span>' + eur(subt[brk]) + ' · ' + (W.total ? nf(subt[brk] / W.total * 100, 1) + '%' : '—') + '</span></div>' : ''; brAnt = brk;
+      const ref = orden === 'ref' ? refDe[r.tk] : undefined;
       const p = r.p, pp = L.precioPos(d, p), v = L.variacion(d, p), w = W.total && r.eur != null ? r.eur / W.total : null;
-      return '<div class="row click" data-pos="' + r.i + '"><div class="main"><div class="name">' + esc(p.empresa) + (UI.etiquetasResultados ? UI.etiquetasResultados(L.tickerDe(d, p)) : '') + '</div><div class="meta">' + esc(p.broker || '') + ' · ' + nf(p.cantidad, 4).replace(/,?0+$/, '') + ' acc. · ' + money(pp && pp.precio, p.moneda) +
-        (pp && pp.convertido ? ' (conv.)' : '') + fechaPrecio(pp) + '</div></div><div class="num"><b>' + eur(r.eur) + '</b><div class="meta"><span class="' + cls(v) + '">' + pct(v) + '</span> · ' + (w == null ? '—' : nf(w * 100, 1) + '%') + '</div></div></div>';
+      return cab + '<div class="row click" data-pos="' + r.i + '"><div class="main"><div class="name">' + esc(p.empresa) + (UI.etiquetasResultados ? UI.etiquetasResultados(L.tickerDe(d, p)) : '') + '</div><div class="meta">' + esc(p.broker || '') + ' · ' + nf(p.cantidad, 4).replace(/,?0+$/, '') + ' acc. · ' + money(pp && pp.precio, p.moneda) +
+        (pp && pp.convertido ? ' (conv.)' : '') + fechaPrecio(pp) + '</div></div><div class="num"><b>' + eur(r.eur) + '</b><div class="meta"><span class="' + cls(v) + '">' + pct(v) + '</span> · ' + (w == null ? '—' : nf(w * 100, 1) + '%') + '</div>' + (ref !== undefined ? '<div class="meta">esperada ' + (ref == null ? '—' : nf(ref * 100, 1) + '%') + '</div>' : '') + '</div></div>';
     }).join('') : '<div class="empty">Sin posiciones' + (q ? ' que coincidan' : '') + '.</div>') + '</div>';
     h += '<button class="btn fab" data-a="compra">+ Compra</button>';
     const mv = d.movimientos.slice().reverse().slice(0, 30);
@@ -221,7 +292,7 @@
   }
 
   /* ───── Ajustes ───── */
-  const APP_VERSION = '66 · Inicio con plusvalía y reparto, pestañas abajo en el móvil · 65 · Arreglos: precio manual, precios al importar, fecha local, divisas en Ajustes, caché · 64 · Cifras de 12 meses: la IA busca sola y da fuentes · 63 · Caja de calidad: cada botón hace algo (avisos, verificar, guía de múltiplos, precio del feed) · 62 · Informes: una empresa con dos nombres comparte carpeta · 61 · Completar fichas con una IA que busca sola en los informes (con fuentes, fase 2 y deshacer)';
+  const APP_VERSION = '67 · Inicio más rápido, evolución del valor, medidor de la watchlist, cartera por broker y por rentab. esperada · 66 · Inicio con plusvalía y reparto, pestañas abajo en el móvil · 65 · Arreglos: precio manual, precios al importar, fecha local, divisas en Ajustes, caché · 64 · Cifras de 12 meses: la IA busca sola y da fuentes · 63 · Caja de calidad: cada botón hace algo (avisos, verificar, guía de múltiplos, precio del feed) · 62 · Informes: una empresa con dos nombres comparte carpeta · 61 · Completar fichas con una IA que busca sola en los informes (con fuentes, fase 2 y deshacer)';
   function ajustes() {
     const d = Store.get(), A = d.ajustes, cp = Store.ultimaCopia();
     const DIVS = [...new Set(Object.keys(A.fx).concat(d.posiciones.map(p => p.moneda)).filter(k => k && /^[A-Z]{3}$/.test(k) && k !== 'EUR'))].sort();   // todas las divisas del feed y de tus posiciones (antes solo USD, CNY y TWD)
@@ -322,7 +393,21 @@
   /* ───── Drive ───── */
   const TXT = { off: 'Sin conectar. Conecta para tener los mismos datos en el móvil y en el PC.', on: 'Conectado', sync: 'Sincronizando…', reconectar: 'Hay que volver a dar permiso (toca el icono ☁).', error: 'Error', conflicto: 'Hay cambios distintos en Drive y aquí.' };
   function textoDrive() { const e = Drive.estado(); return esc((TXT[e.estado] || '') + (e.detalle && e.estado !== 'off' ? ' · ' + e.detalle : '')); }
+  /* Cabecera: cuántas posiciones, de cuándo son los precios y cómo está Drive */
+  function hace(t) {
+    const m = Math.round((Date.now() - Date.parse(t)) / 60000); if (!isFinite(m)) return '';
+    return m < 2 ? 'ahora' : m < 60 ? 'hace ' + m + ' min' : m < 24 * 60 ? 'hace ' + Math.round(m / 60) + ' h' : 'del ' + new Date(t).toLocaleDateString('es-ES', { day: 'numeric', month: 'numeric' });
+  }
+  const DRV = { on: 'Drive al día', sync: 'sincronizando…', reconectar: 'Drive: reconectar', error: 'Drive: error', conflicto: 'Drive: elegir versión' };
+  function pintaSub() {
+    const d = Store.get(); if (!d) return;
+    const pi = Store.preciosInfo(), e = Drive.estado(), partes = [d.posiciones.length ? d.posiciones.length + ' posiciones' : 'sin datos'];
+    if (pi && pi.generado) partes.push('precios ' + hace(pi.generado));
+    if (e.conectado && DRV[e.estado]) partes.push(DRV[e.estado]);
+    $('#sub').textContent = partes.join(' · '); $('#sub').title = 'Divisas del ' + (d.ajustes.fx.fecha || '—') + (pi && pi.generado ? ' · precios automáticos del ' + new Date(pi.generado).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) : '');
+  }
   function pintaSync(est) {
+    pintaSub();
     const b = $('#btn-sync'); b.className = 'icon-btn ' + est; b.title = 'Drive: ' + textoDrive();
     const t = document.getElementById('dr-t'); if (t) t.innerHTML = textoDrive();
   }
@@ -345,6 +430,7 @@
 
   function render() {
     const d = Store.get(); if (!d) return;
+    Store.foto();   // foto del día del valor (solo guarda si cambia); antes de dibujar, para que el gráfico la incluya
     document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
     const v = $('#vista'), keep = document.activeElement && document.activeElement.id === 'q';
     const keepI = document.activeElement && document.activeElement.id === 'qi';
@@ -355,15 +441,15 @@
       console.error(err); v.innerHTML = '<div class="alert bad"><b>Error al mostrar esta pestaña:</b> ' + esc(err && err.message || String(err)) + '<br><small>Tus datos están intactos. Cuéntame este mensaje y la pestaña (versión ' + esc(APP_VERSION) + ').</small></div>';
     }
     (UI.pies[tab] || []).forEach(fn => { v.insertAdjacentHTML('beforeend', fn()); });
-    const fx = d.ajustes.fx.fecha;
-    $('#sub').textContent = d.posiciones.length ? d.posiciones.length + ' posiciones · divisas ' + (fx || '') : 'sin datos';
+    pintaSub();
     if (keep) { const q = $('#q'); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }
     if (keepI) { const q = $('#qi'); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }
   }
 
   document.addEventListener('click', e => {
     for (const f of UI.clicks) if (f(e)) return;
-    const t = e.target.closest('[data-tab],[data-a],[data-pos],[data-undo],[data-inf],[data-rep]'); if (!t) return;
+    const t = e.target.closest('[data-tab],[data-a],[data-pos],[data-undo],[data-inf],[data-rep],[data-evo]'); if (!t) return;
+    if (t.dataset.evo) { evo = t.dataset.evo; try { localStorage.setItem(EVO_K, evo); } catch (er) { } return render(); }
     if (t.dataset.rep) { rep = t.dataset.rep; try { localStorage.setItem(REP_K, rep); } catch (er) { } return render(); }
     if (t.dataset.inf != null) return detalleInforme(+t.dataset.inf);
     if (t.dataset.tab) { tab = t.dataset.tab; render(); window.scrollTo(0, 0); return; }
@@ -402,7 +488,13 @@
   Store.load(); render();
   Drive.init({ onEstado: pintaSync, onDatos: () => { render(); toast('Datos actualizados desde Drive'); Store.cargarPreciosAuto().then(n => n && render()); }, preguntar: preguntarConflicto });
   if (Store.aviso()) toast(Store.aviso());
+  let ultPrecios = Date.now();
   Store.cargarPreciosAuto().then(n => { if (n) { render(); toast('Precios actualizados'); } });
+  document.addEventListener('visibilitychange', () => {   // si la app se queda abierta (PWA en el móvil), al volver se traen los precios si han pasado 15 min
+    if (document.hidden || Date.now() - ultPrecios < 15 * 60000) return; ultPrecios = Date.now();
+    Store.cargarPreciosAuto().then(n => { if (n) { render(); toast('Precios actualizados'); } else pintaSub(); });
+  });
+  setInterval(pintaSub, 60000);   // «precios hace X min» al día
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(r => r.update()).catch(() => { });
   // Si el servidor ya tiene una versión más nueva que la cargada, recarga una vez (evita quedarse con código viejo por cachés)
   try {

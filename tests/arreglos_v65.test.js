@@ -53,7 +53,7 @@ const srv = http.createServer((q, r) => {
     await pg.click('#btn-ajustes'); await pg.setInputFiles('#a-imp', tmp); await pg.waitForTimeout(600);
     let r = await pg.evaluate(() => ({ p: Store.get().precios.AAA.precio, fx: Store.get().ajustes.fx }));
     assert.equal(r.p, 50, 'precio del feed aplicado tras importar'); assert.equal(r.fx.fecha, HOY); assert.equal(r.fx.GBP, 0.85);
-    assert(/divisas \d{4}-\d\d-\d\d/.test(await pg.textContent('#sub')) && (await pg.textContent('#sub')).includes(HOY), 'la cabecera muestra las divisas de hoy');
+    assert((await pg.getAttribute('#sub', 'title')).includes('Divisas del ' + HOY), 'la cabecera lleva las divisas de hoy');
     /* 3. Volver a leer el mismo feed no cuenta como cambio (antes: «Precios actualizados» en cada arranque) */
     assert.equal(await pg.evaluate(() => Store.cargarPreciosAuto()), 0);
     const toasts = []; await pg.exposeFunction('__toast', t => toasts.push(t));

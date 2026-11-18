@@ -283,6 +283,7 @@ const Logic = (function () {
     ['posiciones', 'movimientos', 'resultados'].forEach(k => { if (!Array.isArray(out[k])) out[k] = []; });
     ['fichas', 'precios', 'cribado'].forEach(k => { if (!out[k] || typeof out[k] !== 'object') out[k] = {}; });
     if (!out.otras || !Array.isArray(out.otras.accounts)) out.otras = { accounts: [] };
+    if (!Array.isArray(out.historico)) out.historico = [];   // fotos diarias del valor de la cartera: [{f:'AAAA-MM-DD', v: valor €, c: coste €}]
     const limpia = o => { if (o && typeof o.divisa === 'string') { const t = o.divisa.trim().toUpperCase(); if (t !== o.divisa) o.divisa = t; } };   // «EUR » con un espacio rompía la comparación de divisas (BIT:SOL@ficha)
     Object.keys(out.fichas).forEach(k => limpia(out.fichas[k])); Object.keys(out.precios).forEach(k => limpia(out.precios[k]));
     return aplicarParches(out);
@@ -307,12 +308,25 @@ const Logic = (function () {
     if (b) { const ex = cands.filter(p => norm(p.broker).trim() === b); return ex.length ? ex[0] : null; }
     return cands.length === 1 ? cands[0] : null;
   }
+  /* Índice nombre → ticker de las fichas. Se rehace solo si cambian las fichas (claves o nombres): comprobarlo es comparar cadenas, sin expresiones regulares.
+     Antes cada búsqueda normalizaba el nombre de todas las fichas; el Inicio hacía más de un millón de esas normalizaciones por dibujo con 150 fichas y 60 posiciones. */
+  const IDX = new WeakMap();
+  function indiceNombres(fichas) {
+    const ks = Object.keys(fichas); let c = IDX.get(fichas);
+    if (c && c.ks.length === ks.length && ks.every((k, i) => k === c.ks[i] && (fichas[k] && fichas[k].nombre) === c.ns[i])) return c.m;
+    const m = new Map(), ns = ks.map(k => fichas[k] && fichas[k].nombre);
+    ks.forEach((k, i) => {   // el primero en orden gana, por nombre o por ticker (igual que el recorrido de antes)
+      const n = coreName(ns[i]), kl = k.toLowerCase();
+      if (n && !m.has(n)) m.set(n, k);
+      if (!m.has(kl)) m.set(kl, k);
+    });
+    IDX.set(fichas, { ks, ns, m }); return m;
+  }
   function tickerDe(d, pos) {
     const t = (pos.ticker || '').trim().toUpperCase();
     if (t && d.fichas[t]) return t;
     const a = coreName(pos.empresa);
-    for (const k of Object.keys(d.fichas)) { if (a && (coreName(d.fichas[k].nombre) === a || k.toLowerCase() === a)) return k; }
-    return t || null;
+    return (a && indiceNombres(d.fichas).get(a)) || t || null;
   }
 
   /* ───── Divisas y precios ───── */
@@ -759,6 +773,22 @@ const Logic = (function () {
     return { filas, total, emp, sec, div };
   }
 
+  /* ───── Evolución: una foto por día del valor y del coste (sin coste conocido, cuenta su valor: así v − c es la plusvalía) ───── */
+  function fotoDiaria(d, hoy) {
+    hoy = hoy || today(); if (!d.posiciones.length) return false;
+    let v = 0, c = 0;
+    for (const p of d.posiciones) { const val = valorEur(d, p); if (val == null) continue; const co = costeEur(d, p); v += val; c += co != null ? co : val; }
+    if (!(v > 0)) return false;
+    const r = x => Math.round(x * 100) / 100, H = d.historico = Array.isArray(d.historico) ? d.historico : [], u = H[H.length - 1], foto = { f: hoy, v: r(v), c: r(c) };
+    if (u && u.f === hoy) { if (u.v === foto.v && u.c === foto.c) return false; H[H.length - 1] = foto; return true; }   // el día de hoy se va actualizando: queda la última del día
+    H.push(foto); H.sort((a, b) => (a.f < b.f ? -1 : a.f > b.f ? 1 : 0)); return true;
+  }
+  /* Junta las fotos de dos dispositivos (por día; si ambos tienen el mismo día, gana b) */
+  function unirHistorico(a, b) {
+    const m = new Map(); (a || []).forEach(x => x && x.f && m.set(x.f, x)); (b || []).forEach(x => x && x.f && m.set(x.f, x));
+    return [...m.values()].sort((x, y) => (x.f < y.f ? -1 : x.f > y.f ? 1 : 0));
+  }
+
   /* ───── Dashboard (Inicio) ───── */
   function dashboard(d, hoy) {
     hoy = hoy || today();
@@ -801,7 +831,7 @@ const Logic = (function () {
     };
   }
 
-  return { isN, today, clone, nuevoDatos, normalizar, norm, coreName, sameCompany, findExisting, tickerDe, fxPorEur, aEur, precioPos, costeEur, mercadoEur, valorEur, variacion, diasDesde,
+  return { fotoDiaria, unirHistorico, isN, today, clone, nuevoDatos, normalizar, norm, coreName, sameCompany, findExisting, tickerDe, fxPorEur, aEur, precioPos, costeEur, mercadoEur, valorEur, variacion, diasDesde,
     compra, venta, editar, eliminar, borrarMov, reverseMov, precioManual, precioFicha, matrizEntrada, auditoriaDivisas, provisional, promptBusqueda, extraerJSON, aplicarBusqueda, pendientesBusqueda, deshacerBusqueda, promptFase2, proponerMultiplos, aplicarMultiplos, deshacerMultiplos, calidadFichas, distorsion, previsualizarSoloFcf, aplicarSoloFcf, valoracion, renombrarTicker, tickerValido, claves, divisaCotizacion, mezclarManual, contrastar, lineasFaltantes, revision, precioRef, pesos, dashboard, informes, V };
 })();
 if (typeof module !== 'undefined') module.exports = Logic;
