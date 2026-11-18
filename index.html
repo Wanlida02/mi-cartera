@@ -9,8 +9,21 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<link rel="stylesheet" href="css/app.css?v=72">
+<link rel="stylesheet" href="css/app.css?v=73">
 <title>Mi Cartera</title>
+<script>/* Rescate: si la app no consigue dibujarse (error de código, caché rota, datos raros), se explica en vez de quedar en blanco */
+window.__errs = []; addEventListener('error', function (e) { __errs.push((e.message || 'error') + (e.filename ? ' (' + e.filename.split('/').pop().split('?')[0] + ':' + e.lineno + ')' : '')); });
+addEventListener('unhandledrejection', function (e) { __errs.push('promesa: ' + (e.reason && e.reason.message || e.reason)); });
+window.__rescate = function (err) {
+  var v = document.getElementById('vista'); if (!v || (v.textContent.trim() && !err)) return;
+  if (err) __errs.push((err.message || String(err)) + (err.stack ? ' — ' + String(err.stack).split('\n')[1] : ''));
+  v.innerHTML = '<div class="card"><h2>La app no ha podido arrancar</h2><p class="small">Tus datos siguen guardados en este dispositivo. Prueba «Reintentar»; si sigue igual, «Borrar la caché de la app» (no toca tus datos). Si persiste, envía este mensaje:</p><pre id="r-err" class="small" style="white-space:pre-wrap;background:var(--chip);padding:8px;border-radius:8px"></pre><div class="acts" style="justify-content:flex-start"><button class="btn" id="r-re">Reintentar</button><button class="btn sec" id="r-cache">Borrar la caché de la app</button><button class="btn sec" id="r-dat">Descargar copia de mis datos</button></div></div>';
+  document.getElementById('r-err').textContent = (__errs.join('\n') || 'Sin detalle del error') + '\n' + navigator.userAgent;
+  document.getElementById('r-re').onclick = function () { location.reload(); };
+  document.getElementById('r-cache').onclick = function () { var p = []; if (navigator.serviceWorker) p.push(navigator.serviceWorker.getRegistrations().then(function (rs) { return Promise.all(rs.map(function (r) { return r.unregister(); })); })); if (window.caches) p.push(caches.keys().then(function (k) { return Promise.all(k.map(function (x) { return caches.delete(x); })); })); Promise.all(p).then(function () { location.reload(); }, function () { location.reload(); }); };
+  document.getElementById('r-dat').onclick = function () { var t = ''; try { t = localStorage.getItem('mi-cartera:datos:v1') || ''; } catch (e) { } if (!t) return alert('No hay datos guardados en este dispositivo.'); var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([t], { type: 'application/json' })); a.download = 'datos-rescate.json'; document.body.appendChild(a); a.click(); };
+};
+</script>
 </head>
 <body>
 <header class="top">
@@ -31,17 +44,18 @@
 <main id="vista" tabindex="-1"></main>
 <dialog id="dlg"></dialog>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="js/val.js?v=72"></script>
-<script src="js/logic.js?v=72"></script>
-<script src="js/store.js?v=72"></script>
-<script src="js/drive.js?v=72"></script>
-<script src="js/cribado.js?v=72"></script>
-<script src="js/app.js?v=72"></script>
-<script src="js/enlaces-ui.js?v=72"></script>
-<script src="js/datos-web.js?v=72"></script>
-<script src="js/cribado-ui.js?v=72"></script>
-<script src="js/valoracion-ui.js?v=72"></script>
-<script src="js/resultados-ui.js?v=72"></script>
-<script src="js/extras-ui.js?v=72"></script>
+<script src="js/val.js?v=73"></script>
+<script src="js/logic.js?v=73"></script>
+<script src="js/store.js?v=73"></script>
+<script src="js/drive.js?v=73"></script>
+<script src="js/cribado.js?v=73"></script>
+<script src="js/app.js?v=73"></script>
+<script src="js/enlaces-ui.js?v=73"></script>
+<script src="js/datos-web.js?v=73"></script>
+<script src="js/cribado-ui.js?v=73"></script>
+<script src="js/valoracion-ui.js?v=73"></script>
+<script src="js/resultados-ui.js?v=73"></script>
+<script src="js/extras-ui.js?v=73"></script>
+<script>setTimeout(function () { var v = document.getElementById('vista'); if (v && !v.textContent.trim()) window.__rescate(); }, 4000);</script>
 </body>
 </html>

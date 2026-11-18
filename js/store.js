@@ -2,9 +2,9 @@
    Los precios automáticos llegan en precios.json (público, lo escribe una tarea programada de GitHub; no contiene datos personales).
    La sincronización con Google Drive se añade como otro «backend» sin cambiar el resto de la app. */
 const Store = (function () {
-  const KEY = 'mi-cartera:datos:v1', BK = 'mi-cartera:copia-previa', META = 'mi-cartera:meta';
+  const KEY = 'mi-cartera:datos:v1', BK = 'mi-cartera:copia-previa', META = 'mi-cartera:meta', ROTA = 'mi-cartera:copia-ilegible';
   const INFO = 'mi-cartera:precios-info';
-  let data = null, aviso = '', info = null, gen = 0;   // gen: sube cuando los datos se sustituyen desde fuera (Drive, importar); invalida un «Deshacer» pendiente
+  let data = null, aviso = '', avisoCarga = '', info = null, gen = 0;   // gen: sube cuando los datos se sustituyen desde fuera (Drive, importar); invalida un «Deshacer» pendiente
   try { info = JSON.parse(localStorage.getItem(INFO) || 'null'); } catch (e) { info = null; }
   const subs = [];
 
@@ -14,7 +14,11 @@ const Store = (function () {
       const n0 = raw && raw.ajustes && Array.isArray(raw.ajustes.parches) ? raw.ajustes.parches.length : 0;
       if (raw && data.ajustes.parches && data.ajustes.parches.length > n0) setTimeout(() => save(true), 0);   // parche de datos aplicado: se guarda sin contar como edición tuya (cada dispositivo lo aplica igual al leer los datos; si contara, el segundo en sincronizar vería «Datos distintos»)
     }
-    catch (e) { data = Logic.normalizar(null); aviso = 'No se pudo leer lo guardado en este dispositivo.'; }
+    catch (e) {   // no se pierde nada: lo que no se pudo leer se guarda aparte antes de empezar vacío (si no, el siguiente guardado lo pisaría)
+      console.error(e); let guardada = false;
+      try { const t = localStorage.getItem(KEY); if (t) { localStorage.setItem(ROTA, t); guardada = true; } } catch (e2) { /* sin espacio */ }
+      data = Logic.normalizar(null); aviso = 'No se pudo leer lo guardado en este dispositivo (' + (e && e.message || 'error') + ').' + (guardada ? ' Hay una copia intacta: en ⚙ Ajustes, «Descargar lo que no se pudo leer».' : ''); avisoCarga = aviso;
+    }
     return data;
   }
   function save(silencioso) {
@@ -76,5 +80,5 @@ const Store = (function () {
       return n;
     } catch (e) { return false; }
   }
-  return { restaurar, generacion: () => gen, foto, load, save, adopt, importar, exportar, marcarCopia, ultimaCopia, cargarPreciosAuto, get: () => data, preciosInfo: () => info, aviso: () => aviso, onChange: f => subs.push(f) };
+  return { avisoCarga: () => avisoCarga, copiaIlegible: () => { try { return localStorage.getItem(ROTA); } catch (e) { return null; } }, restaurar, generacion: () => gen, foto, load, save, adopt, importar, exportar, marcarCopia, ultimaCopia, cargarPreciosAuto, get: () => data, preciosInfo: () => info, aviso: () => aviso, onChange: f => subs.push(f) };
 })();
