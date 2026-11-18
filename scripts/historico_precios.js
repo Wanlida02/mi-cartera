@@ -5,7 +5,8 @@
    Reglas: si falla un valor conserva el histórico anterior; los precios van ajustados por splits (Yahoo) y se guardan los splits para contrastar con las acciones de la ficha;
    la divisa es la que declara Yahoo (el motor solo usa el histórico si coincide con la de la ficha). */
 const fs = require('fs'), path = require('path');
-const RAIZ = path.join(__dirname, '..'), OUT = path.join(RAIZ, 'datos', 'precios_anuales.json');
+const RAIZ = path.join(__dirname, '..'), EXTRA = (process.argv.find(a => a.startsWith('--extra=')) || '').slice(8).split(',').map(x => x.trim()).filter(Boolean);   // --extra=TK,TK: tickers de EE. UU. solo para backtests → datos/precios_backtest.json
+const OUT = path.join(RAIZ, 'datos', EXTRA.length ? 'precios_backtest.json' : 'precios_anuales.json');
 const UA = { 'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36', Accept: 'application/json,*/*' };
 const esperar = ms => new Promise(r => setTimeout(r, ms));
 const num = v => (typeof v === 'number' && isFinite(v) && v > 0 ? v : null);
@@ -87,7 +88,7 @@ async function sonda() {
 }
 async function main() {
   if (process.argv.includes('--sonda')) return sonda();
-  const cfg = JSON.parse(fs.readFileSync(path.join(RAIZ, 'simbolos.json'), 'utf8')), solo = (process.argv.find(a => a.startsWith('--solo=')) || '').slice(7).split(',').filter(Boolean);
+  const cfg = EXTRA.length ? { simbolos: Object.fromEntries(EXTRA.map(t => [t, { y: [t] }])) } : JSON.parse(fs.readFileSync(path.join(RAIZ, 'simbolos.json'), 'utf8')), solo = (process.argv.find(a => a.startsWith('--solo=')) || '').slice(7).split(',').filter(Boolean);
   let prev = {}; try { prev = JSON.parse(fs.readFileSync(OUT, 'utf8')).simbolos || {}; } catch (e) { /* primera vez */ }
   let precios = {}; try { precios = JSON.parse(fs.readFileSync(path.join(RAIZ, 'precios.json'), 'utf8')).precios || {}; } catch (e) { /* sin divisas conocidas: se usa la del país */ }
   const sim = {}, fallos = [];   // se parte de cero: lo anterior solo se conserva si este valor falla y sigue cuadrando con el precio actual

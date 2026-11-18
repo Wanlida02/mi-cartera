@@ -1,0 +1,39 @@
+name: Datos para backtests (muestra ampliada)
+# Manual. Precios mensuales (→ datos/precios_backtest.json) y cuentas publicadas (→ datos/publicado/) de valores de EE. UU. que NO están en la app,
+# solo para ampliar la muestra de los backtests (cíclicas, industriales, crecimiento). No afecta a la app.
+on:
+  workflow_dispatch:
+    inputs:
+      tickers:
+        description: 'Tickers (separados por comas)'
+        required: false
+        default: 'ABT,ADBE,ADP,CAT,CL,CLX,COST,GD,GIS,HD,ITW,JNJ,KMB,KO,LMT,LOW,MMM,NKE,ORCL,PEP,PG,ROST,SBUX,SHW,TGT,TXN,UNP,WM,DE,PCAR,CMI,EMR,ETN,HON,GE,F,GM,DAL,UAL,LUV,DHI,LEN,AMAT,LRCX,KLAC,MCHP,ADI,NUE,STLD,DOW,LYB,CF,MOS,WHR,TXT,ITT,DOV,PH,ROK,SWK,NFLX,TSLA,AMD,CRM,AVGO,ADSK,INTU,NOC,LHX,TDG,HII'
+permissions:
+  contents: write
+concurrency:
+  group: datos-empresa
+  cancel-in-progress: false
+jobs:
+  datos:
+    runs-on: ubuntu-latest
+    env:
+      SEC_CONTACT: ${{ vars.SEC_CONTACT }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Precios mensuales
+        run: node scripts/historico_precios.js "--extra=${{ github.event.inputs.tickers }}"
+        continue-on-error: true
+      - name: Cuentas publicadas (SEC)
+        run: node scripts/datos_sec.js --publicado "${{ github.event.inputs.tickers }}"
+        continue-on-error: true
+      - name: Guardar
+        run: |
+          git config user.name "mi-cartera-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add datos
+          if git diff --cached --quiet; then echo "Sin cambios"; exit 0; fi
+          git commit -m "Datos para backtests: muestra ampliada"
+          for i in 1 2 3; do git pull --rebase origin ${{ github.ref_name }} && git push && break || sleep 5; done
