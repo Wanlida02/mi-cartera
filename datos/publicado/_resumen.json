@@ -1,0 +1,286 @@
+{
+ "generado": "2026-11-18T06:12:33.312Z",
+ "empresas": {
+  "ACMR": {
+   "filas": 793,
+   "desde": "2016-09-30"
+  },
+  "AER": {
+   "filas": 0,
+   "desde": null
+  },
+  "AMZN": {
+   "filas": 2070,
+   "desde": "2007-12-31"
+  },
+  "AZO": {
+   "filas": 1458,
+   "desde": "2008-08-30"
+  },
+  "BA": {
+   "filas": 1685,
+   "desde": "2007-12-31"
+  },
+  "CBNA": {
+   "filas": 151,
+   "desde": null
+  },
+  "CRWD": {
+   "filas": 623,
+   "desde": "2018-01-31"
+  },
+  "ESEA": {
+   "filas": 0,
+   "desde": null
+  },
+  "FSLR": {
+   "filas": 1540,
+   "desde": "2007-12-29"
+  },
+  "GCT": {
+   "filas": 308,
+   "desde": "2021-12-31"
+  },
+  "GOOGL": {
+   "filas": 987,
+   "desde": "2013-12-31"
+  },
+  "GS": {
+   "filas": 1268,
+   "desde": null
+  },
+  "HALO": {
+   "filas": 1291,
+   "desde": "2009-12-31"
+  },
+  "LAUR": {
+   "filas": 881,
+   "desde": "2015-12-31"
+  },
+  "LIN": {
+   "filas": 829,
+   "desde": "2016-12-31"
+  },
+  "MCD": {
+   "filas": 1858,
+   "desde": "2007-12-31"
+  },
+  "MCO": {
+   "filas": 1667,
+   "desde": "2007-12-31"
+  },
+  "META": {
+   "filas": 1236,
+   "desde": "2010-12-31"
+  },
+  "MSFT": {
+   "filas": 1738,
+   "desde": "2007-09-30"
+  },
+  "MU": {
+   "filas": 1509,
+   "desde": "2008-12-04"
+  },
+  "NET": {
+   "filas": 652,
+   "desde": "2017-12-31"
+  },
+  "RGLD": {
+   "filas": 1196,
+   "desde": "2014-06-30"
+  },
+  "RTX": {
+   "filas": 1578,
+   "desde": "2007-12-31"
+  },
+  "SI": {
+   "filas": 180,
+   "desde": "2024-06-30"
+  },
+  "SNDK": {
+   "filas": 247,
+   "desde": "2023-06-30"
+  },
+  "TBBK": {
+   "filas": 1000,
+   "desde": "2019-12-31"
+  },
+  "TSM": {
+   "error": "Sin datos US-GAAP"
+  },
+  "UBER": {
+   "filas": 766,
+   "desde": "2017-12-31"
+  },
+  "V": {
+   "filas": 1341,
+   "desde": "2007-09-30"
+  },
+  "VITL": {
+   "filas": 611,
+   "desde": "2018-12-30"
+  },
+  "AAPL": {
+   "filas": 1565,
+   "desde": "2007-09-29"
+  },
+  "CHE": {
+   "filas": 1368,
+   "desde": "2008-12-31"
+  },
+  "OSCR": {
+   "filas": 518,
+   "desde": "2019-12-31"
+  },
+  "BELFA": {
+   "filas": 1174,
+   "desde": "2009-12-31"
+  },
+  "STRL": {
+   "filas": 1317,
+   "desde": "2009-12-31"
+  },
+  "ATYM": {
+   "error": "no está en la SEC"
+  },
+  "FTDR": {
+   "filas": 753,
+   "desde": "2016-12-31"
+  },
+  "PRDO": {
+   "filas": 1470,
+   "desde": "2008-12-31"
+  },
+  "COLLEGIUM PHARMACEUTICAL": {
+   "error": "no está en la SEC"
+  },
+  "SOL SPA": {
+   "error": "no está en la SEC"
+  },
+  "NEURONES": {
+   "error": "no está en la SEC"
+  },
+  "BZU": {
+   "error": "no está en la SEC"
+  },
+  "CSU": {
+   "error": "no está en la SEC"
+  },
+  "NVDA": {
+   "filas": 1635,
+   "desde": "2008-01-27"
+  },
+  "KO": {
+   "filas": 1662,
+   "desde": "2007-12-31"
+  },
+  "JNJ": {
+   "filas": 1479,
+   "desde": "2007-12-30"
+  },
+  "PG": {
+   "filas": 1658,
+   "desde": "2008-06-30"
+  },
+  "HD": {
+   "filas": 1648,
+   "desde": "2008-02-03"
+  },
+  "CAT": {
+   "filas": 1468,
+   "desde": "2007-12-31"
+  },
+  "NKE": {
+   "filas": 1317,
+   "desde": "2008-05-31"
+  },
+  "SBUX": {
+   "filas": 1765,
+   "desde": "2007-09-30"
+  },
+  "TGT": {
+   "filas": 1584,
+   "desde": "2008-02-02"
+  },
+  "ORCL": {
+   "filas": 1441,
+   "desde": "2008-05-31"
+  },
+  "WM": {
+   "filas": 1568,
+   "desde": "2007-12-31"
+  },
+  "COST": {
+   "filas": 1722,
+   "desde": "2008-08-31"
+  },
+  "LOW": {
+   "filas": 1503,
+   "desde": "2008-02-01"
+  },
+  "PEP": {
+   "filas": 1665,
+   "desde": "2007-12-29"
+  },
+  "UNP": {
+   "filas": 1508,
+   "desde": "2007-12-31"
+  },
+  "ADP": {
+   "filas": 1462,
+   "desde": "2008-06-30"
+  },
+  "MMM": {
+   "filas": 1710,
+   "desde": "2007-12-31"
+  },
+  "ABT": {
+   "filas": 1638,
+   "desde": "2007-12-31"
+  },
+  "TXN": {
+   "filas": 1555,
+   "desde": "2007-12-31"
+  },
+  "ADBE": {
+   "filas": 1638,
+   "desde": "2007-11-30"
+  },
+  "LMT": {
+   "filas": 1649,
+   "desde": "2007-12-31"
+  },
+  "GD": {
+   "filas": 1464,
+   "desde": "2007-12-31"
+  },
+  "CL": {
+   "filas": 1471,
+   "desde": "2007-12-31"
+  },
+  "KMB": {
+   "filas": 1576,
+   "desde": "2007-12-31"
+  },
+  "CLX": {
+   "filas": 1459,
+   "desde": "2008-06-30"
+  },
+  "GIS": {
+   "filas": 1614,
+   "desde": "2008-05-25"
+  },
+  "SHW": {
+   "filas": 1492,
+   "desde": "2007-12-31"
+  },
+  "ITW": {
+   "filas": 1532,
+   "desde": "2007-12-31"
+  },
+  "ROST": {
+   "filas": 1399,
+   "desde": "2009-01-31"
+  }
+ }
+}
