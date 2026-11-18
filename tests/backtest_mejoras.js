@@ -120,7 +120,13 @@ function comp(nombre, v, k, sub) {
   const idx = []; base.forEach((b, i) => { if (SUB[sub](b) && b[k] && v[i][k]) idx.push(i); });
   if (idx.length < 3) return { n: idx.length };
   const e0 = idx.map(i => err(base[i], k)), e1 = idx.map(i => err(v[i], k)), d = idx.map((_, j) => Math.abs(e1[j]) - Math.abs(e0[j]));
-  return { n: idx.length, sesgo0: med(e0), sesgo1: med(e1), abs0: med(e0.map(Math.abs)), abs1: med(e1.map(Math.abs)), dAbs: med(d), mejora: d.filter(x => x < -1e-9).length, empeora: d.filter(x => x > 1e-9).length, rho0: spearEnv(idx.map(i => base[i]), k), rho1: spearEnv(idx.map(i => v[i]), k) };
+  const ch = idx.map((_, j) => j).filter(j => Math.abs(d[j]) > 1e-9);   // filas que la mejora realmente cambia
+  const mean = a => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : null);
+  const mad = a => { const m = med(a); return med(a.map(x => Math.abs(x - m))); };
+  return { n: idx.length, cambian: ch.length, madCh0: mad(ch.map(j => e0[j])), madCh1: mad(ch.map(j => e1[j])), abs0: med(e0.map(Math.abs)), abs1: med(e1.map(Math.abs)), sesgo0: med(e0), sesgo1: med(e1),
+    sesgoCh0: med(ch.map(j => e0[j])), sesgoCh1: med(ch.map(j => e1[j])), absCh0: med(ch.map(j => Math.abs(e0[j]))), absCh1: med(ch.map(j => Math.abs(e1[j]))),
+    dMed: med(ch.map(j => d[j])), dMedia: mean(ch.map(j => d[j])), mejora: ch.filter(j => d[j] < 0).length, empeora: ch.filter(j => d[j] > 0).length,
+    rho0: spearEnv(idx.map(i => base[i]), k), rho1: spearEnv(idx.map(i => v[i]), k), empresas: new Set(ch.map(j => base[idx[j]].tk)).size, ...(() => { const g = {}; ch.forEach(j => { (g[base[idx[j]].tk] = g[base[idx[j]].tk] || []).push(d[j]); }); const m = Object.values(g).map(a => med(a)); return { empMejoran: m.filter(x => x < -1e-9).length, empEmpeoran: m.filter(x => x > 1e-9).length }; })() };
 }
 const f1 = x => (x == null ? '—' : (x * 100).toFixed(1) + '%'), f2 = x => (x == null ? '—' : x.toFixed(2));
 const salida = { empresas: Object.keys(pubs).length, filas: base.length, variantes: [] };
@@ -129,9 +135,8 @@ MALLA.forEach(([nombre, exp]) => {
   const v = correr(exp); const fila = { nombre, exp, kinds: {} };
   console.log('\n' + nombre);
   ['B', 'A'].forEach(k => Object.keys(SUB).forEach(sub => {
-    const c = comp(nombre, v, k, sub); fila.kinds[k + ' · ' + sub] = c; if (c.n < 3) return;
-    if (sub !== 'todas' && Math.abs((c.abs1 || 0) - (c.abs0 || 0)) < 1e-6 && c.mejora === 0 && c.empeora === 0) return;
-    console.log(('  ' + (k === 'B' ? 'propios' : 'genérico') + ' · ' + sub).padEnd(36), 'n=' + String(c.n).padStart(3), '| sesgo', f1(c.sesgo0), '→', f1(c.sesgo1), '| |err| mediano', f1(c.abs0), '→', f1(c.abs1), '| Δ', f1(c.dAbs), '| mejoran', c.mejora, 'empeoran', c.empeora, '| spearman', f2(c.rho0), '→', f2(c.rho1));
+    const c = comp(nombre, v, k, sub); fila.kinds[k + ' · ' + sub] = c; if (!(c.n >= 3) || !(c.cambian >= 5) || k === 'A' && sub !== 'todas') return;
+    console.log(('  ' + (k === 'B' ? 'propios' : 'genérico') + ' · ' + sub).padEnd(34), 'cambian ' + String(c.cambian).padStart(3) + '/' + c.n + ' (' + c.empresas + ' emp.)', '| en esas: |err| ' + f1(c.absCh0) + ' → ' + f1(c.absCh1), '(Δ mediano ' + f1(c.dMed) + ')', 'sesgo ' + f1(c.sesgoCh0) + ' → ' + f1(c.sesgoCh1), '| dispersión (MAD) ' + f1(c.madCh0) + ' → ' + f1(c.madCh1) + ' | filas mejoran/empeoran', c.mejora + '/' + c.empeora, '· EMPRESAS mejoran/empeoran', c.empMejoran + '/' + c.empEmpeoran, '| muestra: |err| ' + f1(c.abs0) + ' → ' + f1(c.abs1) + ', spearman ' + f2(c.rho0) + ' → ' + f2(c.rho1));
   }));
   salida.variantes.push(fila);
 });
