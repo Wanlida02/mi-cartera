@@ -59,9 +59,9 @@
       '<div class="num">' + extra + '</div></div>';
   }
   function vistaInicio() {
-    const d = Store.get(), D = L.dashboard(d), R = D.resumen;
+    const d = Store.get(), D = L.dashboard(d), R = D.resumen, ac = Store.avisoCarga() ? '<div class="alert bad">⚠ ' + esc(Store.avisoCarga()) + '</div>' : '';
     if (!d.posiciones.length && !Object.keys(d.fichas).length)
-      return '<div class="card empty"><p><b>Aún no hay datos en este dispositivo.</b></p><p>Abre ⚙ Ajustes e importa tu archivo <code>datos.json</code> (o empieza añadiendo una compra en Cartera).</p><button class="btn" data-a="ajustes">Abrir ajustes</button></div>';
+      return ac + '<div class="card empty"><p><b>Aún no hay datos en este dispositivo.</b></p><p>Abre ⚙ Ajustes e importa tu archivo <code>datos.json</code> (o empieza añadiendo una compra en Cartera).</p><button class="btn" data-a="ajustes">Abrir ajustes</button></div>';
     const eurS = n => n == null || !isFinite(n) ? '—' : (n > 0 ? '+' : n < 0 ? '-' : '') + nf(Math.abs(n), 0) + ' €';
     let h = '<div class="kpis">' +
       '<div class="kpi"><span>Valor de la cartera</span><b>' + eur(R.valorEur) + '</b><small>' + R.nPos + ' empresas</small></div>' +
@@ -308,7 +308,7 @@
   }
 
   /* ───── Ajustes ───── */
-  const APP_VERSION = '72 · Respuestas de IA: fuentes agrupadas por bloques de años o por documento, JSON con texto alrededor o comas de más · 71 · Múltiplos de salida: pega la respuesta de la IA y rellena las medianas · 70 · La IA puede citar documentos con página (URD2025.pdf#p79) como fuente · 69 · Ajustes más claros en el móvil · 68 · Borrar con «Deshacer», filas usables con teclado · 67 · Inicio más rápido, evolución del valor, medidor de la watchlist, cartera por broker y por rentab. esperada · 66 · Inicio con plusvalía y reparto, pestañas abajo en el móvil · 65 · Arreglos: precio manual, precios al importar, fecha local, divisas en Ajustes, caché · 64 · Cifras de 12 meses: la IA busca sola y da fuentes · 63 · Caja de calidad: cada botón hace algo (avisos, verificar, guía de múltiplos, precio del feed) · 62 · Informes: una empresa con dos nombres comparte carpeta · 61 · Completar fichas con una IA que busca sola en los informes (con fuentes, fase 2 y deshacer)';
+  const APP_VERSION = '73 · Nunca en blanco al abrir: aviso de rescate y datos raros que se limpian · 72 · Respuestas de IA: fuentes agrupadas por bloques de años o por documento, JSON con texto alrededor o comas de más · 71 · Múltiplos de salida: pega la respuesta de la IA y rellena las medianas · 70 · La IA puede citar documentos con página (URD2025.pdf#p79) como fuente · 69 · Ajustes más claros en el móvil · 68 · Borrar con «Deshacer», filas usables con teclado · 67 · Inicio más rápido, evolución del valor, medidor de la watchlist, cartera por broker y por rentab. esperada · 66 · Inicio con plusvalía y reparto, pestañas abajo en el móvil · 65 · Arreglos: precio manual, precios al importar, fecha local, divisas en Ajustes, caché · 64 · Cifras de 12 meses: la IA busca sola y da fuentes · 63 · Caja de calidad: cada botón hace algo (avisos, verificar, guía de múltiplos, precio del feed) · 62 · Informes: una empresa con dos nombres comparte carpeta · 61 · Completar fichas con una IA que busca sola en los informes (con fuentes, fase 2 y deshacer)';
   function ajustes() {
     const d = Store.get(), A = d.ajustes, cp = Store.ultimaCopia();
     const DIVS = [...new Set(Object.keys(A.fx).concat(d.posiciones.map(p => p.moneda)).filter(k => k && /^[A-Z]{3}$/.test(k) && k !== 'EUR'))].sort();   // todas las divisas del feed y de tus posiciones (antes solo USD, CNY y TWD)
@@ -324,7 +324,8 @@
       '<section class="aj"><h3>Copia de tus datos</h3><p class="aj-ayuda">Se guardan en este dispositivo' + (conectado ? ' y en tu Drive' : '') + '. Última copia exportada: ' + (cp ? new Date(cp).toLocaleDateString('es-ES') : 'nunca') + '.</p>' +
         '<div class="aj-bt"><button class="btn sec" id="a-exp">Exportar copia</button><label class="btn sec">Importar archivo<input id="a-imp" type="file" accept=".json,application/json" hidden></label></div></section>' +
       '<section class="aj"><h3>Informes anuales</h3><p class="aj-ayuda">El <code>indice_informes.json</code> que genera <code>herramientas/indice_informes.py</code> en tu PC.</p><div class="aj-bt"><label class="btn sec">Cargar índice de informes<input id="a-inf" type="file" accept=".json,application/json" hidden></label></div></section>' +
-      '<details class="aj-ver small"><summary>Novedades de cada versión</summary><ul>' + ver.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul></details>' +
+      (Store.copiaIlegible() ? '<section class="aj"><h3>Datos que no se pudieron leer</h3><p class="aj-ayuda">Una vez no se pudieron leer los datos de este dispositivo y se guardó una copia intacta.</p><div class="aj-bt"><button class="btn sec" id="a-rota">Descargar lo que no se pudo leer</button></div></section>' : '') +
+            '<details class="aj-ver small"><summary>Novedades de cada versión</summary><ul>' + ver.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul></details>' +
       '<div class="aj-pie"><button class="btn sec" data-a="cerrar">Cancelar</button><button class="btn" id="a-ok">Guardar</button></div>',
       dd => {
         dd.querySelector('#a-ok').onclick = () => {
@@ -338,6 +339,7 @@
         };
         const bo = (id, f) => { const b = dd.querySelector(id); if (b) b.onclick = f; };
         bo('#dr-on', () => { Drive.conectar(); cerrar(); }); bo('#dr-now', () => { Drive.ahora(); cerrar(); }); bo('#dr-off', () => { if (confirm('¿Desconectar de Drive? Los datos se quedan en este dispositivo y en tu Drive.')) { Drive.desconectar(); cerrar(); } });
+        bo('#a-rota', () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([Store.copiaIlegible()], { type: 'application/json' })); a.download = 'datos-no-leidos.json'; a.click(); });
         dd.querySelector('#a-inf').onchange = e => { if (e.target.files[0]) cargarIndiceInformes(e.target.files[0]); };
         dd.querySelector('#a-exp').onclick = () => {
           const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([Store.exportar()], { type: 'application/json' }));
@@ -418,7 +420,8 @@
     return m < 2 ? 'ahora' : m < 60 ? 'hace ' + m + ' min' : m < 24 * 60 ? 'hace ' + Math.round(m / 60) + ' h' : 'del ' + new Date(t).toLocaleDateString('es-ES', { day: 'numeric', month: 'numeric' });
   }
   const DRV = { on: 'Drive al día', sync: 'sincronizando…', reconectar: 'Drive: reconectar', error: 'Drive: error', conflicto: 'Drive: elegir versión' };
-  function pintaSub() {
+  function pintaSub() { try { pintaSub0(); } catch (e) { console.error(e); } }
+  function pintaSub0() {
     const d = Store.get(); if (!d) return;
     const pi = Store.preciosInfo(), e = Drive.estado(), partes = [d.posiciones.length ? d.posiciones.length + ' posiciones' : 'sin datos'];
     if (pi && pi.generado) partes.push('precios ' + hace(pi.generado));
@@ -449,7 +452,7 @@
 
   function render() {
     const d = Store.get(); if (!d) return;
-    Store.foto();   // foto del día del valor (solo guarda si cambia); antes de dibujar, para que el gráfico la incluya
+    try { Store.foto(); } catch (e) { console.error(e); }   // foto del día del valor (solo guarda si cambia); antes de dibujar, para que el gráfico la incluya. Si falla, la pantalla se dibuja igual
     document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
     const v = $('#vista'), keep = document.activeElement && document.activeElement.id === 'q';
     const keepI = document.activeElement && document.activeElement.id === 'qi';
@@ -459,7 +462,7 @@
     } catch (err) {   // un fallo al dibujar una pestaña no debe dejarla en blanco sin explicación
       console.error(err); v.innerHTML = '<div class="alert bad"><b>Error al mostrar esta pestaña:</b> ' + esc(err && err.message || String(err)) + '<br><small>Tus datos están intactos. Cuéntame este mensaje y la pestaña (versión ' + esc(APP_VERSION) + ').</small></div>';
     }
-    (UI.pies[tab] || []).forEach(fn => { v.insertAdjacentHTML('beforeend', fn()); });
+    (UI.pies[tab] || []).forEach(fn => { try { v.insertAdjacentHTML('beforeend', fn()); } catch (e) { console.error(e); } });
     pintaSub();
     if (keep) { const q = $('#q'); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }
     if (keepI) { const q = $('#qi'); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }
@@ -510,7 +513,7 @@
   Object.assign(UI, { conDeshacer, urlSegura, lineaPrecios: () => lineaPrecios(), dlg, cerrar, toast, esc, nf, pct, money, eur, guardar, render, campo, val, cls, irA: t => { tab = t; render(); window.scrollTo(0, 0); },
     abrirPosicion: tk => { const d = Store.get(), i = d.posiciones.findIndex(p => L.tickerDe(d, p) === tk); if (i < 0) return; tab = 'cartera'; render(); window.scrollTo(0, 0); detalle(i); },
     abrirInforme: tk => { const I = L.informes(Store.get()), i = I ? I.lista.findIndex(e => (e.tk || '').toUpperCase() === String(tk).toUpperCase()) : -1; tab = 'informes'; render(); window.scrollTo(0, 0); if (i >= 0) detalleInforme(i); } });
-  Store.load(); render();
+  try { Store.load(); render(); } catch (e) { console.error(e); if (window.__rescate) window.__rescate(e); }   // si algo falla al arrancar, aviso con el error y salida (nunca pantalla en blanco)
   Drive.init({ onEstado: pintaSync, onDatos: () => { render(); toast('Datos actualizados desde Drive'); Store.cargarPreciosAuto().then(n => n && render()); }, preguntar: preguntarConflicto });
   if (Store.aviso()) toast(Store.aviso());
   let ultPrecios = Date.now();
