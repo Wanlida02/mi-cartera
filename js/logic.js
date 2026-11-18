@@ -186,16 +186,37 @@ const Logic = (function () {
       'B) Tabla de FUENTES USADAS: línea, año, documento, URL exacta, página o nota del PDF, fecha de publicación. Incluye las páginas que intentaste abrir y no pudiste.\nC) AVISOS: desgloses, discrepancias (con ambas cifras y URL), definiciones distintas y cifras calculadas con su cuenta.';
   }
   function extraerJSON(txt) { return objetosJSON(txt).find(o => o && typeof o === 'object' && o.datos) || null; }   // primer objeto JSON válido con «datos»
-  function objetosJSON(txt) {   // todos los objetos JSON válidos de un texto (tolera texto y bloques de código alrededor)
+  /* Todos los JSON (objetos y listas) de un texto, en orden: tolera texto, tablas y bloques ``` alrededor, y arregla lo que las IA suelen romper
+     (comas antes de } o ], comentarios de línea o de bloque, NaN/undefined, comillas tipográficas como delimitadores). Los de dentro de uno válido no se repiten. */
+  function reparaJSON(t) {
+    let o = '', str = false, esc = false;
+    for (let i = 0; i < t.length; i++) { const c = t[i];
+      if (str) { o += c; if (esc) esc = false; else if (c === '\\') esc = true; else if (c === '"') str = false; continue; }
+      if (c === '"') { str = true; o += c; continue; }
+      if (c === '“' || c === '”') { str = true; o += '"'; let k = i + 1; for (; k < t.length && t[k] !== '”' && t[k] !== '“' && t[k] !== '\n'; k++) o += t[k] === '"' ? '\\"' : t[k]; o += '"'; str = false; i = k; continue; }
+      if (c === '/' && t[i + 1] === '/') { while (i < t.length && t[i] !== '\n') i++; o += '\n'; continue; }
+      if (c === '/' && t[i + 1] === '*') { const k = t.indexOf('*/', i + 2); i = k < 0 ? t.length : k + 1; continue; }
+      o += c;
+    }
+    return o.replace(/\b(NaN|undefined|-?Infinity)\b/g, 'null').replace(/,\s*([}\]])/g, '$1');
+  }
+  function objetosJSON(txt) {
     txt = String(txt || ''); const out = [];
-    for (let i = 0; i < txt.length; i++) if (txt[i] === '{') {
+    for (let i = 0; i < txt.length; i++) if (txt[i] === '{' || txt[i] === '[') {
       let dep = 0, str = false, esc = false;
       for (let j = i; j < txt.length; j++) { const c = txt[j];
         if (str) { if (esc) esc = false; else if (c === '\\') esc = true; else if (c === '"') str = false; }
-        else if (c === '"') str = true; else if (c === '{') dep++;
-        else if (c === '}') { dep--; if (dep === 0) { try { out.push(JSON.parse(txt.slice(i, j + 1))); i = j; } catch (e) { /* no era JSON */ } break; } } }
+        else if (c === '"') str = true; else if (c === '{' || c === '[') dep++;
+        else if (c === '}' || c === ']') { dep--; if (dep === 0) { const t = txt.slice(i, j + 1); let o; try { o = JSON.parse(t); } catch (e) { try { o = JSON.parse(reparaJSON(t)); } catch (e2) { o = undefined; } }
+          if (o !== undefined && o !== null && typeof o === 'object') { out.push(o); i = j; } break; } } }
     }
     return out;
+  }
+  /* El JSON de una respuesta de IA: el primero que «encaja» (tiene lo que se espera) o, si no, el más grande. null si no hay ninguno. */
+  function jsonDeIA(txt, encaja) {
+    const c = objetosJSON(txt); if (!c.length) return null;
+    const ok = encaja ? c.filter(o => { try { return !!encaja(o); } catch (e) { return false; } }) : [];
+    return ok.length ? ok[0] : c.slice().sort((a, b) => JSON.stringify(b).length - JSON.stringify(a).length)[0];
   }
   /* Respuesta de una IA con los múltiplos de cada cierre → medianas. Acepta el JSON del prompt ({"per":[…],"anios":[…],…}), medianas sueltas ({"per":18.2})
      o, si no hay JSON, líneas de texto con «mediana» («PER mediana: 18,4x»). Ignora null, negativos (pérdidas) y valores absurdos (> 150x). */
@@ -209,7 +230,7 @@ const Logic = (function () {
     if (objs.length) {
       const o = objs.sort((a, b) => Object.keys(MULT_K).filter(k => clave(b, k) !== undefined).length - Object.keys(MULT_K).filter(k => clave(a, k) !== undefined).length)[0];
       res.origen = 'json'; res.anios = Array.isArray(o.anios) ? o.anios : [];
-      res.fuentes = (Array.isArray(o.fuentes) ? o.fuentes : o.fuentes && typeof o.fuentes === 'object' ? Object.values(o.fuentes) : []).filter(u => typeof u === 'string' && /^https?:\/\//.test(u.trim()));
+      res.fuentes = (Array.isArray(o.fuentes) ? o.fuentes : o.fuentes && typeof o.fuentes === 'object' ? Object.values(o.fuentes) : []).filter(u => typeof u === 'string' && urlOk(u));
       res.dudas = (Array.isArray(o.dudas) ? o.dudas : []).map(String);
       Object.keys(MULT_K).forEach(k => {
         const v = clave(o, k); if (v == null) return;
@@ -230,7 +251,40 @@ const Logic = (function () {
     return res;
   }
   const numB = x => (isN(x) ? x : typeof x === 'string' && x.trim() !== '' && isFinite(Number(x.replace(/\s/g, '').replace(',', '.'))) ? Number(x.replace(/\s/g, '').replace(',', '.')) : null);
-  const urlOk = u => typeof u === 'string' && (/^https?:\/\/\S+/.test(u.trim()) || /\.pdf\b.*(#p|\bp\.?\s?|pág|page)\s?\d+/i.test(u.trim()));   // URL, o documento de tus informes con página (URD2025.pdf#p79)
+  const urlOk = u => typeof u === 'string' && (/^https?:\/\/\S+/.test(u.trim()) || /^(www\.)?[a-z0-9-]+(\.[a-z0-9-]+)+\/\S+/i.test(u.trim()) || /\.pdf\b.*(#p|\bp\.?\s?|pág|page)\s?\d+/i.test(u.trim()));   // URL, o documento de tus informes con página (URD2025.pdf#p79)
+  /* Fuente de cada dato (línea, año) en cualquiera de las formas que usan las IA:
+     {"capex":{"2024":"url"}} · {"capex":"url"} (todos los años) · {"2024":{"capex":"url"}} · {"2020-2021 (todas las líneas)":"url"} · {"caja_neta_oficial 2022-2023":"url"}
+     · ["url"] (una para todo) · ["informe_2021.pdf","informe_2023.pdf"] (por el año del documento) · [{"linea":"capex","anio":2024,"url":"…"}].
+     Gana la más concreta (línea y año > solo línea o solo año > general). */
+  function resolverFuentes(fu, lineas, anios) {
+    const R = [], N = s => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    const linDe = t => { t = N(t); return lineas.filter(k => new RegExp('(^|[^a-z0-9_])' + k + '($|[^a-z0-9_])').test(t) || (k.indexOf('_') > 0 && t.indexOf(k.replace(/_/g, ' ')) >= 0)); };
+    const aniosDe = t => { const out = [], s = String(t); let m; const re = /\b((?:19|20)\d{2})\s*(?:[-–—\/]|a|al|hasta)\s*((?:19|20)?\d{2})\b/g;
+      while ((m = re.exec(s))) { let a = +m[1], b = +m[2]; if (b < 100) b += Math.floor(a / 100) * 100; for (let y = Math.min(a, b); y <= Math.max(a, b) && y - a < 40; y++) out.push(y); }
+      (s.replace(re, ' ').match(/\b(?:19|20)\d{2}\b/g) || []).forEach(y => out.push(+y)); return [...new Set(out)]; };
+    const add = (url, ls, as, base) => { if (typeof url !== 'string' || !urlOk(url)) return; R.push({ url: url.trim(), ls: ls && ls.length ? ls : null, as: as && as.length ? as : null, p: (ls && ls.length ? 2 : 0) + (as && as.length ? 1 : 0) + (base || 0) }); };
+    const urlDe = v => (typeof v === 'string' ? v : v && typeof v === 'object' && !Array.isArray(v) ? (v.url || v.fuente || v.enlace || v.link) : null);
+    if (typeof fu === 'string') add(fu);
+    else if (Array.isArray(fu)) {
+      const strs = fu.filter(x => typeof x === 'string' && urlOk(x));
+      if (strs.length === 1) add(strs[0]);
+      else if (strs.length > 1) {   // varios documentos sin decir para qué: el informe del año Y trae Y y el anterior
+        const conA = strs.map(u => ({ u, y: Math.max.apply(null, (u.match(/(?:19|20)\d{2}/g) || []).map(Number).concat([0])) }));
+        anios.forEach(a => { const c = conA.filter(x => x.y >= a).sort((x, y) => x.y - y.y)[0]; if (c) add(c.u, null, [a], -0.5); });
+        add(strs[0], null, null, -1);
+      }
+      fu.forEach(x => { if (x && typeof x === 'object' && !Array.isArray(x)) { const ls = [].concat(x.linea || x.lineas || x.campo || []).flatMap(linDe), as = [].concat(x.anio || x.anios || x['año'] || x['años'] || []).flatMap(aniosDe); add(urlDe(x), ls.length ? ls : linDe(JSON.stringify(x)), as); } });
+    } else if (fu && typeof fu === 'object') {
+      Object.keys(fu).forEach(K => {
+        const v = fu[K], lsK = linDe(K), asK = aniosDe(K);
+        if (v && typeof v === 'object' && !Array.isArray(v) && !urlDe(v)) {   // anidado: {línea:{año:url}} o {año:{línea:url}}
+          Object.keys(v).forEach(K2 => { const ls2 = linDe(K2), as2 = aniosDe(K2); add(urlDe(v[K2]), lsK.length ? lsK : ls2, asK.length ? asK : as2); });
+        } else if (Array.isArray(v)) v.forEach(u => add(urlDe(u), lsK, asK));
+        else add(urlDe(v), lsK, asK);
+      });
+    }
+    return (k, a) => { const c = R.filter(r => (!r.ls || r.ls.indexOf(k) >= 0) && (!r.as || r.as.indexOf(Number(a)) >= 0)).sort((x, y) => y.p - x.p)[0]; return c ? c.url : null; };
+  }
   const RANGO = { A: 3, P: 2, E: 1 };
   function aplicarBusqueda(d, tk, txt) {
     const f = d.fichas[tk]; if (!f) throw new Error('No existe la ficha ' + tk + '.');
@@ -246,13 +300,14 @@ const Logic = (function () {
     const fuera = ja.filter(a => an.indexOf(a) < 0); if (fuera.length) av.push('Años de la respuesta que no están en la ficha (se ignoran): ' + fuera.join(', ') + '.');
     const sinAnio = an.filter(a => aIdx[a] == null); if (sinAnio.length) av.push('La respuesta no trae estos años de la ficha: ' + sinAnio.join(', ') + '.');
     const ABS = { da: 1, capex: 1, deuda: 1, caja: 1, leases_deuda: 1 }, extras = ['caja_neta_oficial', 'acciones_diluidas'];
+    const fuenteDe = resolverFuentes(fu, LIN_BUSQ.concat(extras), ja);   // las IA agrupan las fuentes de muchas formas (por bloque de años, por documento…)
     LIN_BUSQ.concat(extras).forEach(k => {
       const arr = datos[k]; if (arr == null) return; if (!Array.isArray(arr) || arr.length !== ja.length) throw new Error('«' + k + '» debe tener ' + ja.length + ' valores (uno por año: ' + ja.join(', ') + ').');
       ia.datos[k] = ia.datos[k] || an.map(() => null); ia.confianza[k] = ia.confianza[k] || an.map(() => null); ia.fuentes[k] = ia.fuentes[k] || {};
       const cf = Array.isArray(conf[k]) ? conf[k] : [];
       an.forEach((a, ix) => {
         const i = aIdx[a]; if (i == null) return; let v = numB(arr[i]); if (v == null) return; if (ABS[k]) v = Math.abs(v);
-        const c = /^[APE]$/.test(String(cf[i])) ? String(cf[i]) : 'P', url = fu[k] && fu[k][a], hayUrl = urlOk(url);
+        const c = /^[APE]$/.test(String(cf[i])) ? String(cf[i]) : 'P', url = fuenteDe(k, a), hayUrl = urlOk(url);
         if (!hayUrl) { sinFuente.push(k + ' ' + a); return; }                       // sin URL no se acepta nada
         if (ia.datos[k][ix] == null || (RANGO[c] || 0) >= (RANGO[ia.confianza[k][ix]] || 0)) { ia.datos[k][ix] = v; ia.confianza[k][ix] = c; ia.fuentes[k][a] = url.trim(); }
         if (extras.indexOf(k) >= 0) return;                                          // solo se guardan como referencia y para contrastar
@@ -864,7 +919,7 @@ const Logic = (function () {
     };
   }
 
-  return { multiplosDeIA, objetosJSON, fotoDiaria, unirHistorico, isN, today, clone, nuevoDatos, normalizar, norm, coreName, sameCompany, findExisting, tickerDe, fxPorEur, aEur, precioPos, costeEur, mercadoEur, valorEur, variacion, diasDesde,
+  return { jsonDeIA, resolverFuentes, urlOk, multiplosDeIA, objetosJSON, fotoDiaria, unirHistorico, isN, today, clone, nuevoDatos, normalizar, norm, coreName, sameCompany, findExisting, tickerDe, fxPorEur, aEur, precioPos, costeEur, mercadoEur, valorEur, variacion, diasDesde,
     compra, venta, editar, eliminar, borrarMov, reverseMov, precioManual, precioFicha, matrizEntrada, auditoriaDivisas, provisional, promptBusqueda, extraerJSON, aplicarBusqueda, pendientesBusqueda, deshacerBusqueda, promptFase2, proponerMultiplos, aplicarMultiplos, deshacerMultiplos, calidadFichas, distorsion, previsualizarSoloFcf, aplicarSoloFcf, valoracion, renombrarTicker, tickerValido, claves, divisaCotizacion, mezclarManual, contrastar, lineasFaltantes, revision, precioRef, pesos, dashboard, informes, V };
 })();
 if (typeof module !== 'undefined') module.exports = Logic;

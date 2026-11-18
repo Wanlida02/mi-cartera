@@ -1,0 +1,42 @@
+Voy a buscar los informes anuales de Vidrala (2025, 2023, 2021) y extraer las 11 líneas.
+
+**A) JSON**
+
+```json
+{"anios":[2020,2021,2022,2023,2024,2025],
+ "datos":{
+  "impuestos":[29.703,27.357,34.062,54.098,64.968,67.320],
+  "intereses":[5.102,6.059,0.616,7.952,28.284,15.900],
+  "da":[84.144,86.284,85.460,97.865,117.720,132.948],
+  "capex":[134.248,109.800,120.200,151.700,168.800,188.503],
+  "fco":[273.353,280.749,114.124,263.437,362.516,380.287],
+  "deuda":[303.788,236.942,321.207,553.666,348.408,213.613],
+  "caja":[112.178,160.540,154.029,81.506,100.094,108.352],
+  "caja_neta_oficial":[-233.482,-97.076,-167.177,-472.160,-248.314,-105.261],
+  "leases_deuda":[41.872,20.674,2.346,45.382,44.904,49.300],
+  "acciones":[28.333,29.732,30.727,32.263,33.530,35.206],
+  "acciones_diluidas":[28.366,29.742,30.942,32.263,33.692,35.206]},
+ "confianza":{
+  "impuestos":["A","A","A","A","A","A"],
+  "intereses":["A","A","A","A","A","A"],
+  "da":["A","A","A","A","A","A"],
+  "capex":["A","A","A","A","A","A"],
+  "fco":["A","A","A","A","A","A"],
+  "deuda":["E","E","E","E","E","E"],
+  "caja":["A","A","A","A","A","A"],
+  "caja_neta_oficial":["E","E","A","A","E","A"],
+  "leases_deuda":["A","A","A","A","A","A"],
+  "acciones":["A","A","A","A","A","A"],
+  "acciones_diluidas":["A","A","A","A","A","A"]},
+ "fuentes":{
+  "2020-2021 (todas las líneas)":"https://www.vidrala.com/default/documentos/1391_es-informacion_financiera_consolidada_2021.pdf",
+  "2022-2023 (todas las líneas)":"https://www.vidrala.com/default/documentos/1809_es-informacion_financiera_consolidada_2023.pdf",
+  "2024-2025 (todas las líneas)":"https://www.vidrala.com/default/documentos/2308_es-informacion_financiera_consolidada_2025.pdf",
+  "caja_neta_oficial 2022-2023":"https://www.vidrala.com/default/documentos/2012_es-informe_resultados_final_2023.pdf#p12",
+  "caja_neta_oficial 2025":"https://www.vidrala.com/default/documentos/2297_es-informe_resultados_fy_2025.pdf",
+  "caja_neta_oficial 2020-2021":"https://www.vidrala.com/default/documentos/2004_es-informe_resultados_final_2021.pdf#p6"},
+ "pendiente":[
+  {"linea":"da","anio":2023,"motivo":"componentes no cuadran"},
+  {"linea":"caja_neta_oficial","anio":2024,"motivo":"Vidrala publica 248,3 M€; la cifra en miles es cálculo propio (248.314)"}
+]}
+```

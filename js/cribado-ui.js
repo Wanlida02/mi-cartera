@@ -240,7 +240,7 @@
       dd => {
         dd.querySelector('#cr-cp').onclick = async () => { const t = C.prompt(sel, '', (precioDe(sel, c) || {}).precio); try { await navigator.clipboard.writeText(t); U.toast('Prompt copiado'); } catch (e) { dd.querySelector('#cr-json').value = t; U.toast('Copia el texto del recuadro'); } };
         dd.querySelector('#cr-imp').onclick = () => {
-          let o; try { o = JSON.parse(dd.querySelector('#cr-json').value.trim().replace(/^```(?:json)?/i, '').replace(/```$/, '').trim()); } catch (e) { return U.toast('JSON no válido: ' + e.message); }
+          const o = L.jsonDeIA(dd.querySelector('#cr-json').value, x => !Array.isArray(x)); if (!o) return U.toast('No encuentro un JSON válido en lo que has pegado');
           if (!o || typeof o !== 'object' || Array.isArray(o)) return U.toast('Debe ser un objeto JSON');
           const ow = dd.querySelector('#cr-ow').checked; let n = 0;
           const base = ow ? Object.assign({}, c, o) : C.rellenar(c, o).datos; if (!ow) n = 1;
@@ -324,8 +324,8 @@
       dd.querySelector('#ia-modo').onchange = pinta; dd.querySelector('#ia-sym').oninput = pinta; pinta();
       dd.querySelector('#ia-copy').onclick = () => { const t = dd.querySelector('#ia-p'); t.select(); try { navigator.clipboard.writeText(t.value); } catch (err) { document.execCommand && document.execCommand('copy'); } U.toast('Mensaje copiado'); };
       dd.querySelector('#ia-ok').onclick = () => {
-        const txt = dd.querySelector('#ia-r').value, i = txt.indexOf('{'), j = txt.lastIndexOf('}'); let o0;
-        try { o0 = JSON.parse(txt.slice(i, j + 1)); } catch (err) { return U.avisoDlg('No encuentro un JSON válido en la respuesta. Pide a la IA «solo el JSON» y vuelve a pegarlo.'); }
+        const txt = dd.querySelector('#ia-r').value, j = txt.lastIndexOf('}'), o0 = L.jsonDeIA(txt, o => !Array.isArray(o) && ['divisa', 'anios', 'hist', 'ventas', 'error'].some(k => k in o));
+        if (!o0 || Array.isArray(o0)) return U.avisoDlg('No encuentro un JSON válido en lo que has pegado' + (/[{[]/.test(String(txt || '')) ? ' (puede que la IA lo haya cortado: pídele que lo repita completo)' : '') + '.');
         if (o0.error === 'sin_navegacion') return U.avisoDlg('Tu IA dice que no puede abrir páginas. Cambia a «no navega», copia el texto de las páginas y pégalo con el mensaje.');
         const dIA = typeof o0.divisa === 'string' && /^[A-Za-z]{3}$/.test(o0.divisa.trim()) && o0.divisa.trim().toUpperCase() !== 'XXX' ? o0.divisa.trim().toUpperCase() : null;
         if (div && dIA && dIA !== div) return U.avisoDlg('La IA ha dado las cifras en ' + dIA + ' y las tuyas están en ' + div + '. No se pueden mezclar monedas: pídele que use ' + div + ' (o dime si tus cifras estaban mal).');
