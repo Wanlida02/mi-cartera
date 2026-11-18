@@ -4,7 +4,7 @@
 const Logic = (function () {
   const V = typeof Val !== 'undefined' ? Val : require('./val.js');
   const isN = v => typeof v === 'number' && isFinite(v);
-  const today = () => new Date().toISOString().slice(0, 10);
+  const today = () => { const t = new Date(), z = n => String(n).padStart(2, '0'); return t.getFullYear() + '-' + z(t.getMonth() + 1) + '-' + z(t.getDate()); };   // fecha LOCAL (en UTC, entre las 00:00 y las 02:00 en España salía el día anterior)
   const round8 = x => Math.round(x * 1e8) / 1e8;
   const clone = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
 
@@ -434,7 +434,7 @@ const Logic = (function () {
   /* Precio manual de un valor: se guarda por ticker (lo leen cartera y valoración) o, sin ticker, en la propia posición */
   function precioManual(d, pos, precio, hoy) {
     const p = Number(precio); if (!(p > 0)) return false;
-    const tk = (pos.ticker || '').trim().toUpperCase();
+    const tk = tickerDe(d, pos);   // la misma clave con la que lo lee precioPos (la ficha a la que se asocia la posición), no el ticker tal cual
     if (tk) d.precios[tk] = { ticker: tk, precio: p, divisa: pos.moneda, fecha_precio: hoy || today(), fuente: 'manual', actualizado: new Date().toISOString() };
     else { pos.precio_actual = p; pos.fecha_precio = hoy || today(); }
     return true;
@@ -782,11 +782,21 @@ const Logic = (function () {
       (v.distEntrada != null && v.distEntrada <= 0 ? watch : watchResto).push(v);
     });
     watch.sort((a, b) => a.distEntrada - b.distEntrada); watchResto.sort((a, b) => (a.distEntrada ?? 9) - (b.distEntrada ?? 9));
-    const alertas = [];
-    Object.keys(W.emp).forEach(k => { const p = W.emp[k] / W.total * 100; if (p > A.lim_empresa) alertas.push({ tipo: 'empresa', nombre: k, pct: p, lim: A.lim_empresa }); });
+    const alertas = [], nombreDe = k => (porTk[k] && porTk[k].nombre) || (porTk['~' + k] && porTk['~' + k].nombre) || k;   // la alerta dice el nombre de la empresa, no su ticker
+    Object.keys(W.emp).forEach(k => { const p = W.emp[k] / W.total * 100; if (p > A.lim_empresa) alertas.push({ tipo: 'empresa', nombre: nombreDe(k), tk: k, pct: p, lim: A.lim_empresa }); });
     Object.keys(W.sec).forEach(k => { const p = W.sec[k] / W.total * 100; if (p > A.lim_sector) alertas.push({ tipo: 'sector', nombre: k, pct: p, lim: A.lim_sector }); });
+    /* Plusvalía latente: solo posiciones con precio de mercado y coste (ambos en € al cambio actual: no incluye el efecto divisa) */
+    let mer = 0, cos = 0, nPlus = 0;
+    d.posiciones.forEach(p => { const m = mercadoEur(d, p), c = costeEur(d, p); if (m != null && c != null && c > 0) { mer += m; cos += c; nPlus++; } });
+    const reparto = {   // pesos ordenados de mayor a menor, para las barras del Inicio
+      empresa: Object.keys(W.emp).map(k => ({ k, nombre: nombreDe(k), eur: W.emp[k] })),
+      sector: Object.keys(W.sec).map(k => ({ k, nombre: k, eur: W.sec[k] })),
+      divisa: Object.keys(W.div).map(k => ({ k, nombre: k, eur: W.div[k] }))
+    };
+    Object.keys(reparto).forEach(t => { reparto[t].forEach(x => { x.pct = W.total ? x.eur / W.total : 0; }); reparto[t].sort((a, b) => b.eur - a.eur); });
     return {
-      resumen: { valorEur: W.total, nPos: Object.keys(porTk).length, refPond: pesoVal ? refPond / pesoVal : null, cubierto: W.total ? pesoVal / W.total : null, preciosViejos: viejos },
+      reparto, lim: { empresa: A.lim_empresa, sector: A.lim_sector },
+      resumen: { valorEur: W.total, nPos: Object.keys(porTk).length, plusEur: nPlus ? mer - cos : null, plusPct: nPlus && cos ? mer / cos - 1 : null, nPlus, nTotal: d.posiciones.length, refPond: pesoVal ? refPond / pesoVal : null, cubierto: W.total ? pesoVal / W.total : null, preciosViejos: viejos },
       baratas, caras, ocultas, watch, watchResto, sinFicha, sinCalcular, alertas, pesos: W
     };
   }

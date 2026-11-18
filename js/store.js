@@ -12,7 +12,7 @@ const Store = (function () {
     try {
       const t = localStorage.getItem(KEY), raw = t ? JSON.parse(t) : null; data = Logic.normalizar(raw);
       const n0 = raw && raw.ajustes && Array.isArray(raw.ajustes.parches) ? raw.ajustes.parches.length : 0;
-      if (raw && data.ajustes.parches && data.ajustes.parches.length > n0) setTimeout(() => save(), 0);   // parche de datos aplicado: se guarda (y sube a Drive) como una edición tuya
+      if (raw && data.ajustes.parches && data.ajustes.parches.length > n0) setTimeout(() => save(true), 0);   // parche de datos aplicado: se guarda sin contar como edición tuya (cada dispositivo lo aplica igual al leer los datos; si contara, el segundo en sincronizar vería «Datos distintos»)
     }
     catch (e) { data = Logic.normalizar(null); aviso = 'No se pudo leer lo guardado en este dispositivo.'; }
     return data;
@@ -51,12 +51,19 @@ const Store = (function () {
       let j = jIn; if (!j) { const r = await fetch('precios.json', { cache: 'no-store' }); if (!r.ok) return false; j = await r.json(); }
       let n = 0;
       Object.keys(j.precios || {}).forEach(tk => {
-        const nuevo = j.precios[tk], ant = data.precios[tk];
+        let nuevo = j.precios[tk]; const ant = data.precios[tk];
+        if (nuevo && (nuevo.divisa === 'GBp' || nuevo.divisa === 'GBX') && nuevo.precio > 0) nuevo = Object.assign({}, nuevo, { precio: nuevo.precio / 100, divisa: 'GBP' });   // peniques → libras (un precios.json antiguo los traía así)
         if (!nuevo || !(nuevo.precio > 0)) return;
-        if (!ant || (ant.simbolo && nuevo.simbolo && ant.simbolo !== nuevo.simbolo) || (nuevo.fecha_precio || '') > (ant.fecha_precio || '') || ((nuevo.fecha_precio || '') === (ant.fecha_precio || '') && ant.fuente !== 'manual')) { data.precios[tk] = nuevo; n++; }
+        if (!ant || (ant.simbolo && nuevo.simbolo && ant.simbolo !== nuevo.simbolo) || (nuevo.fecha_precio || '') > (ant.fecha_precio || '') || ((nuevo.fecha_precio || '') === (ant.fecha_precio || '') && ant.fuente !== 'manual')) {
+          if (!ant || JSON.stringify(ant) !== JSON.stringify(nuevo)) n++;   // solo cuenta lo que cambia de verdad (si no, «Precios actualizados» salía en cada arranque)
+          data.precios[tk] = nuevo;
+        }
       });
       const fl = data.ajustes.fx;   // divisas: gana la fecha más reciente; un ajuste manual de hoy se respeta hasta mañana
-      if (j.fx && j.fx.fecha && (j.fx.fecha > (fl.fecha || '') || (j.fx.fecha === fl.fecha && !fl.manual))) { data.ajustes.fx = Object.assign({}, fl, j.fx, { manual: false }); n++; }
+      if (j.fx && j.fx.fecha && (j.fx.fecha > (fl.fecha || '') || (j.fx.fecha === fl.fecha && !fl.manual))) {
+        const nfx = Object.assign({}, fl, j.fx, { manual: false });
+        if (Object.keys(nfx).some(k => nfx[k] !== fl[k])) { data.ajustes.fx = nfx; n++; }
+      }
       try { localStorage.setItem(INFO, JSON.stringify({ generado: j.generado, estado: j.estado })); } catch (e) { /* sin info */ }
       info = { generado: j.generado, estado: j.estado };
       if (n) save(true);

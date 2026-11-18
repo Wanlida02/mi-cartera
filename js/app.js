@@ -8,6 +8,7 @@
   const money = (n, div) => n == null ? '—' : (div === 'EUR' ? nf(n, 2) + ' €' : nf(n, 2) + ' ' + (SYM[div] || div || ''));
   const pct = (x, d) => x == null || !isFinite(x) ? '—' : (x > 0 ? '+' : '') + nf(x * 100, d == null ? 1 : d) + '%';
   const cls = x => x == null ? '' : x >= 0 ? 'up' : 'down';
+  const urlSegura = u => (/^https?:\/\//i.test(String(u || '').trim()) ? String(u).trim() : null);   // solo http(s): un «javascript:…» en un archivo importado no se convierte en enlace
   let tab = 'inicio', filtro = '', orden = 'peso', toastT;
 
   function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 3200); }
@@ -37,14 +38,19 @@
     const d = Store.get(), D = L.dashboard(d), R = D.resumen;
     if (!d.posiciones.length && !Object.keys(d.fichas).length)
       return '<div class="card empty"><p><b>Aún no hay datos en este dispositivo.</b></p><p>Abre ⚙ Ajustes e importa tu archivo <code>datos.json</code> (o empieza añadiendo una compra en Cartera).</p><button class="btn" data-a="ajustes">Abrir ajustes</button></div>';
+    const eurS = n => n == null || !isFinite(n) ? '—' : (n > 0 ? '+' : n < 0 ? '-' : '') + nf(Math.abs(n), 0) + ' €';
     let h = '<div class="kpis">' +
-      '<div class="kpi"><span>Valor de la cartera</span><b>' + eur(R.valorEur) + '</b></div>' +
-      '<div class="kpi"><span>Empresas</span><b>' + R.nPos + '</b></div>' +
+      '<div class="kpi"><span>Valor de la cartera</span><b>' + eur(R.valorEur) + '</b><small>' + R.nPos + ' empresas</small></div>' +
+      '<div class="kpi" title="Valor de mercado menos coste, ambos en € al cambio actual (no incluye el efecto divisa)"><span>Plusvalía latente</span><b class="' + cls(R.plusEur) + '">' + eurS(R.plusEur) + '</b><small>' +
+        (R.plusPct == null ? 'sin coste o precio' : '<span class="' + cls(R.plusPct) + '">' + pct(R.plusPct) + '</span> sobre coste' + (R.nPlus < R.nTotal ? ' · ' + R.nPlus + ' de ' + R.nTotal + ' pos.' : '')) + '</small></div>' +
       '<div class="kpi"><span>Rentab. esperada (pond.)</span><b>' + (R.refPond == null ? '—' : nf(R.refPond * 100, 1) + '%') + '</b></div>' +
       '<div class="kpi"><span>Cartera valorada</span><b>' + (R.cubierto == null ? '—' : nf(R.cubierto * 100, 0) + '%') + '</b></div></div>';
     h += lineaPrecios();
     D.alertas.forEach(a => h += '<div class="alert bad">⚠ ' + esc(a.nombre) + ' pesa ' + nf(a.pct, 1) + '% (límite ' + (a.tipo === 'empresa' ? 'por empresa' : 'por sector') + ' ' + a.lim + '%)</div>');
+    const sinFx = [...new Set(d.posiciones.filter(p => p.moneda && L.fxPorEur(d, p.moneda) == null).map(p => p.moneda))];
+    if (sinFx.length) h += '<div class="alert warn">Sin tipo de cambio para ' + esc(sinFx.join(', ')) + ': esas posiciones no cuentan en el valor ni en los pesos. Añádelo en ⚙ Ajustes o pulsa «Actualizar precios».</div>';
     if (R.preciosViejos) h += '<div class="alert warn">' + R.preciosViejos + ' posición(es) con precio de hace más de ' + d.ajustes.dias_precio_viejo + ' días.</div>';
+    h += vistaReparto(D);
     if (UI.cargarSEC) UI.cargarSEC();
     if (UI.avisosResultados) h += UI.avisosResultados();
     if (UI.calidadDatos) h += UI.calidadDatos();
@@ -65,6 +71,26 @@
       h += '<p class="mut small">Precios automáticos: ' + new Date(pi.generado).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) + ' · ' + ((pi.estado || {}).ok || 0) + '/' + ((pi.estado || {}).total || 0) + ' valores' +
         (fall.length ? ' · sin actualizar: ' + esc(fall.join(', ')) : '') + '.</p>';
     }
+    return h;
+  }
+
+  /* Reparto por empresa / sector / divisa: barras horizontales con la línea del límite */
+  const REP_K = 'mi-cartera:reparto', REP_T = { empresa: 'Empresa', sector: 'Sector', divisa: 'Divisa' };
+  let rep = (() => { try { return REP_T[localStorage.getItem(REP_K)] ? localStorage.getItem(REP_K) : 'empresa'; } catch (e) { return 'empresa'; } })();
+  function vistaReparto(D) {
+    const todos = D.reparto[rep] || [], lim = D.lim[rep], N = 8;
+    if (!todos.length) return '';
+    const filas = todos.length > N + 1 ? todos.slice(0, N).concat([{ nombre: 'Otras (' + (todos.length - N) + ')', otras: true, eur: todos.slice(N).reduce((a, x) => a + x.eur, 0), pct: todos.slice(N).reduce((a, x) => a + x.pct, 0) }]) : todos;
+    const tope = Math.max.apply(null, filas.map(x => x.pct).concat(lim ? [lim / 100 * 1.15] : [])) || 1;
+    const nExc = lim ? todos.filter(x => x.pct * 100 > lim).length : 0;
+    let h = '<div class="sec-t"><h2>Reparto</h2><div class="seg" role="group" aria-label="Reparto por">' + Object.keys(REP_T).map(k => '<button type="button" data-rep="' + k + '" aria-pressed="' + (k === rep) + '">' + REP_T[k] + '</button>').join('') + '</div></div>';
+    h += '<div class="card rep">' + (lim ? '<p class="mut small rep-lim"><i></i>Límite ' + nf(lim, 0) + '% por ' + rep + (nExc ? ' · <b class="down">' + nExc + ' lo supera' + (nExc > 1 ? 'n' : '') + '</b>' : ' · ninguna lo supera') + '</p>' : '');
+    h += filas.map(x => {
+      const over = lim && !x.otras && x.pct * 100 > lim;
+      return '<div class="rb' + (over ? ' over' : '') + '" title="' + esc(x.nombre) + ': ' + nf(x.pct * 100, 1) + '% · ' + eur(x.eur) + (over ? ' · supera el límite del ' + lim + '%' : '') + '">' +
+        '<div class="rb-l"><span class="rb-n">' + esc(x.nombre) + (over ? ' <span class="pill bad">⚠ supera</span>' : '') + '</span><span class="rb-v"><b>' + nf(x.pct * 100, 1) + '%</b> · ' + eur(x.eur) + '</span></div>' +
+        '<div class="rb-t"><i style="width:' + (x.pct / tope * 100).toFixed(2) + '%"></i>' + (lim ? '<b style="left:' + (lim / 100 / tope * 100).toFixed(2) + '%"></b>' : '') + '</div></div>';
+    }).join('') + '</div>';
     return h;
   }
 
@@ -195,12 +221,13 @@
   }
 
   /* ───── Ajustes ───── */
-  const APP_VERSION = '64 · Cifras de 12 meses: la IA busca sola y da fuentes · 63 · Caja de calidad: cada botón hace algo (avisos, verificar, guía de múltiplos, precio del feed) · 62 · Informes: una empresa con dos nombres comparte carpeta · 61 · Completar fichas con una IA que busca sola en los informes (con fuentes, fase 2 y deshacer)';
+  const APP_VERSION = '66 · Inicio con plusvalía y reparto, pestañas abajo en el móvil · 65 · Arreglos: precio manual, precios al importar, fecha local, divisas en Ajustes, caché · 64 · Cifras de 12 meses: la IA busca sola y da fuentes · 63 · Caja de calidad: cada botón hace algo (avisos, verificar, guía de múltiplos, precio del feed) · 62 · Informes: una empresa con dos nombres comparte carpeta · 61 · Completar fichas con una IA que busca sola en los informes (con fuentes, fase 2 y deshacer)';
   function ajustes() {
     const d = Store.get(), A = d.ajustes, cp = Store.ultimaCopia();
+    const DIVS = [...new Set(Object.keys(A.fx).concat(d.posiciones.map(p => p.moneda)).filter(k => k && /^[A-Z]{3}$/.test(k) && k !== 'EUR'))].sort();   // todas las divisas del feed y de tus posiciones (antes solo USD, CNY y TWD)
     dlg('<h2>Ajustes</h2><p class="small mut">Versión de la app: ' + APP_VERSION + '</p><h3>Umbrales del Inicio (rentabilidad anual esperada a 5 años)</h3><div class="f2">' + campo('a-b', 'Barata ≥ %', A.umbral_barata, 'number') + campo('a-c', 'Cara ≤ %', A.umbral_cara, 'number') + '</div>' +
       '<h3 style="margin-top:14px">Límites de cartera</h3><div class="f2">' + campo('a-le', 'Máx. por empresa %', A.lim_empresa, 'number') + campo('a-ls', 'Máx. por sector %', A.lim_sector, 'number') + '</div>' +
-      '<h3 style="margin-top:14px">Divisas (unidades por 1 €) <span class="mut small">' + esc(A.fx.fecha || '') + '</span></h3><div class="f2">' + campo('a-usd', 'USD', A.fx.USD, 'number') + campo('a-cny', 'CNY', A.fx.CNY, 'number') + campo('a-twd', 'TWD', A.fx.TWD, 'number') + '</div>' +
+      '<h3 style="margin-top:14px">Divisas (unidades por 1 €) <span class="mut small">' + esc(A.fx.fecha || '') + '</span></h3><div class="f2">' + DIVS.map(k => campo('a-fx-' + k, k, A.fx[k], 'number')).join('') + '</div>' +
       '<div class="acts" style="justify-content:flex-start"><button class="btn" id="a-ok">Guardar ajustes</button></div>' +
       '<h3 style="margin-top:18px">Google Drive</h3><p class="small mut" id="dr-t">' + textoDrive() + '</p><div class="acts" style="justify-content:flex-start">' +
       (Drive.estado().conectado ? '<button class="btn" id="dr-now">Sincronizar ahora</button><button class="btn sec" id="dr-off">Desconectar</button>' : '<button class="btn" id="dr-on">Conectar con Drive</button>') + '</div>' +
@@ -212,9 +239,11 @@
       dd => {
         dd.querySelector('#a-ok').onclick = () => {
           const n = id => Number(val(id));
-          const v = { b: n('a-b'), c: n('a-c'), e: n('a-le'), s: n('a-ls'), u: n('a-usd'), y: n('a-cny'), t: n('a-twd') };
+          const v = { b: n('a-b'), c: n('a-c'), e: n('a-le'), s: n('a-ls') };
           if (Object.values(v).some(x => !(x > 0)) || v.c >= v.b) return toast('Revisa los valores (la barata debe ser mayor que la cara)');
-          Object.assign(A, { umbral_barata: v.b, umbral_cara: v.c, lim_empresa: v.e, lim_sector: v.s }); Object.assign(A.fx, { USD: v.u, CNY: v.y, TWD: v.t, fecha: L.today(), manual: true });
+          const fx = {}; for (const k of DIVS) { const t = val('a-fx-' + k).trim(); if (t === '') continue; const x = Number(t); if (!(x > 0)) return toast('Tipo de cambio no válido: ' + k); fx[k] = x; }
+          Object.assign(A, { umbral_barata: v.b, umbral_cara: v.c, lim_empresa: v.e, lim_sector: v.s });
+          if (Object.keys(fx).some(k => fx[k] !== A.fx[k])) Object.assign(A.fx, fx, { fecha: L.today(), manual: true });   // solo cuenta como ajuste manual si tocas una divisa (antes cambiar un umbral congelaba las divisas del día)
           guardar({ ok: true, msg: 'Ajustes guardados' });
         };
         const bo = (id, f) => { const b = dd.querySelector(id); if (b) b.onclick = f; };
@@ -230,7 +259,8 @@
             let j = null; try { j = JSON.parse(t); } catch (er) {}
             if (j && j.tipo === 'cribado' && j.cribado) { const n = UI.fusionarCribado(j.cribado); cerrar(); render(); return toast(n + ' cribado(s) añadidos; el resto de tus datos no se ha tocado'); }
             if (Store.get().posiciones.length && !confirm('Esto reemplaza los datos de este dispositivo (se guarda una copia previa). ¿Continuar?')) return;
-            try { Store.importar(t); cerrar(); render(); toast('Datos importados'); } catch (err) { toast('No se pudo importar: ' + err.message); }
+            try { Store.importar(t); cerrar(); render(); toast('Datos importados'); } catch (err) { return toast('No se pudo importar: ' + err.message); }
+            Store.cargarPreciosAuto().then(n => { if (n) render(); });   // el archivo trae precios y divisas de cuando se exportó: se ponen al día ya, no al recargar
           });
         };
       });
@@ -268,7 +298,7 @@
     dlg('<h2>' + esc(e.nombre) + '</h2><p class="mut small">' + esc(e.tk || '') + (e.ident ? ' · ' + esc(e.ident) : '') + '</p>' + (UI.enlaces ? UI.enlaces(e.tk, 'inf') : '') +
       '<h3>Informes anuales</h3><div>' + e.documentos.slice().reverse().map(x =>
         '<div class="row"><div class="main"><div class="name">' + esc(x.anio) + ' · ' + esc(x.tipo || '') + (x.idioma ? ' (' + esc(x.idioma) + ')' : '') + '</div><div class="meta">' + esc(x.archivo || 'solo enlace') + (x.kb ? ' · ' + nf(x.kb / 1024, 1) + ' MB' : '') + '</div></div>' +
-        (x.url ? '<a class="btn sec sm" href="' + esc(x.url) + '" target="_blank" rel="noopener">Abrir original</a>' : '') + '</div>').join('') + '</div>' +
+        (urlSegura(x.url) ? '<a class="btn sec sm" href="' + esc(urlSegura(x.url)) + '" target="_blank" rel="noopener">Abrir original</a>' : '') + '</div>').join('') + '</div>' +
       '<p class="small mut">Los PDF están en tu PC: carpeta «' + esc(e.carpeta) + '».</p>' +
       (tr.length ? '<h3 style="margin-top:12px">Resultados trimestrales</h3><div>' + tr.map((x, n) => '<div class="row"><div class="main"><div class="name">' + esc(x.periodo) + '</div><div class="meta">' + esc(x.archivo) + (x.kb ? ' · ' + nf(x.kb / 1024, 1) + ' MB' : '') + '</div></div>' + (e.tk ? '<button class="btn sm" data-trim="' + esc(x.periodo) + '">Revisar vs. valoración</button>' : '') + '</div>').join('') + '</div><p class="small mut">«Revisar» abre la revisión de ese trimestre (pestaña Resultados): compara el ritmo de los últimos 12 meses con lo que esperaba tu valoración.</p>' : (e.tk ? '<p class="small mut">Sin resultados trimestrales en la carpeta. Si dejas uno (p. ej. <code>presentation-3Q-2026.pdf</code>) y vuelves a ejecutar indice_informes.py, aparecerá aquí.</p>' : '')) +
       (dt ? '<h3 style="margin-top:12px">Cifras clave (' + esc(dt.divisa || '') + ' millones)</h3><div style="overflow:auto"><table style="border-collapse:collapse;font-size:13px;width:100%"><tr><th></th>' + dt.anios.map(a => '<th style="text-align:right;padding:3px 6px">' + a + '</th>').join('') + '</tr>' +
@@ -333,7 +363,8 @@
 
   document.addEventListener('click', e => {
     for (const f of UI.clicks) if (f(e)) return;
-    const t = e.target.closest('[data-tab],[data-a],[data-pos],[data-undo],[data-inf]'); if (!t) return;
+    const t = e.target.closest('[data-tab],[data-a],[data-pos],[data-undo],[data-inf],[data-rep]'); if (!t) return;
+    if (t.dataset.rep) { rep = t.dataset.rep; try { localStorage.setItem(REP_K, rep); } catch (er) { } return render(); }
     if (t.dataset.inf != null) return detalleInforme(+t.dataset.inf);
     if (t.dataset.tab) { tab = t.dataset.tab; render(); window.scrollTo(0, 0); return; }
     if (t.dataset.pos) return detalle(+t.dataset.pos);
@@ -365,7 +396,7 @@
   $('#btn-ajustes').onclick = ajustes;
   $('#btn-sync').onclick = () => { const e = Drive.estado(); if (!e.conectado) ajustes(); else if (e.estado === 'conflicto' || e.estado === 'reconectar' || e.estado === 'error') Drive.ahora(); else toast(textoDrive()); };
 
-  Object.assign(UI, { lineaPrecios: () => lineaPrecios(), dlg, cerrar, toast, esc, nf, pct, money, eur, guardar, render, campo, val, cls, irA: t => { tab = t; render(); window.scrollTo(0, 0); },
+  Object.assign(UI, { urlSegura, lineaPrecios: () => lineaPrecios(), dlg, cerrar, toast, esc, nf, pct, money, eur, guardar, render, campo, val, cls, irA: t => { tab = t; render(); window.scrollTo(0, 0); },
     abrirPosicion: tk => { const d = Store.get(), i = d.posiciones.findIndex(p => L.tickerDe(d, p) === tk); if (i < 0) return; tab = 'cartera'; render(); window.scrollTo(0, 0); detalle(i); },
     abrirInforme: tk => { const I = L.informes(Store.get()), i = I ? I.lista.findIndex(e => (e.tk || '').toUpperCase() === String(tk).toUpperCase()) : -1; tab = 'informes'; render(); window.scrollTo(0, 0); if (i >= 0) detalleInforme(i); } });
   Store.load(); render();
