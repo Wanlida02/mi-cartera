@@ -308,8 +308,7 @@
     const o = {}; Object.keys(j).forEach(k => { const n = norm(k); const c = Object.keys(ALIAS).find(c => ALIAS[c].includes(n)); o[c || k] = j[k]; }); return o;
   }
   function aplicarLineas(tk, txt) {
-    const f = D().fichas[tk], an = (f.anios || []).map(Number), n = an.length, m = /\{[\s\S]*\}/.exec(txt || ''); if (!m) throw new Error('No encuentro el JSON en lo que has pegado.');
-    let j0; try { j0 = JSON.parse(m[0]); } catch (e) { throw new Error('El JSON no es válido (' + e.message + '). Pídele a la IA que lo repita «solo con el JSON, sin texto».'); }
+    const f = D().fichas[tk], an = (f.anios || []).map(Number), n = an.length, j0 = L.jsonDeIA(txt, o => !Array.isArray(o) && ['datos', 'anios', 'contraste', 'error', 'lineas'].some(k => k in o)); if (!j0 || Array.isArray(j0)) throw new Error('No encuentro un JSON válido en lo que has pegado' + (/[{[]/.test(String(txt || '')) ? ' (puede que la IA lo haya cortado: pídele que lo repita completo)' : '') + '.');
     if (j0.error === 'sin_navegacion' || /sin_navegacion/.test(String(j0.error || ''))) throw new Error('Esa IA no puede abrir páginas web. Cambia a «Mi IA no puede abrir páginas»: abre los enlaces, copia el texto de las páginas y pégaselo a la IA debajo del texto.');
     if (/faltan/.test(String(j0.error || ''))) throw new Error('A la IA le faltan páginas: ' + (Array.isArray(j0.faltan) ? j0.faltan.join(', ') : String(j0.faltan || j0.error)) + '. Copia también esas páginas (cuenta de resultados, balance y flujos de caja de StockAnalysis), pégalas a continuación del mensaje y pídele que repita.');
     const j = normalizarRespuesta(j0);
@@ -516,8 +515,8 @@
       dd.querySelector('#n-ok').onclick = () => {
         const tk = U.val('n-tk').toUpperCase().replace(/[^A-Z0-9_\-.~:@+]/g, ''); if (!tk) return U.toast('Escribe el ticker'); if (D().fichas[tk]) return U.toast('Ya existe una ficha de ' + tk);
         const tipo = dd.querySelector('#n-tipo').value, fin = tipo !== 'industrial'; let o = {};
-        const raw = dd.querySelector('#n-json').value.trim().replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
-        if (raw) { try { o = JSON.parse(raw); } catch (e) { return U.toast('JSON no válido: ' + e.message); } }
+        const raw = dd.querySelector('#n-json').value.trim();
+        if (raw) { o = L.jsonDeIA(raw, x => !Array.isArray(x) && (x.anios || x.hist || x.nombre)); if (!o || Array.isArray(o)) return U.toast('No encuentro un JSON válido en lo que has pegado'); }
         const an = Array.isArray(o.anios) && o.anios.length ? o.anios.map(Number) : (() => { const y = new Date().getFullYear() - 1; return [y - 4, y - 3, y - 2, y - 1, y]; })(), n = an.length;
         const f = { ticker: tk, nombre: o.nombre || U.val('n-nom') || tk, divisa: (o.divisa || U.val('n-div') || 'USD').toUpperCase(), anio_base: an[n - 1], anios: an, leases_ok: fin ? true : o.leases_ok !== false, hist: {}, conf: {}, fuentes: [], notas: [].concat(o.notas || [], (o.dudas || []).map(x => 'Duda de la extracción: ' + x)), fecha_datos: hoy(), _borrador: true };
         if (fin) f.tipo = tipo;

@@ -130,8 +130,7 @@
       'Responde SOLO con este JSON, sin texto antes ni después:\n{"fechas":[{"tk":"' + ks[0] + '","fecha":"AAAA-MM-DD","periodo":"T4 2026","confirmada":false,"fuente":"URL"}]}';
   }
   function parseFechasIA(txt, ks) {
-    const m = /[\[{][\s\S]*[\]}]/.exec(txt || ''); if (!m) throw new Error('No encuentro el JSON en lo que has pegado.');
-    let j; try { j = JSON.parse(m[0]); } catch (e) { throw new Error('El JSON no es válido (' + e.message + '). Pídele a la IA que lo repita «solo con el JSON, sin texto».'); }
+    const j = L.jsonDeIA(txt, o => (Array.isArray(o) ? o.some(x => x && x.tk) : Array.isArray(o.fechas))); if (!j) throw new Error('No encuentro un JSON válido en lo que has pegado' + (/[{[]/.test(String(txt || '')) ? ' (puede que la IA lo haya cortado: pídele que lo repita completo)' : '') + '.');   // tolera texto alrededor, comas sobrantes…
     const arr = Array.isArray(j) ? j : Array.isArray(j.fechas) ? j.fechas : null; if (!arr) throw new Error('Falta la lista «fechas» en el JSON.');
     const h = hoy(), tope = new Date(Date.parse(h) + 450 * 864e5).toISOString().slice(0, 10), ok = [], rechazadas = [], vistos = new Set();
     arr.forEach(x => {
@@ -141,7 +140,7 @@
       if (!/^\d{4}-\d{2}-\d{2}$/.test(f) || isNaN(Date.parse(f))) { rechazadas.push(tk + ': fecha no válida (' + f + ')'); return; }
       if (f < h || f > tope) { rechazadas.push(tk + ': fecha fuera de rango (' + f + ')'); return; }
       if (vistos.has(tk)) return; vistos.add(tk);
-      const url = /^https?:\/\//.test(String(x.fuente || '')) ? String(x.fuente).slice(0, 300) : null;
+      const url = L.urlOk(String(x.fuente || '')) ? String(x.fuente).trim().slice(0, 300) : null;   // también «www.…» o un PDF con página, no solo http(s)
       ok.push({ tk, fecha: f, periodo: /^(T[1-4]|S[12]|FY) ?\d{4}$/i.test(String(x.periodo || '').trim()) ? String(x.periodo).trim().toUpperCase().replace(/^(T[1-4]|S[12]|FY)(\d)/, '$1 $2') : trimestre(f), confirmada: x.confirmada === true && !!url, fuente: url });
     });
     return { ok, rechazadas };
@@ -199,8 +198,7 @@
   }
   const NORM = k => String(k).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9_]/g, '');
   function parseIA(txt, r) {
-    const m = /\{[\s\S]*\}/.exec(txt || ''); if (!m) throw new Error('No encuentro el JSON en lo que has pegado.');
-    let j0; try { j0 = JSON.parse(m[0]); } catch (e) { throw new Error('El JSON no es válido (' + e.message + '). Pídele a la IA que lo repita «solo con el JSON, sin texto».'); }
+    const j0 = L.jsonDeIA(txt, o => !Array.isArray(o) && ['trimestres', 'quarters', 'ventas_12m', 'por_fuente', 'error'].some(k => k in o)); if (!j0 || Array.isArray(j0)) throw new Error('No encuentro un JSON válido en lo que has pegado' + (/[{[]/.test(String(txt || '')) ? ' (puede que la IA lo haya cortado: pídele que lo repita completo)' : '') + '.');
     if (/sin_navegacion/.test(String(j0.error || ''))) throw new Error('Esa IA no puede abrir páginas web. Cambia a «no puede buscar»: abre los enlaces, copia el texto de las páginas y pégaselo a la IA debajo del texto.');
     const j = {}; Object.keys(j0).forEach(k => { const n = NORM(k); j[{ trimestres: 'trimestres', quarters: 'trimestres', porfuente: 'por_fuente', por_fuente: 'por_fuente', deudaneta: 'deuda_neta', deuda_neta: 'deuda_neta' }[n] || k] = j0[k]; });
     const f = D().fichas[r.tk], h = f.hist, n = h.ventas.length - 1, v0 = h.ventas[n], eb0 = h.ebit[n] - (isN((h.extra || [])[n]) ? h.extra[n] : 0), num = x => (isN(x) ? x : typeof x === 'string' && x.trim() !== '' && isFinite(Number(x.replace(/\s/g, '').replace(',', '.'))) ? Number(x.replace(/\s/g, '').replace(',', '.')) : null);
