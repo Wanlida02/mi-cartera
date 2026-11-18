@@ -1,3 +1,4 @@
+if (!process.argv[2] || !require('fs').existsSync(process.argv[2])) { console.log('OMITIDO lineas_ia.test.js: necesita tu archivo de datos (node tests/lineas_ia.test.js datos.json)'); process.exit(0); }
 /* Completar con una IA las líneas que faltan de una ficha borrador europea (Vidrala). Las cifras de la «respuesta» son inventadas, solo prueban el flujo. Uso: node tests/lineas_ia.test.js datos.json */
 const assert = require('assert'), { chromium } = require('playwright'), http = require('http'), fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..'), mime = { html: 'text/html', js: 'text/javascript', css: 'text/css', json: 'application/json', png: 'image/png', svg: 'image/svg+xml', webmanifest: 'application/json' };

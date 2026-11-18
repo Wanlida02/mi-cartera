@@ -1,3 +1,4 @@
+if (!process.argv[2] || !require('fs').existsSync(process.argv[2])) { console.log('OMITIDO drive.test.js: necesita tu archivo de datos (node tests/drive.test.js datos.json)'); process.exit(0); }
 /* Prueba de sincronización con un Google Drive simulado: dos dispositivos (móvil y PC) comparten un archivo. */
 const { chromium } = require('playwright'), http = require('http'), fs = require('fs'), path = require('path'), assert = require('assert');
 const root = path.join(__dirname, '..'), datos = fs.readFileSync(process.argv[2], 'utf8'), N = JSON.parse(datos).posiciones.length;   // posiciones del fichero que se importa

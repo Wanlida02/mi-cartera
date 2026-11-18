@@ -1,3 +1,4 @@
+if (!process.argv[2] || !require('fs').existsSync(process.argv[2])) { console.log('OMITIDO valoracion_todas.test.js: necesita tu archivo de datos (node tests/valoracion_todas.test.js datos.json)'); process.exit(0); }
 /* Ninguna ficha debe romper la valoración con un error técnico (undefined…). Uso: node tests/valoracion_todas.test.js datos.json */
 const assert = require('assert'), { chromium } = require('playwright'), http = require('http'), fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..'), mime = { html: 'text/html', js: 'text/javascript', css: 'text/css', json: 'application/json', png: 'image/png', svg: 'image/svg+xml', webmanifest: 'application/json' };

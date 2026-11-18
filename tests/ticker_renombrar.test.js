@@ -1,3 +1,4 @@
+if (!process.argv[2] || !require('fs').existsSync(process.argv[2])) { console.log('OMITIDO ticker_renombrar.test.js: necesita tu archivo de datos (node tests/ticker_renombrar.test.js datos.json)'); process.exit(0); }
 /* Cambiar el ticker de una ficha (NRO → NRO.PA) desde Valoración → Editar datos: se mueve en ficha, precios, cribado, resultados, posiciones y simbolos.json.
    Uso: node tests/ticker_renombrar.test.js datos.json (el fichero debe tener la ficha NRO) */
 const assert = require('assert'), { chromium } = require('playwright'), http = require('http'), fs = require('fs'), path = require('path');

@@ -535,7 +535,7 @@
     else if (a === 'reset') { delete d.fichas[sel].escenarios; Store.save(); restore(() => {}); U.toast('Supuestos restablecidos'); }
     else if (a === 'estado') { const f = d.fichas[sel], e0 = estadoDe(sel); if (e0 === 'cartera') U.toast('Está en tu cartera: se gestiona en la pestaña Cartera'); else { if (e0 === 'candidata') delete f.estado; else f.estado = 'candidata'; Store.save(); restore(() => {}); } }
     else if (a === 'copiar') { const t2 = JSON.stringify(d.fichas[sel], null, 1); (navigator.clipboard ? navigator.clipboard.writeText(t2) : Promise.reject()).then(() => U.toast('Ficha copiada'), () => U.toast('No se pudo copiar')); }
-    else if (a === 'borrar') { if (enCartera(sel)) return U.toast('Está en tu cartera: no se puede borrar su ficha'), true; if (confirm('¿Eliminar la ficha de ' + sel + '?')) { delete d.fichas[sel]; delete d.precios[sel + '@ficha']; sel = null; U.guardar({ ok: true, msg: 'Ficha eliminada' }); } }
+    else if (a === 'borrar') { if (enCartera(sel)) return U.toast('Está en tu cartera: no se puede borrar su ficha'), true; U.conDeshacer(() => { const k = sel; delete d.fichas[k]; delete d.precios[k + '@ficha']; sel = null; return { ok: true, msg: 'Ficha de ' + k + ' eliminada' }; }); }
     else return false;
     return true;
   });

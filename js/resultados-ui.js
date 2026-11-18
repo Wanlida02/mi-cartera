@@ -300,7 +300,7 @@
       dd.querySelector('#r-sv').onclick = () => set(); dd.querySelector('#r-ok').onclick = () => set(r.estado === 'revisado' ? 'reabrir' : 'rev');
       dd.querySelector('#r-ia').onclick = () => dialogoIA(r, av => revisar(id, av));
       dd.querySelector('#r-val').onclick = () => { U.cerrar(); U.abrirFicha ? U.abrirFicha(r.tk) : null; };
-      dd.querySelector('#r-del').onclick = () => { if (confirm('¿Eliminar este registro?')) { d.resultados.splice(d.resultados.indexOf(r), 1); U.guardar({ ok: true, msg: 'Eliminado' }); } };
+      dd.querySelector('#r-del').onclick = () => { U.conDeshacer(() => { d.resultados.splice(d.resultados.indexOf(r), 1); return { ok: true, msg: 'Registro eliminado' }; }); };
     });
   }
   U.clicks.push(e => { const t = e.target.closest('[data-r]'); if (!t) return false; if (t.dataset.r === 'nuevo') nuevo(t.dataset.k);
