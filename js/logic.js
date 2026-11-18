@@ -77,6 +77,7 @@ const Logic = (function () {
       ya.push(p.id);
     });
     aplicarParchesV60(d, ya);
+    aplicarParchesV61(d, ya);
     return d;
   }
 
@@ -128,7 +129,150 @@ const Logic = (function () {
       ya.push(m.id);
     });
   }
+  /* v61: Neurones — datos extraídos por una IA que busca en sus informes anuales (URD 2020-2025), cada cifra con su URL; entra por las reglas de aplicarBusqueda (sin URL no entra, lo estimado solo rellena huecos, copia para deshacer) */
+  const JSON_NRO_IA = {"anios":[2020,2021,2022,2023,2024,2025],"datos":{"da":[15.031,14.805,15.406,15.9,17.204,17.987],"capex":[7.192,6.579,10.605,17.982,12.037,10.438],"fco":[67.289,64.498,54.969,72.075,84.382,71.282],"deuda":[0.75,0.535,0.283,7.379,7.016,4.167],"caja":[266.603,265.174,272.058,297.758,326.491,340.781],"caja_neta_oficial":[null,null,271.775,290.379,319.475,336.614],"leases_deuda":[33.543,34.913,35.838,36.637,35.045,32.846],"acciones":[null,null,null,null,null,24.328716],"acciones_diluidas":[null,null,null,null,null,null]},"confianza":{"da":["A","A","A","A","A","A"],"capex":["A","A","A","A","A","A"],"fco":["A","A","A","A","A","A"],"deuda":["A","A","A","A","A","A"],"caja":["A","A","A","A","A","A"],"caja_neta_oficial":[null,null,"A","A","A","A"],"leases_deuda":["A","A","A","A","A","A"],"acciones":[null,null,null,null,null,"A"],"acciones_diluidas":[null,null,null,null,null,null]},"fuentes":{"da":{"2020":"https://echanges.dila.gouv.fr/OPENDATA/AMF/260/8888/01/FC260381462_20210427.pdf#Compte-de-resultat-consolide","2021":"https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2022.pdf#Compte-de-resultat-consolide","2022":"https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2022.pdf#Compte-de-resultat-consolide","2023":"https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2024.pdf#Compte-de-resultat-consolide","2024":"https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2025.pdf#p.66","2025":"https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2025.pdf#p.66"},"capex":{"2020":"https://echanges.dila.gouv.fr/OPENDATA/AMF/260/8888/01/FC260381462_20210427.pdf#Tableau-des-flux","2021":"https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2022.pdf#p.85","2022":"https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2022.pdf#p.85","2023":"https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2024.pdf#p.70","2024":"https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2025.pdf#p.70","2025":"https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2025.pdf#p.70"},"fco":{"2020":"https://echanges.dila.gouv.fr/OPENDATA/AMF/260/8888/01/FC260381462_20210427.pdf#Tableau-des-flux","2021":"https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2022.pdf#p.85","2022":"https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2022.pdf#p.85","2023":"https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2024.pdf#p.70","2024":"https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2025.pdf#p.70","2025":"https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2025.pdf#p.70"},"deuda":{"2020":"https://echanges.dila.gouv.fr/OPENDATA/AMF/260/8888/01/FC260381462_20210427.pdf#Bilan-consolide-Note-9","2021":"https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2022.pdf#p.83","2022":"https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2022.pdf#p.83","2023":"https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2024.pdf#Bilan-consolide-Note-9","2024":"https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2025.pdf#Bilan-consolide-Note-9","2025":"https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2025.pdf#Bilan-consolide-Note-9"},"caja":{"2020":"https://echanges.dila.gouv.fr/OPENDATA/AMF/260/8888/01/FC260381462_20210427.pdf#Bilan-consolide-Note-9","2021":"https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2022.pdf#p.83","2022":"https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2022.pdf#p.83","2023":"https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2024.pdf#Bilan-consolide-Note-9","2024":"https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2025.pdf#Bilan-consolide-Note-9","2025":"https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2025.pdf#Bilan-consolide-Note-9"},"caja_neta_oficial":{"2022":"https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2022.pdf#Note-9","2023":"https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2024.pdf#Note-9","2024":"https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2025.pdf#Note-9","2025":"https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2025.pdf#Note-9"},"leases_deuda":{"2020":"https://echanges.dila.gouv.fr/OPENDATA/AMF/260/8888/01/FC260381462_20210427.pdf#Bilan-consolide-Note-3","2021":"https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2022.pdf#p.83","2022":"https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2022.pdf#p.83","2023":"https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2024.pdf#Bilan-consolide-Note-3","2024":"https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2025.pdf#Bilan-consolide-Note-3","2025":"https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2025.pdf#Bilan-consolide-Note-3"},"acciones":{"2025":"https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2025.pdf#Capital-social"}},"pendiente":[]};
+  function aplicarParchesV61(d, ya) {
+    if (ya.indexOf('v61-nro-ia') >= 0) return; const f = d.fichas && d.fichas.NRO; if (!f || !f.hist) return;
+    if (!f.verificada && /neurones/i.test(f.nombre || '')) { try { aplicarBusqueda(d, 'NRO', JSON.stringify(JSON_NRO_IA)); } catch (e) { /* ficha distinta: no se toca */ } }
+    ya.push('v61-nro-ia');
+  }
   const MULT_V60 = [{"id":"v60-mult-aapl","tk":"AAPL","mult":{"per":31.7,"pfcf":32.2,"ev_ebitda":25.5,"ev_ebit":28.1},"anios":[2021,2022,2023,2024,2025],"n":{"per":5,"pfcf":5,"ev_ebitda":5,"ev_ebit":5},"disp":{"per":0.21395002714228123,"pfcf":0.17662077419912883,"ev_ebitda":0.19438323599682097,"ev_ebit":0.18598277379293424}},{"id":"v60-mult-nro","tk":"NRO","mult":{"per":20.8,"pfcf":16.5},"anios":[2020,2021,2022,2023,2024,2025],"n":{"per":6,"pfcf":6,"ev_ebitda":0,"ev_ebit":2},"disp":{"per":0.0943841225778858,"pfcf":0.2311376441191297}},{"id":"v60-mult-ftdr","tk":"FTDR","mult":{"per":21.1,"pfcf":17.6,"ev_ebitda":13,"ev_ebit":15.5},"anios":[2020,2021,2022,2023,2024,2025],"n":{"per":6,"pfcf":6,"ev_ebitda":6,"ev_ebit":6},"disp":{"per":0.3671292326725646,"pfcf":0.2625575693109757,"ev_ebitda":0.37503745839521113,"ev_ebit":0.34013515377566794}},{"id":"v60-mult-prdo","tk":"PRDO","mult":{"per":8.9,"pfcf":8,"ev_ebitda":3.5},"anios":[2020,2021,2022,2023,2024,2025],"n":{"per":6,"pfcf":6,"ev_ebitda":5,"ev_ebit":5},"disp":{"per":0.48207385039269557,"pfcf":0.7210548581519756,"ev_ebitda":0.7698450771661408,"ev_ebit":0.8893229914619295}}];
+
+  /* ───── Completar una ficha con una IA que BUSCA por su cuenta (sin abrir páginas a mano) ─────
+     Fase 1: un prompt único (ficha → JSON con datos, confianza, fuentes por URL y pendientes). Fase 2: la genera la app con lo que sigue pendiente.
+     Reglas de importación prudentes: sin URL no se escribe; lo estimado solo rellena huecos; ficha verificada: solo huecos; cambios ×5 se dejan para revisar; copia para deshacer. */
+  const LIN_BUSQ = ['intereses', 'impuestos', 'da', 'capex', 'fco', 'deuda', 'caja', 'leases_deuda', 'acciones'];
+  const IDIOMA_BOLSA = { PA: 'fr', BR: 'fr', MC: 'es', MI: 'it', DE: 'de', F: 'de', SW: 'de', VI: 'de' };
+  const IDIOMAS = { fr: ['francés', ['dotations aux amortissements + amortissements des droits d\'utilisation IFRS 16', 'acquisitions d\'immobilisations corporelles et incorporelles', 'flux nets de trésorerie générés par l\'activité', 'passifs financiers courants + non courants, incluidos descubiertos', 'trésorerie et équivalents', 'dettes locatives IFRS 16', '«trésorerie nette»', 'nombre moyen d\'actions diluées']],
+    es: ['español', ['amortizaciones + amortización de derechos de uso (NIIF 16)', 'adquisiciones de inmovilizado material e intangible', 'flujos de efectivo de las actividades de explotación', 'deuda financiera corriente + no corriente, con descubiertos', 'efectivo y equivalentes', 'pasivos por arrendamiento NIIF 16', '«deuda financiera neta» o «caja neta»', 'número medio ponderado de acciones diluidas']],
+    it: ['italiano', ['ammortamenti + ammortamento dei diritti d\'uso IFRS 16', 'investimenti in immobilizzazioni materiali e immateriali', 'flusso di cassa dell\'attività operativa', 'debiti finanziari correnti e non correnti', 'disponibilità liquide e mezzi equivalenti', 'passività per leasing IFRS 16', '«posizione finanziaria netta»', 'numero medio ponderato di azioni diluite']],
+    de: ['alemán', ['Abschreibungen (inkl. Nutzungsrechte IFRS 16)', 'Auszahlungen für Investitionen in Sach- und immaterielle Anlagen', 'Cashflow aus betrieblicher Tätigkeit', 'Finanzverbindlichkeiten kurz- und langfristig', 'Zahlungsmittel und Zahlungsmitteläquivalente', 'Leasingverbindlichkeiten', '«Nettofinanzverbindlichkeiten» / Nettoliquidität', 'verwässerte durchschnittliche Aktienzahl']],
+    en: ['inglés', ['depreciation and amortization (incl. right-of-use assets)', 'capital expenditures (purchases of PP&E and intangibles)', 'net cash provided by operating activities', 'short-term + long-term debt, excluding leases', 'cash and cash equivalents (+ short-term investments)', 'lease liabilities (operating + finance)', 'net cash / net debt as reported by the company', 'weighted-average diluted shares']] };
+  function idiomaDe(sym) { const m = /\.([A-Z]{1,2})$/.exec(String(sym || '')); return IDIOMA_BOLSA[m && m[1]] || 'en'; }
+  const serieCompleta = a => Array.isArray(a) && a.length > 0 && a.every(isN);
+  const ultimoNum = a => { for (let i = (a || []).length - 1; i >= 0; i--) if (isN(a[i])) return a[i]; return null; };
+  function promptBusqueda(d, tk, sym) {
+    const f = d.fichas[tk], h = f.hist || {}, an = (f.anios || []).map(Number), n = an.length, div = f.divisa || 'EUR', id = idiomaDe(sym), [idN, g] = IDIOMAS[id], eur = id !== 'en' || /\.[A-Z]{1,2}$/.test(sym || '');
+    const r1 = x => (isN(x) ? Math.round(x * 10) / 10 : null), fila = k => JSON.stringify((h[k] || []).map(r1));
+    const faltaIntImp = ['intereses', 'impuestos'].filter(k => !serieCompleta(h[k]));
+    const docs = []; for (let i = n - 1; i >= 0; i -= 2) docs.push(i > 0 ? [an[i], an[i - 1]] : [an[i]]);
+    const tipoDoc = eur ? 'informe anual / documento de registro (URD, Annual Report)' : 'Form 10-K (SEC EDGAR)';
+    const lin = [
+      ['da', 'depreciación y amortización total del ejercicio (' + g[0] + '). Desglosa ambos componentes en AVISOS.'],
+      ['capex', 'compras de inmovilizado material e intangible (' + g[1] + '). Indica si es bruto o neto de desinversiones.'],
+      ['fco', 'flujo de caja operativo (' + g[2] + ').'],
+      ['deuda', 'deuda financiera bruta SIN arrendamientos IFRS 16 (' + g[3] + '). Desglosa.'],
+      ['caja', 'efectivo y equivalentes + inversiones financieras a corto plazo, si las hay (' + g[4] + ').'],
+      ['caja_neta_oficial', 'la caja o deuda neta que publica la propia empresa (' + g[6] + '), cifra exacta sin redondear (negativa si es deuda neta), e indica si excluye IFRS 16.'],
+      ['leases_deuda', 'pasivos por arrendamientos IFRS 16 / de explotación, corrientes + no corrientes (' + g[5] + '). Desglosa.'],
+      ['acciones', 'acciones en circulación al cierre de cada ejercicio (millones).'],
+      ['acciones_diluidas', 'media ponderada de acciones diluidas usada en el BPA (' + g[7] + '), en millones.']];
+    if (faltaIntImp.indexOf('intereses') >= 0) lin.unshift(['intereses', 'coste financiero neto (gasto financiero menos ingresos financieros); negativo si la empresa gana más de lo que paga.']);
+    if (faltaIntImp.indexOf('impuestos') >= 0) lin.unshift(['impuestos', 'gasto por impuesto sobre beneficios del ejercicio.']);
+    const claves = lin.map(x => x[0]), jsonDatos = claves.map(k => '"' + k + '":[...]').join(',');
+    return 'Eres un analista financiero. Necesito datos históricos verificados de ' + (f.nombre || tk) + ' (ticker ' + tk + (sym ? ', símbolo en Yahoo ' + sym : '') + '; cuentas en ' + div + '; informes en ' + idN + ') para los ejercicios ' + an[0] + '–' + an[n - 1] + '. Identifica tú el mes de cierre del ejercicio fiscal y las normas contables (IFRS o US GAAP). Referencia de mi ficha, solo para comprobar que miras la empresa y las unidades correctas (millones de ' + div + '): ventas ' + fila('ventas') + ' · EBIT ' + fila('ebit') + ' · beneficio neto ' + fila('ni_reportado') + '.\n\n' +
+      'Trabajas en DOS FASES. Esta conversación es la FASE 1. Es normal que no consigas todo: tu objetivo es entregar lo que puedas verificar y decir con precisión qué queda pendiente.\n\n' +
+      'CÓMO TRABAJAR\n1. Busca tú mismo en internet, sin pedirme datos ni enlaces. Si no puedes abrir una página, busca otra fuente para el mismo dato.\n' +
+      '2. Trabaja por documentos, no por líneas. Cada informe anual trae el ejercicio actual y el anterior, así que ' + docs.length + ' documentos cubren los ' + n + ' años: ' + docs.map((p, i) => 'documento ' + (i + 1) + ' = ' + (eur ? 'informe anual' : '10-K') + ' del ejercicio ' + p[0] + ' → años ' + p.join(' y ')).join('; ') + '. Abre un documento, extrae de una vez todas las líneas pedidas para sus años y pasa al siguiente. No repitas búsquedas.\n' +
+      '3. Presupuesto: planifica unas 5 búsquedas o aperturas por documento y reserva las últimas para redactar la respuesta. Prioridad si te quedas corto: primero da, capex, fco, deuda y caja de los años más recientes; después los más antiguos; después el resto.\n' +
+      '4. Fuentes: primero primarias (' + tipoDoc + ', comunicados anuales de resultados, web de relación con inversores de la empresa y el regulador: SEC, AMF, CNMV, Consob, BaFin…). Los agregadores (StockAnalysis, MarketScreener, Yahoo Finance, Morningstar…) solo para un dato concreto que no aparezca en el documento primario, con confianza "P".\n' +
+      '5. No inventes cifras. Si no puedes abrir ninguna fuente para un dato, devuelve null y anótalo como pendiente. Un null honesto vale más que una cifra sin fuente.\n' +
+      '6. Unidades: millones de ' + div + '; acciones en millones; ejercicio completo, nunca 12 meses móviles.\n\n' +
+      'LÍNEAS (serie ' + an[0] + '–' + an[n - 1] + ', del más antiguo al más reciente)\n' + lin.map(x => '- ' + x[0] + ': ' + x[1]).join('\n') + '\n\n' +
+      'CONFIANZA (por año)\nA = leída en el documento primario (también la suma de dos líneas publicadas); P = agregador o una sola fuente secundaria; E = calculada por ti (con la cuenta en AVISOS). Un null no lleva confianza (null).\n\n' +
+      'VERIFICACIONES ANTES DE RESPONDER\n- Si un año sale en dos documentos (actual en uno y comparativo en otro), usa el documento donde es el año actual; si difieren más de un 1 %, explica ambas cifras con su URL en AVISOS.\n- caja − deuda ≈ la caja neta oficial; da, capex y fco del mismo ejercicio; acciones diluidas coherentes con beneficio neto / BPA (±3 %); la deuda no incluye arrendamientos.\n\n' +
+      'FORMATO DE RESPUESTA (obligatorio: una respuesta sin los tres bloques se considera incompleta)\nA) JSON, sin texto dentro:\n{"anios":[' + an.join(',') + '],\n "datos":{' + jsonDatos + '},\n "confianza":{"da":[...], ...},\n "fuentes":{"da":{"' + an[n - 1] + '":"https://...#página"}, ...},\n "pendiente":[{"linea":"capex","anio":' + an[0] + ',"motivo":"..."}, ...]}\n' +
+      'B) Tabla de FUENTES USADAS: línea, año, documento, URL exacta, página o nota del PDF, fecha de publicación. Incluye las páginas que intentaste abrir y no pudiste.\nC) AVISOS: desgloses, discrepancias (con ambas cifras y URL), definiciones distintas y cifras calculadas con su cuenta.';
+  }
+  function extraerJSON(txt) {   // primer objeto JSON válido con «datos» (tolera texto y bloques de código alrededor)
+    txt = String(txt || ''); const out = [];
+    for (let i = 0; i < txt.length; i++) if (txt[i] === '{') {
+      let dep = 0, str = false, esc = false;
+      for (let j = i; j < txt.length; j++) { const c = txt[j];
+        if (str) { if (esc) esc = false; else if (c === '\\') esc = true; else if (c === '"') str = false; }
+        else if (c === '"') str = true; else if (c === '{') dep++;
+        else if (c === '}') { dep--; if (dep === 0) { try { out.push(JSON.parse(txt.slice(i, j + 1))); i = j; } catch (e) { /* no era JSON */ } break; } } }
+    }
+    return out.find(o => o && typeof o === 'object' && o.datos) || null;
+  }
+  const numB = x => (isN(x) ? x : typeof x === 'string' && x.trim() !== '' && isFinite(Number(x.replace(/\s/g, '').replace(',', '.'))) ? Number(x.replace(/\s/g, '').replace(',', '.')) : null);
+  const urlOk = u => typeof u === 'string' && /^https?:\/\/\S+/.test(u.trim());
+  const RANGO = { A: 3, P: 2, E: 1 };
+  function aplicarBusqueda(d, tk, txt) {
+    const f = d.fichas[tk]; if (!f) throw new Error('No existe la ficha ' + tk + '.');
+    const an = (f.anios || []).map(Number), n = an.length;
+    if (/sin_navegacion/.test(String(txt)) && !/"datos"/.test(String(txt))) throw new Error('Esa IA no puede buscar en internet. Usa otra IA, o la opción «no puede abrir páginas» (pegas tú el texto de las páginas).');
+    const j = extraerJSON(txt); if (!j) throw new Error('No encuentro el JSON con «datos» en lo que has pegado. Pega la respuesta completa de la IA (el bloque A con el JSON) y vuelve a probar.');
+    const ja = (Array.isArray(j.anios) && j.anios.length ? j.anios : an).map(Number); if (ja.some(a => !isFinite(a))) throw new Error('Los años de la respuesta no son números.');
+    const datos = j.datos && typeof j.datos === 'object' ? j.datos : {}, conf = j.confianza || {}, fu = j.fuentes || {};
+    f.hist = f.hist || {}; f.conf = f.conf || {};
+    const orig = {}, soloHuecos = !!f.verificada, av = [], escritos = [], revisar = [], sinFuente = [], cambiosGrandes = [], antes = {}, hoyS = today();
+    const ia = f.datos_ia = f.datos_ia || { anios: an.slice(), datos: {}, confianza: {}, fuentes: {}, pendiente: [] };
+    const aIdx = {}; ja.forEach((a, i) => { aIdx[a] = i; });
+    const fuera = ja.filter(a => an.indexOf(a) < 0); if (fuera.length) av.push('Años de la respuesta que no están en la ficha (se ignoran): ' + fuera.join(', ') + '.');
+    const sinAnio = an.filter(a => aIdx[a] == null); if (sinAnio.length) av.push('La respuesta no trae estos años de la ficha: ' + sinAnio.join(', ') + '.');
+    const ABS = { da: 1, capex: 1, deuda: 1, caja: 1, leases_deuda: 1 }, extras = ['caja_neta_oficial', 'acciones_diluidas'];
+    LIN_BUSQ.concat(extras).forEach(k => {
+      const arr = datos[k]; if (arr == null) return; if (!Array.isArray(arr) || arr.length !== ja.length) throw new Error('«' + k + '» debe tener ' + ja.length + ' valores (uno por año: ' + ja.join(', ') + ').');
+      ia.datos[k] = ia.datos[k] || an.map(() => null); ia.confianza[k] = ia.confianza[k] || an.map(() => null); ia.fuentes[k] = ia.fuentes[k] || {};
+      const cf = Array.isArray(conf[k]) ? conf[k] : [];
+      an.forEach((a, ix) => {
+        const i = aIdx[a]; if (i == null) return; let v = numB(arr[i]); if (v == null) return; if (ABS[k]) v = Math.abs(v);
+        const c = /^[APE]$/.test(String(cf[i])) ? String(cf[i]) : 'P', url = fu[k] && fu[k][a], hayUrl = urlOk(url);
+        if (!hayUrl) { sinFuente.push(k + ' ' + a); return; }                       // sin URL no se acepta nada
+        if (ia.datos[k][ix] == null || (RANGO[c] || 0) >= (RANGO[ia.confianza[k][ix]] || 0)) { ia.datos[k][ix] = v; ia.confianza[k][ix] = c; ia.fuentes[k][a] = url.trim(); }
+        if (extras.indexOf(k) >= 0) return;                                          // solo se guardan como referencia y para contrastar
+        if (!(k in orig)) orig[k] = Array.isArray(f.hist[k]) ? f.hist[k].slice() : null;
+        const arrF = f.hist[k] = Array.isArray(f.hist[k]) ? f.hist[k] : an.map(() => null); while (arrF.length < n) arrF.push(null);
+        const e = arrF[ix], vacio = !isN(e);
+        if (vacio) { antes[k] = orig[k]; arrF[ix] = v; escritos.push({ linea: k, anio: a, antes: null, despues: v, conf: c }); return; }
+        if (soloHuecos || c !== 'A') return;                                          // lo estimado o de agregador no pisa lo que ya hay
+        if (Math.abs(v - e) <= 0.005 * Math.max(1, Math.abs(e))) return;
+        if (e !== 0 && v !== 0 && (Math.abs(v / e) > 5 || Math.abs(e / v) > 5)) { revisar.push({ linea: k, anio: a, actual: e, ia: v }); return; }
+        antes[k] = orig[k]; arrF[ix] = v; escritos.push({ linea: k, anio: a, antes: e, despues: v, conf: c });
+        if (Math.abs(v - e) > 0.25 * Math.max(1, Math.abs(e))) cambiosGrandes.push(k + ' ' + a + ': ' + Math.round(e * 100) / 100 + ' → ' + Math.round(v * 100) / 100);
+      });
+    });
+    if (!escritos.length && !Object.keys(ia.datos).some(k => ia.datos[k].some(isN))) throw new Error('La IA no ha devuelto ninguna cifra con URL' + (sinFuente.length ? ' (' + sinFuente.length + ' datos sin fuente se descartan)' : '') + '. Si no puede buscar en internet, usa otra IA o la opción «no puede abrir páginas».');
+    /* contrastes internos */
+    const dat = (k, a) => { const v = ia.datos[k] && ia.datos[k][an.indexOf(a)]; return isN(v) ? v : null; };
+    an.forEach(a => { const c = dat('caja', a), de = dat('deuda', a), ne = dat('caja_neta_oficial', a); if (c != null && de != null && ne != null && Math.abs(c - de - ne) > Math.max(1, 0.015 * Math.abs(ne))) av.push('caja − deuda ≠ caja neta oficial en ' + a + ' (' + Math.round((c - de) * 10) / 10 + ' frente a ' + ne + '): definición distinta o dato dudoso.'); });
+    const vt = f.hist.ventas || [];
+    ['capex', 'da'].forEach(k => an.forEach((a, ix) => { const x = dat(k, a), v0 = vt[ix]; if (x != null && isN(v0) && v0 > 0 && x / v0 > 0.4) av.push('«' + k + '» ' + a + ' es el ' + Math.round(x / v0 * 100) + ' % de las ventas: comprueba unidades y signo.'); }));
+    an.forEach((a, ix) => { const x = dat('acciones', a), ni = (f.hist.ni_reportado || [])[ix], b = (f.hist.bpa || [])[ix]; if (x != null && isN(ni) && isN(b) && b > 0 && Math.abs(x / (ni / b) - 1) > 0.15) av.push('Acciones ' + a + ' (' + x + ' M) no cuadran con beneficio neto / BPA (' + Math.round(ni / b * 10) / 10 + ' M): comprueba si son del cierre o del año.'); });
+    /* copia para deshacer y marcas de confianza */
+    if (Object.keys(antes).length) { d.ajustes = d.ajustes || {}; d.ajustes.copia_ia = d.ajustes.copia_ia || {}; d.ajustes.copia_ia[tk] = { fecha: hoyS, hist: antes }; }
+    const lineas = Object.keys(antes);
+    lineas.forEach(k => { const todasA = an.every((a, ix) => !isN(f.hist[k][ix]) || (ia.confianza[k] && ia.confianza[k][ix] === 'A')); f.conf[k] = todasA ? 'A' : (f.conf[k] === 'A' ? 'A' : 'P'); });
+    const urls = []; Object.keys(ia.fuentes).forEach(k => Object.keys(ia.fuentes[k]).forEach(a => { const u = String(ia.fuentes[k][a]).replace(/#.*$/, ''); if (urls.indexOf(u) < 0) urls.push(u); }));
+    f.fuentes = Array.isArray(f.fuentes) ? f.fuentes : []; urls.forEach(u => { if (f.fuentes.indexOf(u) < 0 && f.fuentes.length < 14) f.fuentes.push(u); });
+    ia.fecha = hoyS; ia.pendiente = Array.isArray(j.pendiente) ? j.pendiente.slice(0, 80) : (ia.pendiente || []);
+    const pend = pendientesBusqueda(f);
+    if (escritos.length) { f.notas = (f.notas || []).concat(['Datos completados el ' + hoyS + ' con una IA que busca en documentos de la empresa (cada cifra con su URL en «datos_ia»): ' + lineas.join(', ') + '.' + (pend.length ? ' Pendiente: ' + pend.length + ' datos.' : '') + (av.length ? ' Avisos: ' + av.join(' ') : '')]); f.fecha_datos = hoyS; }
+    return { escritos, revisar, sinFuente, cambiosGrandes, av, pendiente: pend, lineas, urls };
+  }
+  function pendientesBusqueda(f) {   // líneas de la ficha × años aún sin dato con fuente en datos_ia
+    const an = (f.anios || []).map(Number), ia = f.datos_ia || { datos: {} }, out = [];
+    LIN_BUSQ.forEach(k => { if (['intereses', 'impuestos'].indexOf(k) >= 0 && serieCompleta(f.hist[k])) return; an.forEach((a, ix) => { const v = ia.datos && ia.datos[k] && ia.datos[k][ix]; if (!isN(v)) { const m = (ia.pendiente || []).find(p => p && p.linea === k && Number(p.anio) === a); out.push({ linea: k, anio: a, motivo: m && m.motivo ? String(m.motivo).slice(0, 220) : '' }); } }); });
+    return out;
+  }
+  function deshacerBusqueda(d, tk) {
+    const c = d.ajustes && d.ajustes.copia_ia && d.ajustes.copia_ia[tk], f = d.fichas[tk]; if (!c || !f) return false;
+    Object.keys(c.hist).forEach(k => { if (c.hist[k] == null) delete f.hist[k]; else f.hist[k] = c.hist[k].slice(); }); delete d.ajustes.copia_ia[tk]; return true;
+  }
+  function promptFase2(d, tk, sym) {
+    const f = d.fichas[tk], an = (f.anios || []).map(Number), div = f.divisa || 'EUR', ia = f.datos_ia || { datos: {}, fuentes: {} }, pend = pendientesBusqueda(f);
+    const por = {}; pend.forEach(p => { (por[p.linea] = por[p.linea] || []).push(p); });
+    const falta = Object.keys(por).map(k => '- ' + k + ': años ' + por[k].map(p => p.anio).join(', ') + (por[k].find(p => p.motivo) ? ' — motivo previo: ' + por[k].find(p => p.motivo).motivo : '')).join('\n') || '- (nada pendiente)';
+    const ya = {}; Object.keys(ia.datos || {}).forEach(k => { if (ia.datos[k].some(isN)) ya[k] = ia.datos[k]; });
+    const urls = []; Object.keys(ia.fuentes || {}).forEach(k => Object.keys(ia.fuentes[k]).forEach(a => { const u = String(ia.fuentes[k][a]).replace(/#.*$/, ''); if (urls.indexOf(u) < 0) urls.push(u); }));
+    return 'Eres un analista financiero. FASE 2: completar los datos que faltan de ' + (f.nombre || tk) + ' (ticker ' + tk + (sym ? ', símbolo en Yahoo ' + sym : '') + '; cuentas en ' + div + ') para los ejercicios ' + an[0] + '–' + an[an.length - 1] + '. En una fase 1 anterior ya se obtuvo una parte; ahora SOLO hay que conseguir lo pendiente.\n\n' +
+      'CÓMO TRABAJAR\n1. Busca tú mismo en internet, sin pedirme datos ni enlaces. Si no puedes abrir una página, busca otra fuente para el mismo dato.\n2. Fuentes: primero primarias (informe anual / documento de registro / 10-K de cada año, comunicados de resultados, web de la empresa y el regulador). Agregadores (StockAnalysis, MarketScreener, Yahoo Finance…) solo para un dato que no aparezca en el primario, con confianza "P".\n3. Presupuesto: planifica unas 5 búsquedas por documento. Un informe anual trae el ejercicio actual y el anterior: abre cada documento una vez y extrae de él todo lo pendiente de sus dos años.\n4. No inventes cifras. Si no puedes abrir ninguna fuente para un dato, null y anótalo como pendiente con el motivo.\n5. Unidades: millones de ' + div + '; acciones en millones; ejercicio completo, nunca 12 meses móviles. Confianza por año: A = leída en el documento primario (también la suma de dos líneas publicadas); P = agregador; E = calculada por ti (con la cuenta en AVISOS); null sin confianza.\n\n' +
+      'LO QUE FALTA (solo esto)\n' + falta + '\n\n' +
+      'YA OBTENIDO — NO volver a buscar; úsalo solo para contrastar (años ' + an.join(', ') + ')\n' + JSON.stringify(ya) + '\n\n' +
+      'DOCUMENTOS YA LOCALIZADOS (reutilízalos, no gastes búsquedas en volver a encontrarlos)\n' + (urls.length ? urls.map(u => '- ' + u).join('\n') : '- (ninguno)') + '\n\n' +
+      'FORMATO DE RESPUESTA (obligatorio: tres bloques)\nA) JSON COMPLETO de la serie (lo ya obtenido + lo nuevo), sin texto dentro: {"anios":[' + an.join(',') + '],"datos":{...},"confianza":{...},"fuentes":{"linea":{"año":"https://...#página"}},"pendiente":[{"linea":"...","anio":0,"motivo":"..."}]}\nB) Tabla de FUENTES USADAS: línea, año, documento, URL exacta, página, fecha de publicación; incluye las páginas que no pudiste abrir.\nC) AVISOS: discrepancias entre fuentes (ambas cifras con URL), definiciones distintas y cifras calculadas con su cuenta.';
+  }
 
   function normalizar(d) {
     const b = nuevoDatos(); d = d || {};
@@ -642,6 +786,6 @@ const Logic = (function () {
   }
 
   return { isN, today, clone, nuevoDatos, normalizar, norm, coreName, sameCompany, findExisting, tickerDe, fxPorEur, aEur, precioPos, costeEur, mercadoEur, valorEur, variacion, diasDesde,
-    compra, venta, editar, eliminar, borrarMov, reverseMov, precioManual, precioFicha, matrizEntrada, auditoriaDivisas, provisional, proponerMultiplos, aplicarMultiplos, deshacerMultiplos, calidadFichas, distorsion, previsualizarSoloFcf, aplicarSoloFcf, valoracion, renombrarTicker, tickerValido, claves, divisaCotizacion, mezclarManual, contrastar, lineasFaltantes, revision, precioRef, pesos, dashboard, informes, V };
+    compra, venta, editar, eliminar, borrarMov, reverseMov, precioManual, precioFicha, matrizEntrada, auditoriaDivisas, provisional, promptBusqueda, extraerJSON, aplicarBusqueda, pendientesBusqueda, deshacerBusqueda, promptFase2, proponerMultiplos, aplicarMultiplos, deshacerMultiplos, calidadFichas, distorsion, previsualizarSoloFcf, aplicarSoloFcf, valoracion, renombrarTicker, tickerValido, claves, divisaCotizacion, mezclarManual, contrastar, lineasFaltantes, revision, precioRef, pesos, dashboard, informes, V };
 })();
 if (typeof module !== 'undefined') module.exports = Logic;

@@ -1,0 +1,99 @@
+{
+  "anios": [2020, 2021, 2022, 2023, 2024, 2025],
+  "datos": {
+    "da": [15.031, 14.805, 15.406, 15.9, 17.204, 17.987],
+    "capex": [7.192, 6.579, 10.605, 17.982, 12.037, 10.438],
+    "fco": [67.289, 64.498, 54.969, 72.075, 84.382, 71.282],
+    "deuda": [0.75, 0.535, 0.283, 7.379, 7.016, 4.167],
+    "caja": [266.603, 265.174, 272.058, 297.758, 326.491, 340.781],
+    "caja_neta_oficial": [null, null, 271.775, 290.379, 319.475, 336.614],
+    "leases_deuda": [33.543, 34.913, 35.838, 36.637, 35.045, 32.846],
+    "acciones": [null, null, null, null, null, 24.328716],
+    "acciones_diluidas": [null, null, null, null, null, null]
+  },
+  "confianza": {
+    "da": ["A", "A", "A", "A", "A", "A"],
+    "capex": ["A", "A", "A", "A", "A", "A"],
+    "fco": ["A", "A", "A", "A", "A", "A"],
+    "deuda": ["A", "A", "A", "A", "A", "A"],
+    "caja": ["A", "A", "A", "A", "A", "A"],
+    "caja_neta_oficial": [null, null, "A", "A", "A", "A"],
+    "leases_deuda": ["A", "A", "A", "A", "A", "A"],
+    "acciones": [null, null, null, null, null, "A"],
+    "acciones_diluidas": [null, null, null, null, null, null]
+  },
+  "fuentes": {
+    "da": {
+      "2020": "https://echanges.dila.gouv.fr/OPENDATA/AMF/260/8888/01/FC260381462_20210427.pdf#Compte-de-resultat-consolide",
+      "2021": "https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2022.pdf#Compte-de-resultat-consolide",
+      "2022": "https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2022.pdf#Compte-de-resultat-consolide",
+      "2023": "https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2024.pdf#Compte-de-resultat-consolide",
+      "2024": "https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2025.pdf#p.66",
+      "2025": "https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2025.pdf#p.66"
+    },
+    "capex": {
+      "2020": "https://echanges.dila.gouv.fr/OPENDATA/AMF/260/8888/01/FC260381462_20210427.pdf#Tableau-des-flux",
+      "2021": "https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2022.pdf#p.85",
+      "2022": "https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2022.pdf#p.85",
+      "2023": "https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2024.pdf#p.70",
+      "2024": "https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2025.pdf#p.70",
+      "2025": "https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2025.pdf#p.70"
+    },
+    "fco": {
+      "2020": "https://echanges.dila.gouv.fr/OPENDATA/AMF/260/8888/01/FC260381462_20210427.pdf#Tableau-des-flux",
+      "2021": "https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2022.pdf#p.85",
+      "2022": "https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2022.pdf#p.85",
+      "2023": "https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2024.pdf#p.70",
+      "2024": "https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2025.pdf#p.70",
+      "2025": "https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2025.pdf#p.70"
+    },
+    "deuda": {
+      "2020": "https://echanges.dila.gouv.fr/OPENDATA/AMF/260/8888/01/FC260381462_20210427.pdf#Bilan-consolide-Note-9",
+      "2021": "https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2022.pdf#p.83",
+      "2022": "https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2022.pdf#p.83",
+      "2023": "https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2024.pdf#Bilan-consolide-Note-9",
+      "2024": "https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2025.pdf#Bilan-consolide-Note-9",
+      "2025": "https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2025.pdf#Bilan-consolide-Note-9"
+    },
+    "caja": {
+      "2020": "https://echanges.dila.gouv.fr/OPENDATA/AMF/260/8888/01/FC260381462_20210427.pdf#Bilan-consolide-Note-9",
+      "2021": "https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2022.pdf#p.83",
+      "2022": "https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2022.pdf#p.83",
+      "2023": "https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2024.pdf#Bilan-consolide-Note-9",
+      "2024": "https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2025.pdf#Bilan-consolide-Note-9",
+      "2025": "https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2025.pdf#Bilan-consolide-Note-9"
+    },
+    "caja_neta_oficial": {
+      "2022": "https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2022.pdf#Note-9",
+      "2023": "https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2024.pdf#Note-9",
+      "2024": "https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2025.pdf#Note-9",
+      "2025": "https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2025.pdf#Note-9"
+    },
+    "leases_deuda": {
+      "2020": "https://echanges.dila.gouv.fr/OPENDATA/AMF/260/8888/01/FC260381462_20210427.pdf#Bilan-consolide-Note-3",
+      "2021": "https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2022.pdf#p.83",
+      "2022": "https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2022.pdf#p.83",
+      "2023": "https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2024.pdf#Bilan-consolide-Note-3",
+      "2024": "https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2025.pdf#Bilan-consolide-Note-3",
+      "2025": "https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2025.pdf#Bilan-consolide-Note-3"
+    },
+    "acciones": {
+      "2025": "https://www.neurones.net/sites/default/files/documents/NEURONES-rapport-annuel-document-d-enregistrement-universel-2025.pdf#Capital-social"
+    }
+  },
+  "pendiente": [
+    {"linea": "caja_neta_oficial", "anio": 2021, "motivo": "Sin consultas web en esta sesión; pendiente confirmar directamente la fila final del cuadro Note 9 en URD 2022 (referencia aritmética caja − deuda = 264.639 M€)"},
+    {"linea": "caja_neta_oficial", "anio": 2020, "motivo": "Sin consultas web en esta sesión; pendiente confirmar directamente la fila final del cuadro Note 9 en URD 2020 AMF (referencia aritmética caja − deuda = 265.853 M€)"},
+    {"linea": "acciones", "anio": 2024, "motivo": "Sin consultas web en esta sesión; pendiente extraer número exacto de acciones en circulación al 31/12/2024 en Note 13/14 (Capitaux propres) de URD 2025 o URD 2024"},
+    {"linea": "acciones", "anio": 2023, "motivo": "Sin consultas web en esta sesión; pendiente extraer número exacto de acciones en circulación al 31/12/2023 en Note 13/14 de URD 2024"},
+    {"linea": "acciones", "anio": 2022, "motivo": "Sin consultas web en esta sesión; pendiente extraer número exacto de acciones en circulación al 31/12/2022 en Note 13/14 de URD 2022"},
+    {"linea": "acciones", "anio": 2021, "motivo": "Sin consultas web en esta sesión; pendiente extraer número exacto de acciones en circulación al 31/12/2021 en Note 13/14 de URD 2022"},
+    {"linea": "acciones", "anio": 2020, "motivo": "Sin consultas web en esta sesión; pendiente extraer número exacto de acciones en circulación al 31/12/2020 en URD 2020 AMF"},
+    {"linea": "acciones_diluidas", "anio": 2025, "motivo": "Sin consultas web en esta sesión; pendiente extraer media ponderada de acciones diluidas en la Nota de BPA consolidado de URD 2025"},
+    {"linea": "acciones_diluidas", "anio": 2024, "motivo": "Sin consultas web en esta sesión; pendiente extraer media ponderada de acciones diluidas en la Nota de BPA consolidado de URD 2025"},
+    {"linea": "acciones_diluidas", "anio": 2023, "motivo": "Sin consultas web en esta sesión; pendiente extraer media ponderada de acciones diluidas en la Nota de BPA consolidado de URD 2024"},
+    {"linea": "acciones_diluidas", "anio": 2022, "motivo": "Sin consultas web en esta sesión; pendiente extraer media ponderada de acciones diluidas en la Nota de BPA consolidado de URD 2022"},
+    {"linea": "acciones_diluidas", "anio": 2021, "motivo": "Sin consultas web en esta sesión; pendiente extraer media ponderada de acciones diluidas en la Nota de BPA consolidado de URD 2022"},
+    {"linea": "acciones_diluidas", "anio": 2020, "motivo": "Sin consultas web en esta sesión; pendiente extraer media ponderada de acciones diluidas en la Nota de BPA consolidado de URD 2020 AMF"}
+  ]
+}

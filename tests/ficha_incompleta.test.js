@@ -5,6 +5,7 @@ const srv = http.createServer((q, r) => { const p = path.join(root, q.url.split(
   const b = await chromium.launch(), pg = await (await b.newContext({ viewport: { width: 390, height: 800 } })).newPage(), errs = [];
   pg.on('pageerror', e => errs.push(e.message)); pg.on('console', m => m.type() === 'error' && !/404/.test(m.text()) && errs.push(m.text())); pg.on('dialog', d => d.accept());
   await pg.route('https://api.github.com/**', r => r.fulfill({ status: 404, body: '' })); await pg.goto('http://localhost:' + srv.address().port + '/'); await pg.click('#btn-ajustes'); await pg.setInputFiles('#a-imp', process.argv[2]); await pg.waitForTimeout(600);
+  await pg.evaluate(() => { const f = Store.get().fichas.NRO; if (f && f.hist) { delete f.hist.da; f._borrador = true; Store.save(); } });   // los parches ya completaron las fichas incompletas de los datos reales: se fuerza una
   await pg.click('[data-tab=valoracion]'); await pg.waitForTimeout(1200); let t = await pg.textContent('#vista');
   assert(!/undefined is not an object|Cannot read/.test(t), 'mensaje técnico en la lista'); assert(/ficha incompleta/.test(t), 'sin aviso de ficha incompleta');
   const inc = await pg.evaluate(() => Object.keys(Store.get().fichas).filter(k => (Logic.valoracion(Store.get(), k) || {}).incompleta)); console.log('incompletas:', inc.join(','));
