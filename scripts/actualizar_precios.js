@@ -26,6 +26,12 @@ function fechaLocal(epoch, tz) {
   try { return new Intl.DateTimeFormat('en-CA', { timeZone: tz || 'UTC', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(epoch * 1000)); }
   catch (e) { return new Date(epoch * 1000).toISOString().slice(0, 10); }
 }
+/* Subunidades → divisa principal (peniques → libras, agorot → shekels), sea cual sea la fuente */
+function subunidad(p) {
+  if (p && (p.divisa === 'GBp' || p.divisa === 'GBX')) return Object.assign({}, p, { precio: Math.round(p.precio / 100 * 1e4) / 1e4, divisa: 'GBP' });
+  if (p && p.divisa === 'ILA') return Object.assign({}, p, { precio: Math.round(p.precio / 100 * 1e4) / 1e4, divisa: 'ILS' });
+  return p;
+}
 /* Yahoo → {precio, divisa, fecha, hora} (función pura, probada con ejemplos en tests/precios.test.js) */
 function leerYahoo(j) {
   const r = j && j.chart && j.chart.result && j.chart.result[0]; if (!r || !r.meta) throw new Error('respuesta sin datos');
@@ -167,7 +173,7 @@ async function principal() {
     while (cola.length) {
       const t = cola.shift();
       try {
-        const p = await precioDe(t.cand);
+        const p = subunidad(await precioDe(t.cand));   // todas las fuentes, no solo Yahoo: Google/CNBC también devuelven peniques (ATYM llegaba como 806 GBp)
         precios[t.clave] = { ticker: t.tk, precio: p.precio, divisa: p.divisa, fecha_precio: p.fecha, hora: p.hora, simbolo: p.simbolo, fuente: p.fuente, actualizado: ahora };
         const ant = (previo.precios || {})[t.clave]; if (ant && ant.divisa === p.divisa && num(ant.precio) && Math.abs(p.precio / ant.precio - 1) > 0.15) precios[t.clave].salto = Math.round((p.precio / ant.precio - 1) * 1000) / 10;   // % frente al precio anterior: revisar
         hechos++;
@@ -193,4 +199,4 @@ async function principal() {
   if (fallos.length > tareas.length / 2) process.exit(1);                    // casi todo falla: que el Action avise
 }
 if (require.main === module) principal().catch(e => { console.error(e); process.exit(1); });
-module.exports = { cnbc, nasdaq, yahoo, leerYahoo, leerStooq, leerGoogle, leerTencent, leerCnbc, leerNasdaq, fechaLocal };
+module.exports = { subunidad, cnbc, nasdaq, yahoo, leerYahoo, leerStooq, leerGoogle, leerTencent, leerCnbc, leerNasdaq, fechaLocal };

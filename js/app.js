@@ -38,9 +38,11 @@
     const d = Store.get(), D = L.dashboard(d), R = D.resumen;
     if (!d.posiciones.length && !Object.keys(d.fichas).length)
       return '<div class="card empty"><p><b>Aún no hay datos en este dispositivo.</b></p><p>Abre ⚙ Ajustes e importa tu archivo <code>datos.json</code> (o empieza añadiendo una compra en Cartera).</p><button class="btn" data-a="ajustes">Abrir ajustes</button></div>';
+    const eurS = n => n == null || !isFinite(n) ? '—' : (n > 0 ? '+' : n < 0 ? '-' : '') + nf(Math.abs(n), 0) + ' €';
     let h = '<div class="kpis">' +
-      '<div class="kpi"><span>Valor de la cartera</span><b>' + eur(R.valorEur) + '</b></div>' +
-      '<div class="kpi"><span>Empresas</span><b>' + R.nPos + '</b></div>' +
+      '<div class="kpi"><span>Valor de la cartera</span><b>' + eur(R.valorEur) + '</b><small>' + R.nPos + ' empresas</small></div>' +
+      '<div class="kpi" title="Valor de mercado menos coste, ambos en € al cambio actual (no incluye el efecto divisa)"><span>Plusvalía latente</span><b class="' + cls(R.plusEur) + '">' + eurS(R.plusEur) + '</b><small>' +
+        (R.plusPct == null ? 'sin coste o precio' : '<span class="' + cls(R.plusPct) + '">' + pct(R.plusPct) + '</span> sobre coste' + (R.nPlus < R.nTotal ? ' · ' + R.nPlus + ' de ' + R.nTotal + ' pos.' : '')) + '</small></div>' +
       '<div class="kpi"><span>Rentab. esperada (pond.)</span><b>' + (R.refPond == null ? '—' : nf(R.refPond * 100, 1) + '%') + '</b></div>' +
       '<div class="kpi"><span>Cartera valorada</span><b>' + (R.cubierto == null ? '—' : nf(R.cubierto * 100, 0) + '%') + '</b></div></div>';
     h += lineaPrecios();
@@ -48,6 +50,7 @@
     const sinFx = [...new Set(d.posiciones.filter(p => p.moneda && L.fxPorEur(d, p.moneda) == null).map(p => p.moneda))];
     if (sinFx.length) h += '<div class="alert warn">Sin tipo de cambio para ' + esc(sinFx.join(', ')) + ': esas posiciones no cuentan en el valor ni en los pesos. Añádelo en ⚙ Ajustes o pulsa «Actualizar precios».</div>';
     if (R.preciosViejos) h += '<div class="alert warn">' + R.preciosViejos + ' posición(es) con precio de hace más de ' + d.ajustes.dias_precio_viejo + ' días.</div>';
+    h += vistaReparto(D);
     if (UI.cargarSEC) UI.cargarSEC();
     if (UI.avisosResultados) h += UI.avisosResultados();
     if (UI.calidadDatos) h += UI.calidadDatos();
@@ -68,6 +71,26 @@
       h += '<p class="mut small">Precios automáticos: ' + new Date(pi.generado).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) + ' · ' + ((pi.estado || {}).ok || 0) + '/' + ((pi.estado || {}).total || 0) + ' valores' +
         (fall.length ? ' · sin actualizar: ' + esc(fall.join(', ')) : '') + '.</p>';
     }
+    return h;
+  }
+
+  /* Reparto por empresa / sector / divisa: barras horizontales con la línea del límite */
+  const REP_K = 'mi-cartera:reparto', REP_T = { empresa: 'Empresa', sector: 'Sector', divisa: 'Divisa' };
+  let rep = (() => { try { return REP_T[localStorage.getItem(REP_K)] ? localStorage.getItem(REP_K) : 'empresa'; } catch (e) { return 'empresa'; } })();
+  function vistaReparto(D) {
+    const todos = D.reparto[rep] || [], lim = D.lim[rep], N = 8;
+    if (!todos.length) return '';
+    const filas = todos.length > N + 1 ? todos.slice(0, N).concat([{ nombre: 'Otras (' + (todos.length - N) + ')', otras: true, eur: todos.slice(N).reduce((a, x) => a + x.eur, 0), pct: todos.slice(N).reduce((a, x) => a + x.pct, 0) }]) : todos;
+    const tope = Math.max.apply(null, filas.map(x => x.pct).concat(lim ? [lim / 100 * 1.15] : [])) || 1;
+    const nExc = lim ? todos.filter(x => x.pct * 100 > lim).length : 0;
+    let h = '<div class="sec-t"><h2>Reparto</h2><div class="seg" role="group" aria-label="Reparto por">' + Object.keys(REP_T).map(k => '<button type="button" data-rep="' + k + '" aria-pressed="' + (k === rep) + '">' + REP_T[k] + '</button>').join('') + '</div></div>';
+    h += '<div class="card rep">' + (lim ? '<p class="mut small rep-lim"><i></i>Límite ' + nf(lim, 0) + '% por ' + rep + (nExc ? ' · <b class="down">' + nExc + ' lo supera' + (nExc > 1 ? 'n' : '') + '</b>' : ' · ninguna lo supera') + '</p>' : '');
+    h += filas.map(x => {
+      const over = lim && !x.otras && x.pct * 100 > lim;
+      return '<div class="rb' + (over ? ' over' : '') + '" title="' + esc(x.nombre) + ': ' + nf(x.pct * 100, 1) + '% · ' + eur(x.eur) + (over ? ' · supera el límite del ' + lim + '%' : '') + '">' +
+        '<div class="rb-l"><span class="rb-n">' + esc(x.nombre) + (over ? ' <span class="pill bad">⚠ supera</span>' : '') + '</span><span class="rb-v"><b>' + nf(x.pct * 100, 1) + '%</b> · ' + eur(x.eur) + '</span></div>' +
+        '<div class="rb-t"><i style="width:' + (x.pct / tope * 100).toFixed(2) + '%"></i>' + (lim ? '<b style="left:' + (lim / 100 / tope * 100).toFixed(2) + '%"></b>' : '') + '</div></div>';
+    }).join('') + '</div>';
     return h;
   }
 
@@ -198,7 +221,7 @@
   }
 
   /* ───── Ajustes ───── */
-  const APP_VERSION = '65 · Arreglos: precio manual, precios al importar, fecha local, divisas en Ajustes, caché · 64 · Cifras de 12 meses: la IA busca sola y da fuentes · 63 · Caja de calidad: cada botón hace algo (avisos, verificar, guía de múltiplos, precio del feed) · 62 · Informes: una empresa con dos nombres comparte carpeta · 61 · Completar fichas con una IA que busca sola en los informes (con fuentes, fase 2 y deshacer)';
+  const APP_VERSION = '66 · Inicio con plusvalía y reparto, pestañas abajo en el móvil · 65 · Arreglos: precio manual, precios al importar, fecha local, divisas en Ajustes, caché · 64 · Cifras de 12 meses: la IA busca sola y da fuentes · 63 · Caja de calidad: cada botón hace algo (avisos, verificar, guía de múltiplos, precio del feed) · 62 · Informes: una empresa con dos nombres comparte carpeta · 61 · Completar fichas con una IA que busca sola en los informes (con fuentes, fase 2 y deshacer)';
   function ajustes() {
     const d = Store.get(), A = d.ajustes, cp = Store.ultimaCopia();
     const DIVS = [...new Set(Object.keys(A.fx).concat(d.posiciones.map(p => p.moneda)).filter(k => k && /^[A-Z]{3}$/.test(k) && k !== 'EUR'))].sort();   // todas las divisas del feed y de tus posiciones (antes solo USD, CNY y TWD)
@@ -340,7 +363,8 @@
 
   document.addEventListener('click', e => {
     for (const f of UI.clicks) if (f(e)) return;
-    const t = e.target.closest('[data-tab],[data-a],[data-pos],[data-undo],[data-inf]'); if (!t) return;
+    const t = e.target.closest('[data-tab],[data-a],[data-pos],[data-undo],[data-inf],[data-rep]'); if (!t) return;
+    if (t.dataset.rep) { rep = t.dataset.rep; try { localStorage.setItem(REP_K, rep); } catch (er) { } return render(); }
     if (t.dataset.inf != null) return detalleInforme(+t.dataset.inf);
     if (t.dataset.tab) { tab = t.dataset.tab; render(); window.scrollTo(0, 0); return; }
     if (t.dataset.pos) return detalle(+t.dataset.pos);
