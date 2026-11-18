@@ -21,10 +21,12 @@ const Val = (function () {
      No hay PER, EV/EBIT ni EV/EBITDA en la referencia. Precio y cifras, siempre en la misma divisa (la de la ficha). */
   const esFC = f => !!f && f.metodo === 'fcfa2s';
   const CFG = { crisis: 'ventas', ancho: true, gpre: false };
-  /* EXP: variantes EXPERIMENTALES para backtests (todas apagadas: la app no las usa). tests/backtest_mejoras.js las prueba una a una.
+  /* EXP: variantes del motor probadas una a una en tests/backtest_mejoras.js (18-nov-2026, 99 empresas de EE. UU., 1.461 filas, cifras tal como se publicaron).
+     ACTIVAS (el backtest las respalda): cicMed (empresas cíclicas: margen = mediana de la serie, 17 empresas mejoran / 12 empeoran) y capex (CapEx normalizado: 13 / 4).
+     APAGADAS (el backtest las rechaza, se dejan como interruptor): cicG (g ≤ 4 % en cíclicas: 6 / 14), dyn (balance dinámico: 28 / 52), capPer (tope de PER de salida: 6 / 15). ventana: sin evidencia (solo 12 filas); AIR se resuelve con crec_desde_previo: false en su ficha.
      cicMed: margen de las cíclicas = mediana (no media) · cicG: tope al crecimiento de las cíclicas · ventana: 'sinPrevio' (ignora el año previo a la caída) | 'post2021' (crecimiento desde 2021)
      dyn: deuda neta y gasto financiero dinámicos · capPer: tope de PER/P·FCF de salida si g_5 < 10 % (EV/EBITDA y EV/EBIT escalados) · capex: {ratio, fin}: capex/ventas converge a 1,15×D&A/ventas si capex > ratio×D&A (no flotas) */
-  const EXP = {};   // gpre y el aviso de trampa de valor se probaron y NO mejoraron en la muestra de validación   // mejoras del backtest (21/10/2026): normalizar años de crisis y escenarios más anchos
+  const EXP = { cicMed: true, capex: { ratio: 1.5 } };   // gpre y el aviso de trampa de valor se probaron y NO mejoraron en la muestra de validación   // mejoras del backtest (21/10/2026): normalizar años de crisis y escenarios más anchos
   const median = a => { const x = a.filter(isN).sort((p, q) => p - q); return x.length ? (x.length % 2 ? x[(x.length - 1) / 2] : (x[x.length / 2 - 1] + x[x.length / 2]) / 2) : null; };
   /* Años de crisis †: ventas más de un 10 % por debajo del año anterior, o margen EBIT recurrente por debajo de la mitad de la mediana del resto de años */
   function crisisYears(h) {
@@ -323,7 +325,7 @@ const Val = (function () {
     if (nombre === 'conservador' && !mo) {
       const ih = inicioHundido(h);
       if (ih >= 0 && f.crec_desde_previo !== false) add('y', `El CAGR de ventas a 5 años arrancaba en ${f.anios[ih + 1]}, un año hundido (caída de más del 10 % sobre ${f.anios[ih]}): el crecimiento por defecto se calcula desde ${f.anios[ih]}.`);
-      else if (ih >= 0) add('y', `El CAGR de ventas a 5 años (${(g5 * 100).toFixed(1)} %) arranca en ${f.anios[ih + 1]}, un año hundido (ventas más de un 10 % por debajo de ${f.anios[ih]}): puede inflar el crecimiento por defecto. Desde ${f.anios[ih]} sería ${(cagr(h.ventas.slice(ih), n) * 100).toFixed(1)} %.`);
+      else if (ih >= 0) add('y', `El CAGR de ventas a 5 años (${(g5 * 100).toFixed(1)} %) arranca en ${f.anios[ih + 1]}, un año hundido (ventas más de un 10 % por debajo de ${f.anios[ih]}): puede inflar el crecimiento por defecto. Desde ${f.anios[ih]} sería ${(cagr(h.ventas.slice(ih), h.ventas.length) * 100).toFixed(1)} %.`);
       else if (g5 != null && g5 > 0.15) add('y', `Las ventas crecieron ${(g5 * 100).toFixed(0)} % anual de media en 5 años: puede ser un rebote (p. ej. tras el COVID) y no un ritmo sostenible. Revisa el crecimiento antes de fiarte.`);
     }
     if (g5 != null && sc.g > g5 + 0.005) add('r', `Crecimiento de ventas ${(sc.g * 100).toFixed(1)} % por encima del que tuvo en 5 años (${(g5 * 100).toFixed(1)} %).`);
@@ -335,6 +337,15 @@ const Val = (function () {
       if (act && isN(act[k]) && sc[k] > act[k] * 1.2 && !(mh[k] && sc[k] <= mh[k])) add('y', `${n} objetivo ${sc[k].toFixed(1)}x frente a ${act[k].toFixed(1)}x hoy: la rentabilidad depende de que el múltiplo suba.`);
     });
     if (nombre === 'conservador' && sc.fade !== false && sc.g > G_LARGO) add('y', `Crecimiento que se desvanece †: ${(sc.g * 100).toFixed(1)} % el año 1 y ${(gAnio(sc, 5) * 100).toFixed(1)} % el año 5 (media ${(((Math.pow([1, 2, 3, 4, 5].reduce((p, k) => p * (1 + gAnio(sc, k)), 1), 0.2)) - 1) * 100).toFixed(1)} %).`);
+    /* Avisos añadidos tras la auditoría del 18-nov-2026 (solo informativos) */
+    [['per', 'PER'], ['pfcf', 'P/FCF'], ['ev_ebitda', 'EV/EBITDA'], ['ev_ebit', 'EV/EBIT']].forEach(([k, n]) => { if (mh[k] && sc[k] > 0 && sc[k] < mh[k] * 0.5) add('r', `Múltiplo ${n} ${sc[k].toFixed(1)}x muy por debajo de su media histórica (${mh[k].toFixed(1)}x): ¿escenario guardado antiguo o error de unidad?`); });
+    if (nombre === 'conservador' && !mo) { try {
+      const q = proyectar(f, sc).rows[4], pp = Math.max(q.po.per, q.po.pfcf);
+      if (pp > 0 && q.po.ev_ebitda > 0 && Math.abs(q.po.ev_ebitda / pp - 1) > 0.35) add('y', `El valor del año 5 por EV/EBITDA (${q.po.ev_ebitda.toFixed(0)}) difiere un ${Math.round(Math.abs(q.po.ev_ebitda / pp - 1) * 100)} % del de PER/P·FCF (${pp.toFixed(0)}): los múltiplos de salida no son coherentes entre sí (la referencia promedia ambos).`);
+      else if (pp > 0 && q.po.ev_ebitda <= 0) add('y', 'El valor del año 5 por EV/EBITDA sale negativo: la deuda neta supera al valor de la empresa con esos múltiplos.');
+    } catch (e) { /* sin proyección */ } }
+    if (nombre === 'conservador' && !mo && g5 != null && g5 > 0.04 && sc.g < g5 * 0.5) add('y', `Crecimiento de ventas ${(sc.g * 100).toFixed(1)} % muy por debajo del de los últimos 5 años (${(g5 * 100).toFixed(1)} %): comprueba que el año de partida y la cartera de pedidos lo justifican.`);
+    if (EXP.capex && !f.flota && !mo && nombre === 'conservador') { const n0 = h.ventas.length - 1; if (h.ventas[n0] > 0 && z(last(h.da)) > 0 && z(last(h.capex)) / h.ventas[n0] > EXP.capex.ratio * z(last(h.da)) / h.ventas[n0]) add('y', 'CapEx normalizado †: el último año invierte más de 1,5 veces su amortización; se proyecta que la inversión sobre ventas converja a 1,15 veces la amortización en el año 5 (backtest 13-11-2026: 13 empresas mejoran, 4 empeoran). No aplica a flotas (ficha.flota).'); }
     if (sc.t < 0.12 || sc.t > 0.32) add('y', `Tipo impositivo ${(sc.t * 100).toFixed(0)} % fuera de lo normal (12–32 %).`);
     if (sc.acc < -0.04) add('y', `Recompra de acciones del ${(-sc.acc * 100).toFixed(1)} % anual: muy agresiva.`);
     return out;

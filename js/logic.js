@@ -76,8 +76,59 @@ const Logic = (function () {
         delete c.fcf_por_accion; c.notas_datos = ['Cifras corregidas el 13-11-2026 con los comunicados de resultados (las del cribado anterior venían de una IA y no cuadraban: capitalización 1.650 M, EBITDA 340 M, BPA 3,65).', 'Caja neta ajustada de Danieli 1.020 M (descuenta anticipos de clientes). Dos clases de acciones: ordinarias (DAN) y de ahorro (DANR); aquí se valora la de ahorro.']; }
       ya.push(p.id);
     });
+    aplicarParchesV60(d, ya);
     return d;
   }
+
+  /* ───── Parches v60 (18-11-2026): cifras contrastadas con la SEC (10-K) y comunicados; solo fichas SIN verificar y sin pisar lo que ya tengas, salvo `pisa` (caja = efectivo + inversiones a corto, convención del resto de fichas) ───── */
+  const A60 = [2020, 2021, 2022, 2023, 2024, 2025, 2026];
+  const DATOS_V60 = [
+    { id: 'v60-prdo', tk: 'PRDO', conf: 'A', fuente: 'Perdoceo, 10-K y comunicado FY2025 (19-02-2026), vía SEC', nota: 'Caja = efectivo + inversiones a corto plazo (SEC; antes solo efectivo: infravaloraba la caja neta). Deuda 2024-2025: financiación de la construcción del campus (56,5 M) y de la venta con arrendamiento posterior (57,0 M); sin deuda bancaria. Capex = compras de inmovilizado (SEC).',
+      pisa: { caja: { 2020: 406.4, 2021: 494.2, 2022: 508.7, 2023: 603.1, 2024: 568.9, 2025: 622.2 } },
+      pone: { capex: { 2020: 9.8, 2021: 10.5, 2022: 12.6, 2023: 6.4, 2024: 4.6, 2025: 8.6 }, deuda: { 2020: 0, 2021: 0, 2022: 0, 2023: 0, 2024: 56.5, 2025: 57.0 } } },
+    { id: 'v60-aapl', tk: 'AAPL', conf: 'A', fuente: 'Apple, 10-K (SEC)', nota: 'Caja = efectivo + valores negociables a corto plazo (SEC; antes solo efectivo). No incluye los valores negociables a largo plazo.',
+      pisa: { caja: { 2021: 62639, 2022: 48304, 2023: 61555, 2024: 65171, 2025: 54697, 2026: 56722 } } },
+    { id: 'v60-strl', tk: 'STRL', conf: 'A', fuente: 'Sterling Infrastructure, 10-K (SEC)', nota: 'Caja 2020-2021 = efectivo + inversiones a corto (SEC).', pisa: { caja: { 2020: 66.2, 2021: 81.8 } } },
+    { id: 'v60-mips', tk: 'MIPS', conf: 'A', fuente: 'MIPS, informe anual 2025 (SEK M)', nota: 'Amortización 2024-2025 y deuda financiera 2024 (0) y 2025 (304) del informe anual.', pone: { da: { 2024: 20, 2025: 19 }, deuda: { 2024: 0, 2025: 304 } } },
+    { id: 'v60-che', tk: 'CHE', conf: 'A', fuente: 'Chemed, 10-K (SEC)', nota: 'Sin deuda financiera a cierre de 2024 y 2025 (10-K).', pone: { deuda: { 2024: 0, 2025: 0 } } },
+    { id: 'v60-belfa', tk: 'BELFA', conf: 'A', fuente: 'Bel Fuse, comunicado de resultados (acciones A + B en circulación)', nota: 'Acciones (millones) 2024 y 2025 del comunicado de resultados.', pone: { acciones: { 2024: 12.615, 2025: 12.661 } } },
+    { id: 'v60-sol', tk: 'BIT:SOL', conf: 'P', fuente: 'Balance consolidado de SOL (vía StockAnalysis; contrasta con el informe anual 2025)', nota: 'Deuda financiera bruta sin arrendamientos = deuda a largo + parte corriente + corto plazo (544 / 587 / 733 M en 2023 / 2024 / 2025). Arrendamientos aparte. Fuente secundaria: confirmar con el informe anual.', pone: { deuda: { 2023: 546.4, 2024: 587.3, 2025: 733.3 } } }
+  ];
+  function aplicarParchesV60(d, ya) {
+    const idx = (f, a) => (f.anios || []).indexOf(a);
+    DATOS_V60.forEach(p => {
+      if (ya.indexOf(p.id) >= 0) return; const f = d.fichas && d.fichas[p.tk]; if (!f || !f.hist || !f.anios) return;
+      if (f.verificada) { ya.push(p.id); return; }
+      let n = 0; f.conf = f.conf || {};
+      [['pone', false], ['pisa', true]].forEach(([k, pisa]) => Object.keys(p[k] || {}).forEach(campo => {
+        const arr = f.hist[campo] = Array.isArray(f.hist[campo]) ? f.hist[campo] : (f.anios || []).map(() => null);
+        Object.keys(p[k][campo]).forEach(a => { const i = idx(f, +a); if (i < 0) return; if (pisa || arr[i] == null) { if (arr[i] !== p[k][campo][a]) n++; arr[i] = p[k][campo][a]; } });
+        f.conf[campo] = p.conf;
+      }));
+      if (n) { f.notas = (f.notas || []).concat(['Datos contrastados el 18-11-2026 (' + p.fuente + '). ' + p.nota]); f.fuentes = (f.fuentes || []).concat([p.fuente]); }
+      ya.push(p.id);
+    });
+    /* FDX: el escenario conservador guardado traía EV/EBITDA 1,4x (frente a 8,9x histórico): arrastraba un error de la serie con Freight. Se descarta y se usa el calculado; copia en ajustes.copia_escenarios_FDX */
+    if (ya.indexOf('v60-fdx-esc') < 0) {
+      const f = d.fichas && d.fichas.FDX;
+      if (f) { const c = f.escenarios && f.escenarios.conservador, mh = f.mult_hist && f.mult_hist.ev_ebitda;
+        if (c && isN(c.ev_ebitda) && isN(mh) && c.ev_ebitda < 0.5 * mh) { d.ajustes.copia_escenarios_FDX = JSON.parse(JSON.stringify(f.escenarios)); delete f.escenarios; f.notas = (f.notas || []).concat(['18-11-2026: descartado el escenario guardado (EV/EBITDA de salida 1,4x frente a 8,9x histórico, restos de la serie con Freight). La valoración usa ahora los escenarios calculados.']); }
+        ya.push('v60-fdx-esc'); }
+    }
+    /* Interruptores de ficha: ESEA es naviera (flota: el CapEx es el negocio, no se normaliza); AIR: el crecimiento no arranca del año hundido del COVID */
+    if (ya.indexOf('v60-flags') < 0) {
+      const e = d.fichas && d.fichas.ESEA, a = d.fichas && d.fichas.AIR;
+      if (e && e.flota == null) e.flota = true; if (a && a.crec_desde_previo == null) a.crec_desde_previo = false;
+      if (e || a) ya.push('v60-flags');
+    }
+    /* Múltiplos propios (cierres anuales de precio × cifras de la ficha), calculados el 18-11-2026 con los datos ya corregidos */
+    MULT_V60.forEach(m => {
+      if (ya.indexOf(m.id) >= 0) return; const f = d.fichas && d.fichas[m.tk]; if (!f) return;
+      if (!f.mult_hist && !f.verificada) { f.mult_hist = Object.assign({}, m.mult); f.mult_hist_auto = { fecha: '2026-11-18', anios: m.anios.slice(), n: Object.assign({}, m.n), dispersion: Object.assign({}, m.disp), ajustes_split: [], fuente: 'cierres anuales (Yahoo) × cifras de la ficha' }; d.ajustes.mult_auto = d.ajustes.mult_auto || {}; d.ajustes.mult_auto[m.tk] = { fecha: '2026-11-18' }; }
+      ya.push(m.id);
+    });
+  }
+  const MULT_V60 = [{"id":"v60-mult-aapl","tk":"AAPL","mult":{"per":31.7,"pfcf":32.2,"ev_ebitda":25.5,"ev_ebit":28.1},"anios":[2021,2022,2023,2024,2025],"n":{"per":5,"pfcf":5,"ev_ebitda":5,"ev_ebit":5},"disp":{"per":0.21395002714228123,"pfcf":0.17662077419912883,"ev_ebitda":0.19438323599682097,"ev_ebit":0.18598277379293424}},{"id":"v60-mult-nro","tk":"NRO","mult":{"per":20.8,"pfcf":16.5},"anios":[2020,2021,2022,2023,2024,2025],"n":{"per":6,"pfcf":6,"ev_ebitda":0,"ev_ebit":2},"disp":{"per":0.0943841225778858,"pfcf":0.2311376441191297}},{"id":"v60-mult-ftdr","tk":"FTDR","mult":{"per":21.1,"pfcf":17.6,"ev_ebitda":13,"ev_ebit":15.5},"anios":[2020,2021,2022,2023,2024,2025],"n":{"per":6,"pfcf":6,"ev_ebitda":6,"ev_ebit":6},"disp":{"per":0.3671292326725646,"pfcf":0.2625575693109757,"ev_ebitda":0.37503745839521113,"ev_ebit":0.34013515377566794}},{"id":"v60-mult-prdo","tk":"PRDO","mult":{"per":8.9,"pfcf":8,"ev_ebitda":3.5},"anios":[2020,2021,2022,2023,2024,2025],"n":{"per":6,"pfcf":6,"ev_ebitda":5,"ev_ebit":5},"disp":{"per":0.48207385039269557,"pfcf":0.7210548581519756,"ev_ebitda":0.7698450771661408,"ev_ebit":0.8893229914619295}}];
 
   function normalizar(d) {
     const b = nuevoDatos(); d = d || {};
