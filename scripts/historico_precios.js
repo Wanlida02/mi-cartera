@@ -95,7 +95,7 @@ async function main() {
   for (const tk of Object.keys(cfg.simbolos)) {
     const c = cfg.simbolos[tk]; if (solo.length && !solo.includes(tk)) continue;   // también los valores con precios en pausa: aquí se intenta igualmente
     let ok = null, ult;
-    for (const s of candidatos(c)) { try { const pr = precios[s === c.ficha ? tk + '@ficha' : tk]; const h = await pedirHist(s, pr && pr.divisa); coherente(h, pr && pr.precio); ok = Object.assign({ simbolo: s }, h); break; } catch (e) { ult = e; } await esperar(500); }
+    for (const s of candidatos(c)) { try { const pr = precios[s === c.ficha ? tk + '@ficha' : tk]; const h = await pedirHist(s, pr && pr.divisa); if (!EXTRA.length) coherente(h, pr && pr.precio); ok = Object.assign({ simbolo: s }, h); break; } catch (e) { ult = e; } await esperar(500); }
     if (ok) sim[tk] = Object.assign(ok, { actualizado: new Date().toISOString() });
     else { fallos.push({ ticker: tk, error: ult && ult.message }); try { if (prev[tk]) { coherente(prev[tk], (precios[tk] || {}).precio); sim[tk] = prev[tk]; } } catch (e) { /* el anterior tampoco vale */ } }
     await esperar(700);
