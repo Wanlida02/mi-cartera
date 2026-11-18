@@ -123,3 +123,38 @@ body:has(.fab) .toast{bottom:calc(80px + env(safe-area-inset-bottom))}   /* el a
 .rb.over .rb-t i{background:var(--bad)}
 .rb-t b{position:absolute;top:-3px;bottom:-3px;width:2px;margin-left:-1px;background:var(--ink);opacity:.55;border-radius:1px}
 .rb .pill{font-size:11px;padding:1px 7px}
+/* Evolución del valor (v67): dos líneas en un solo eje (€); etiquetas en HTML para que no se deformen */
+.evo-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.evo-top b{font-variant-numeric:tabular-nums}.evo-top>div:first-child b{font-size:17px}
+.evo-ley{display:flex;gap:14px;margin:8px 0 4px;color:var(--mut)}
+.evo-ley span{display:inline-flex;align-items:center;gap:6px}
+.sw{display:inline-block;width:16px;height:0;border-top:2px solid var(--pri)}.sw.c{border-top:2px dashed var(--mut)}
+.evo-g{display:flex;gap:6px;height:170px;margin-top:6px}
+.evo-y{position:relative;width:44px;flex:none;font-size:11px;color:var(--mut);font-variant-numeric:tabular-nums}
+.evo-y span{position:absolute;right:0;transform:translateY(-50%);white-space:nowrap}
+.evo-plot{position:relative;flex:1;min-width:0;outline:0;touch-action:pan-y;cursor:crosshair}
+.evo-plot:focus-visible{box-shadow:0 0 0 2px var(--pri);border-radius:4px}
+.evo-plot .gl{position:absolute;left:0;right:0;border-top:1px solid var(--line)}
+.evo-plot svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.evo-plot path{fill:none;stroke-width:2;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-linecap:round}
+.evo-plot .lv{stroke:var(--pri)}.evo-plot .lc{stroke:var(--mut);stroke-dasharray:5 4}
+.evo-x{position:absolute;top:0;bottom:0;width:0;border-left:1px solid var(--mut);opacity:.6;pointer-events:none}
+.evo-p{position:absolute;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;border:2px solid var(--card);pointer-events:none}
+.evo-p.v{background:var(--pri)}.evo-p.c{background:var(--mut)}
+.evo-tip{position:absolute;top:4px;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-size:12px;line-height:1.45;box-shadow:0 4px 14px rgba(0,0,0,.15);white-space:nowrap;pointer-events:none;z-index:2;font-variant-numeric:tabular-nums}
+.evo-f{display:flex;justify-content:space-between;margin:4px 0 0 50px}
+.evo-tabla{margin-top:8px}.evo-tabla .tbl{margin-top:4px}
+.evo [hidden]{display:none}
+/* Medidor de la watchlist: compra (≤ entrada) · hasta el máximo · cara */
+.med{position:relative;height:8px;border-radius:4px;background:var(--chip);margin:7px 0 2px;max-width:260px}
+.med i{position:absolute;top:0;bottom:0;left:0}
+.med .z1{background:var(--ok-bg);border-radius:4px 0 0 4px;box-shadow:inset 0 0 0 1px var(--ok)}
+.med .z2{background:var(--warn-bg);box-shadow:inset 0 0 0 1px var(--warn)}
+.med b{position:absolute;top:50%;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:var(--ink);border:2px solid var(--card)}
+.med-ley{display:flex;flex-wrap:wrap;gap:4px 14px;margin:0 0 4px}.med-ley span{display:inline-flex;align-items:center;gap:5px}
+.med-ley i{display:inline-block;width:14px;height:8px;border-radius:2px}.med-ley .z1{background:var(--ok-bg);box-shadow:inset 0 0 0 1px var(--ok)}.med-ley .z2{background:var(--warn-bg);box-shadow:inset 0 0 0 1px var(--warn)}
+.med-ley b{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--ink)}
+/* Cartera agrupada por broker */
+.grp{display:flex;justify-content:space-between;align-items:baseline;padding:12px 0 4px;border-top:1px solid var(--line);font-size:13px;color:var(--mut)}
+.grp:first-child{border-top:0;padding-top:0}.grp b{color:var(--ink);font-size:14px}
+.grp+.row{border-top:0}
