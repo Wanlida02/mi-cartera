@@ -95,7 +95,7 @@
     if (pi && pi.generado) {
       const fall = ((pi.estado || {}).fallos || []).map(f => f.ticker.replace('@ficha', ' (ficha)'));
       h += '<p class="mut small">Precios automáticos: ' + new Date(pi.generado).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) + ' · ' + ((pi.estado || {}).ok || 0) + '/' + ((pi.estado || {}).total || 0) + ' valores' +
-        (fall.length ? ' · sin actualizar: ' + esc(fall.join(', ')) : '') + '.</p>';
+        (fall.length ? ' · sin actualizar: ' + esc(fall.join(', ')) : '') + '.' + (fall.length ? ' <button class="btn sec sm" data-a="precios-ia">Pedir esos precios a una IA</button>' : '') + '</p>';
     }
     return h;
   }
@@ -186,13 +186,78 @@
     return '<div class="tools" style="align-items:center;gap:8px"><span class="mut small" style="flex:1">Precios automáticos: ' + (pi.generado ? new Date(pi.generado).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) + ' · ' + (est.ok || 0) + '/' + (est.total || 0) + ' valores' : 'sin datos aún') +
       '</span><button class="btn sec sm" data-a="precios">Actualizar precios</button></div>';
   }
+  /* Valores cuyo precio no ha llegado en la última descarga, con el motivo y lo que hace falta para la IA */
+  function itemsFallos() {
+    const d = Store.get(), pi = Store.preciosInfo() || {}, fl = ((pi.estado || {}).fallos || []);
+    return fl.map(f => {
+      const key = f.ticker, tk = key.replace('@ficha', ''), fi = d.fichas[tk], pos = d.posiciones.find(p => L.tickerDe(d, p) === tk || String(p.ticker || '').toUpperCase() === tk.toUpperCase()), pr = d.precios[key];
+      const divisa = /@ficha$/.test(key) ? (fi && fi.divisa) : (pr && pr.divisa) || (pos && pos.moneda) || (fi && fi.divisa) || null;
+      const dg = L.diagnosticoPrecio(f, divisa);
+      return { tk: key, nombre: (fi && fi.nombre) || (pos && pos.empresa) || tk, simbolo: dg.simbolo, divisa, ultimo: pr && pr.precio > 0 ? { precio: pr.precio, fecha: pr.fecha_precio } : null, diag: dg };
+    });
+  }
+  function listaFallos() {
+    const it = itemsFallos(); if (!it.length) return '';
+    return '<section class="aj"><h3>Precios que no han llegado (' + it.length + ')</h3><ul class="pf-l">' + it.map(x => '<li><b>' + esc(x.nombre) + '</b> <span class="mut">' + esc(x.tk) + '</span><br><span class="small ' + (x.diag.tipo === 'simbolo' ? 'c-y' : 'mut') + '">' + (x.diag.tipo === 'simbolo' ? '⚠ ' : '') + esc(x.diag.txt) + '</span>' +
+      (x.ultimo ? '<br><span class="small mut">Último precio: ' + esc(money(x.ultimo.precio, x.divisa)) + ' (' + esc(x.ultimo.fecha || 's/f') + ')</span>' : '') + '</li>').join('') + '</ul>' +
+      '<p class="aj-ayuda">Una IA puede buscar sus precios ahora y decirte el símbolo correcto en Yahoo; la app corrige la lista de símbolos para que la descarga automática los encuentre la próxima vez.</p><div class="aj-bt"><button class="btn" data-a="precios-ia">Pedir estos precios a una IA</button></div></section>';
+  }
+  /* Precios con una IA: 1) copiar el prompt, 2) pegar la respuesta (se valida), 3) aplicar precios y corregir símbolos en simbolos.json */
+  function preciosIADlg() {
+    const items = itemsFallos(); if (!items.length) return toast('Todos los precios han llegado en la última descarga');
+    const prompt = L.promptPreciosIA(items);
+    let leido = null;
+    dlg('<div class="aj-cab"><div><h2>Precios con una IA</h2><span class="mut small">' + items.length + ' valor' + (items.length > 1 ? 'es' : '') + ' sin precio automático</span></div><button type="button" class="icon-x" data-a="cerrar" aria-label="Cerrar">✕</button></div>' +
+      '<section class="aj"><h3><span class="paso">1</span>Pide los precios a una IA</h3><p class="aj-ayuda">Una que busque en internet (Claude, ChatGPT…). Le pide también el símbolo correcto de cada uno.</p>' +
+        '<div class="aj-bt"><button class="btn" id="pi-cp">Copiar prompt</button></div><details class="mg-txt small"><summary><span>Ver el texto</span></summary><textarea id="pi-p" readonly rows="7">' + esc(prompt) + '</textarea></details></section>' +
+      '<section class="aj"><h3><span class="paso">2</span>Pega su respuesta</h3><p class="aj-ayuda">Solo se aceptan precios con enlace a la fuente, de los últimos 10 días y en la divisa en que cotiza cada valor.</p>' +
+        (navigator.clipboard && navigator.clipboard.readText ? '<div class="aj-bt"><button class="btn" id="pi-pg">Pegar respuesta</button></div>' : '') + '<textarea id="pi-r" rows="3" placeholder="…o pégala aquí a mano"></textarea><div id="pi-res" aria-live="polite"></div></section>' +
+      '<div id="pi-tok" hidden><label for="pi-t">Token de GitHub (Contents y Actions: Read and write) para corregir los símbolos</label><input id="pi-t" type="password" autocomplete="off" placeholder="github_pat_…"></div>' +
+      '<div class="aj-pie"><button class="btn sec" data-a="cerrar">Cancelar</button><button class="btn" id="pi-ok" disabled>Aplicar</button></div>', dd => {
+      const res = dd.querySelector('#pi-res'), okB = dd.querySelector('#pi-ok');
+      const leer = () => {
+        const t = dd.querySelector('#pi-r').value; leido = null; okB.disabled = true; if (!t.trim()) { res.innerHTML = ''; return; }
+        try { leido = L.leerPreciosIA(t, items); } catch (e) { res.innerHTML = '<p class="mg-err">' + esc(e.message) + '</p>'; return; }
+        const pr = leido.ok.filter(x => !x.soloSimbolo), sim = leido.ok.filter(x => x.cambiaSim);
+        okB.disabled = !pr.length && !sim.length;
+        res.innerHTML = (pr.length ? '<p class="mg-ok">✓ ' + pr.length + ' precio' + (pr.length > 1 ? 's' : '') + ' válido' + (pr.length > 1 ? 's' : '') + '</p><ul class="pf-l">' + pr.map(x => '<li><b>' + esc(x.nombre) + '</b> ' + esc(money(x.precio, x.divisa)) + ' <span class="mut small">' + esc(x.fecha) + '</span>' + (x.salto != null ? ' <span class="small ' + (Math.abs(x.salto) > 0.4 ? 'c-y' : 'mut') + '">' + pct(x.salto) + '</span>' : '') + '</li>').join('') + '</ul>' : '<p class="mg-err">Ningún precio válido.</p>') +
+          (sim.length ? '<p class="small" style="margin:10px 0 4px"><b>Símbolos a corregir</b> (para que la descarga automática los encuentre):</p><ul class="pf-l">' + sim.map(x => '<li>' + esc(x.nombre) + ': <s class="mut">' + esc(x.simboloAntes || '—') + '</s> → <b>' + esc(x.simbolo) + '</b></li>').join('') + '</ul>' : '') +
+          (leido.avisos.length || leido.rechazados.length ? '<ul class="mg-av">' + leido.avisos.concat(leido.rechazados.map(r => 'No se usa: ' + r)).map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>' : '');
+        dd.querySelector('#pi-tok').hidden = !(sim.length && !DatosWeb.token());
+      };
+      dd.querySelector('#pi-r').addEventListener('input', leer);
+      const pg = dd.querySelector('#pi-pg'); if (pg) pg.onclick = async () => { try { const t = await navigator.clipboard.readText(); if (!t) return toast('El portapapeles está vacío'); dd.querySelector('#pi-r').value = t; leer(); } catch (e) { toast('No se pudo leer el portapapeles: pégala a mano en la caja'); dd.querySelector('#pi-r').focus(); } };
+      dd.querySelector('#pi-cp').onclick = async () => { try { await navigator.clipboard.writeText(prompt); toast('Prompt copiado: pégalo en la IA'); } catch (e) { dd.querySelector('.mg-txt').open = true; dd.querySelector('#pi-p').select(); toast('Selecciona el texto y cópialo'); } };
+      okB.onclick = async () => {
+        if (!leido) return; const d = Store.get(), pr = leido.ok.filter(x => !x.soloSimbolo), sim = leido.ok.filter(x => x.cambiaSim);
+        pr.forEach(x => { d.precios[x.tk] = Object.assign({}, d.precios[x.tk] || {}, { ticker: x.tk.replace('@ficha', ''), precio: x.precio, divisa: x.divisa, fecha_precio: x.fecha, fuente: 'IA', url: x.fuente, actualizado: new Date().toISOString() }); });
+        if (pr.length) Store.save();
+        let msgSim = '';
+        if (sim.length) {
+          const t = dd.querySelector('#pi-t').value.trim(); if (t) DatosWeb.setToken(t);
+          okB.disabled = true; okB.textContent = 'Corrigiendo símbolos…';
+          try {
+            const cfg = await DatosWeb.leerArchivo('simbolos.json'); if (!cfg) throw new Error('no se pudo leer simbolos.json');
+            const c = L.corregirSimbolos(cfg, sim.map(x => ({ tk: x.tk, simbolo: x.simbolo, simboloAntes: x.simboloAntes, quitarAntes: x.quitarAntes })));
+            if (!c.hechos.length) msgSim = ' Los símbolos ya estaban corregidos.';
+            else { const w = await DatosWeb.escribirArchivo('simbolos.json', JSON.stringify(c.cfg, null, 2) + '\n', 'Símbolos corregidos con IA: ' + c.hechos.join(', '));
+              if (w.sinToken) msgSim = ' Para corregir los símbolos hace falta el token de GitHub (pégalo y vuelve a pulsar Aplicar).';
+              else if (!w.ok) msgSim = ' No se pudieron corregir los símbolos: ' + w.msg;
+              else { msgSim = ' Símbolos corregidos: ' + c.hechos.join(', ') + '.'; const l = await DatosWeb.lanzarWorkflow('precios.yml', { forzar: 'true' }); if (l.ok) msgSim += ' Lanzada una descarga nueva (1–2 min).'; } }
+          } catch (e) { msgSim = ' No se pudieron corregir los símbolos: ' + e.message; }
+          if (/token/.test(msgSim) && /hace falta/.test(msgSim)) { dd.querySelector('#pi-tok').hidden = false; okB.disabled = false; okB.textContent = 'Aplicar'; render(); return toast((pr.length ? pr.length + ' precio(s) aplicados.' : '') + msgSim); }
+        }
+        cerrar(); render(); toast((pr.length ? pr.length + ' precio' + (pr.length > 1 ? 's' : '') + ' aplicado' + (pr.length > 1 ? 's' : '') + '.' : '') + msgSim);
+      };
+    });
+  }
   function preciosDlg() {
     const pi = Store.preciosInfo() || {}, est = pi.estado || {}, fall = (est.fallos || []).map(f => f.ticker.replace('@ficha', ' (ficha)'));
     dlg('<h2>Actualizar precios</h2><p class="small">Últimos precios automáticos: <b>' + (pi.generado ? new Date(pi.generado).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) : 'sin datos') + '</b> · ' + (est.ok || 0) + '/' + (est.total || 0) + ' valores' + (fall.length ? ' · sin actualizar: ' + esc(fall.join(', ')) : '') + '.</p>' +
       '<p class="small mut">«Traer lo último» lee lo publicado hasta ahora (inmediato). «Forzar descarga» lanza una descarga nueva en GitHub, sin esperar al horario automático, y tarda 1–2 minutos; necesita el token de GitHub de este dispositivo.</p>' +
       '<div class="acts" style="justify-content:flex-start"><button class="btn sec" id="pr-ult">Traer lo último</button><button class="btn" id="pr-forzar">Forzar descarga nueva</button></div>' +
       '<div id="pr-tok" hidden><label for="pr-t">Token de GitHub (Actions: Read and write)</label><input id="pr-t" type="password" autocomplete="off" placeholder="github_pat_…"><div class="acts" style="justify-content:flex-start"><button class="btn sm" id="pr-tok-ok">Guardar y forzar</button></div></div>' +
-      '<p class="small" id="pr-msg"></p><div class="acts"><button class="btn sec" data-a="cerrar">Cerrar</button></div>', dd => {
+      '<p class="small" id="pr-msg"></p>' + listaFallos() + '<div class="acts"><button class="btn sec" data-a="cerrar">Cerrar</button></div>', dd => {
       const msg = t => { dd.querySelector('#pr-msg').textContent = t; };
       let ocupado = false;
       const aplicar = async j => { const n = await Store.cargarPreciosAuto(j); render(); return n; };
@@ -308,7 +373,7 @@
   }
 
   /* ───── Ajustes ───── */
-  const APP_VERSION = '74 · Botones «Ver …» llevan a su sitio (DCF inverso), cuentas sin id editables, el aviso de Deshacer no tapa la última fila · 73 · Nunca en blanco al abrir: aviso de rescate y datos raros que se limpian · 72 · Respuestas de IA: fuentes agrupadas por bloques de años o por documento, JSON con texto alrededor o comas de más · 71 · Múltiplos de salida: pega la respuesta de la IA y rellena las medianas · 70 · La IA puede citar documentos con página (URD2025.pdf#p79) como fuente · 69 · Ajustes más claros en el móvil · 68 · Borrar con «Deshacer», filas usables con teclado · 67 · Inicio más rápido, evolución del valor, medidor de la watchlist, cartera por broker y por rentab. esperada · 66 · Inicio con plusvalía y reparto, pestañas abajo en el móvil · 65 · Arreglos: precio manual, precios al importar, fecha local, divisas en Ajustes, caché · 64 · Cifras de 12 meses: la IA busca sola y da fuentes · 63 · Caja de calidad: cada botón hace algo (avisos, verificar, guía de múltiplos, precio del feed) · 62 · Informes: una empresa con dos nombres comparte carpeta · 61 · Completar fichas con una IA que busca sola en los informes (con fuentes, fase 2 y deshacer)';
+  const APP_VERSION = '75 · Precios que no llegan: diagnóstico, precios con una IA y corrección de símbolos · 74 · Botones «Ver …» llevan a su sitio (DCF inverso), cuentas sin id editables, el aviso de Deshacer no tapa la última fila · 73 · Nunca en blanco al abrir: aviso de rescate y datos raros que se limpian · 72 · Respuestas de IA: fuentes agrupadas por bloques de años o por documento, JSON con texto alrededor o comas de más · 71 · Múltiplos de salida: pega la respuesta de la IA y rellena las medianas · 70 · La IA puede citar documentos con página (URD2025.pdf#p79) como fuente · 69 · Ajustes más claros en el móvil · 68 · Borrar con «Deshacer», filas usables con teclado · 67 · Inicio más rápido, evolución del valor, medidor de la watchlist, cartera por broker y por rentab. esperada · 66 · Inicio con plusvalía y reparto, pestañas abajo en el móvil · 65 · Arreglos: precio manual, precios al importar, fecha local, divisas en Ajustes, caché · 64 · Cifras de 12 meses: la IA busca sola y da fuentes · 63 · Caja de calidad: cada botón hace algo (avisos, verificar, guía de múltiplos, precio del feed) · 62 · Informes: una empresa con dos nombres comparte carpeta · 61 · Completar fichas con una IA que busca sola en los informes (con fuentes, fase 2 y deshacer)';
   function ajustes() {
     const d = Store.get(), A = d.ajustes, cp = Store.ultimaCopia();
     const DIVS = [...new Set(Object.keys(A.fx).concat(d.posiciones.map(p => p.moneda)).filter(k => k && /^[A-Z]{3}$/.test(k) && k !== 'EUR'))].sort();   // todas las divisas del feed y de tus posiciones (antes solo USD, CNY y TWD)
@@ -485,6 +550,7 @@
       case 'cerrar': cerrar(); break;
       case 'ajustes': ajustes(); break;
       case 'precios': preciosDlg(); break;
+      case 'precios-ia': preciosIADlg(); break;
       case 'compra': formCompra(); break;
       case 'mas': { const p = Store.get().posiciones[i]; formCompra({ empresa: p.empresa, ticker: p.ticker, broker: p.broker, moneda: p.moneda, sector: p.sector }); break; }
       case 'vender': formVenta(i); break;

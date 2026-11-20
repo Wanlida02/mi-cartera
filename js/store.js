@@ -64,7 +64,7 @@ const Store = (function () {
         let nuevo = j.precios[tk]; const ant = data.precios[tk];
         if (nuevo && (nuevo.divisa === 'GBp' || nuevo.divisa === 'GBX') && nuevo.precio > 0) nuevo = Object.assign({}, nuevo, { precio: nuevo.precio / 100, divisa: 'GBP' });   // peniques → libras (un precios.json antiguo los traía así)
         if (!nuevo || !(nuevo.precio > 0)) return;
-        if (!ant || (ant.simbolo && nuevo.simbolo && ant.simbolo !== nuevo.simbolo) || (nuevo.fecha_precio || '') > (ant.fecha_precio || '') || ((nuevo.fecha_precio || '') === (ant.fecha_precio || '') && ant.fuente !== 'manual')) {
+        if (!ant || (ant.simbolo && nuevo.simbolo && ant.simbolo !== nuevo.simbolo) || (nuevo.fecha_precio || '') > (ant.fecha_precio || '') || ((nuevo.fecha_precio || '') === (ant.fecha_precio || '') && !/^(manual|IA)$/.test(ant.fuente || ''))) {
           if (!ant || JSON.stringify(ant) !== JSON.stringify(nuevo)) n++;   // solo cuenta lo que cambia de verdad (si no, «Precios actualizados» salía en cada arranque)
           data.precios[tk] = nuevo;
         }
