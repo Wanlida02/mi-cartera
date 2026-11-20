@@ -852,6 +852,80 @@ const Logic = (function () {
     return { generado: idx.generado, lista, sin, avisos: Array.isArray(idx.avisos) ? idx.avisos : [] };
   }
 
+  /* ───── Precios que la descarga automática no consigue: diagnóstico, prompt para una IA y lectura de su respuesta ───── */
+  const SIMB_OK = /^[A-Z0-9^][A-Z0-9.\-=^]{0,19}$/i;   // forma de un símbolo de Yahoo (sin espacios: «SOL SPA» no lo es)
+  const formaDudosa = (sim, divisa) => !SIMB_OK.test(sim) || (!!divisa && divisa !== 'USD' && !/\.[A-Z]{1,3}$/i.test(sim) && !/[=^]/.test(sim));
+  function diagnosticoPrecio(fallo, divisa) {
+    const mot = String(fallo && fallo.motivo || ''), sim = mot.split('/')[0].trim() || String(fallo && fallo.ticker || '').replace('@ficha', '');
+    const yh = (mot.split('|').find(x => /\/yahoo:/.test(x)) || '').toLowerCase();
+    if (!SIMB_OK.test(sim)) return { simbolo: sim, tipo: 'simbolo', txt: '«' + sim + '» no es un símbolo de bolsa válido' };
+    if (divisa && divisa !== 'USD' && !/\.[A-Z]{1,3}$/i.test(sim) && !/[=^]/.test(sim)) return { simbolo: sim, tipo: 'simbolo', txt: 'cotiza en ' + divisa + ' pero «' + sim + '» no lleva el sufijo de su bolsa (.PA, .MI, .MC…)' };
+    if (/429|limitad/.test(yh)) return { simbolo: sim, tipo: 'temporal', txt: 'Yahoo limitó las consultas: suele arreglarse solo en la siguiente descarga' };
+    if (/timeout|abort|fetch failed|econn|http 5\d\d/.test(yh)) return { simbolo: sim, tipo: 'temporal', txt: 'Error de conexión con Yahoo: suele arreglarse solo' };
+    return { simbolo: sim, tipo: 'simbolo', txt: 'Yahoo no encuentra «' + sim + '»: puede que el símbolo esté mal' };
+  }
+  /* items: [{tk, nombre, simbolo, divisa, ultimo:{precio, fecha}}] */
+  function promptPreciosIA(items, hoy) {
+    hoy = hoy || today();
+    return 'Necesito el último precio de cierre de estas acciones y su símbolo correcto en Yahoo Finance. Busca tú en internet (web de la bolsa, Yahoo Finance, Investing, Google Finance, MarketScreener); no me pidas datos.\n\n' +
+      items.map(x => '- ' + x.tk + ': ' + (x.nombre || x.tk) + (x.divisa ? ' · cotiza en ' + x.divisa : '') + ' · símbolo que uso ahora en Yahoo: «' + (x.simbolo || x.tk) + '»' + (x.ultimo && x.ultimo.precio ? ' · último precio que tengo: ' + x.ultimo.precio + ' ' + (x.divisa || '') + ' (' + (x.ultimo.fecha || 's/f') + ')' : '')).join('\n') +
+      '\n\nREGLAS\n1. Precio de cierre del último día con cotización (hoy es ' + hoy + '), en la divisa en que cotiza esa línea; si cotiza en peniques (GBp/GBX), pásalo a libras (GBP).\n' +
+      '2. El símbolo de Yahoo con el sufijo de su bolsa (p. ej. SOL.MI Milán, NRO.PA París, MIPS.ST Estocolmo, VID.MC Madrid, 2330.TW Taiwán; sin sufijo en EE. UU.). Si el que uso está bien, repítelo.\n' +
+      '3. Comprueba que es la misma empresa (nombre y bolsa) y que el precio cuadra con el último que tengo; si hay un salto grande, explica por qué (split, ampliación…).\n' +
+      '4. No inventes nada: si no encuentras un dato, pon null y explícalo en "nota".\n\n' +
+      'Devuelve al final un bloque JSON:\n{"precios":[{"ticker":"' + (items[0] ? items[0].tk : 'TICKER') + '","empresa":"…","simbolo_yahoo":"…","bolsa":"…","precio":0,"divisa":"EUR","fecha":"AAAA-MM-DD","fuente":"https://…","nota":""}]}';
+  }
+  /* Lee la respuesta: precios válidos (con fuente, fecha reciente, divisa esperada) y símbolos a corregir. No toca los datos. */
+  function leerPreciosIA(txt, items, hoy) {
+    hoy = hoy || today();
+    const j = jsonDeIA(txt, o => Array.isArray(o) ? o.some(x => x && (x.ticker || x.precio != null)) : Array.isArray(o.precios));
+    if (!j) throw new Error('No encuentro el JSON con «precios» en lo que has pegado. Pega la respuesta completa de la IA.');
+    const lista = Array.isArray(j) ? j : j.precios, ok = [], rechazados = [], avisos = [], vistos = new Set();
+    const num = x => { const n = typeof x === 'number' ? x : typeof x === 'string' ? Number(x.replace(/[^\d.,-]/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.')) : NaN; return isFinite(n) ? n : null; };
+    const porTk = {}; items.forEach(x => { porTk[x.tk.toUpperCase()] = x; });
+    lista.forEach(r => {
+      if (!r || typeof r !== 'object') return;
+      const it = porTk[String(r.ticker || '').trim().toUpperCase()] || items.find(x => r.empresa && x.nombre && coreName(x.nombre) && coreName(x.nombre) === coreName(r.empresa));
+      if (!it) { rechazados.push((r.ticker || r.empresa || '?') + ': no es ninguno de los que pedí'); return; }
+      if (vistos.has(it.tk)) return; vistos.add(it.tk);
+      const nota = r.nota ? ' (la IA dice: «' + String(r.nota).slice(0, 140) + '»)' : '';
+      let precio = num(r.precio), div = String(r.divisa || '').trim();
+      if (/^(GBp|GBX)$/.test(div) && precio != null) { precio /= 100; div = 'GBP'; }
+      div = div.toUpperCase();
+      const sim = String(r.simbolo_yahoo || r.simbolo || '').trim().toUpperCase(), simOk = SIMB_OK.test(sim), cambiaSim = simOk && sim !== String(it.simbolo || '').toUpperCase();
+      const dudoso = !!it.simbolo && formaDudosa(String(it.simbolo), it.divisa);   // el anterior estaba mal: se quita, no se deja de alternativa
+      const base = { tk: it.tk, nombre: it.nombre, simbolo: simOk ? sim : null, simboloAntes: it.simbolo, cambiaSim, quitarAntes: dudoso };
+      if (!(precio > 0)) { rechazados.push(it.tk + ': sin precio' + nota); if (cambiaSim) ok.push(Object.assign(base, { soloSimbolo: true })); return; }
+      if (!/^[A-Z]{3}$/.test(div)) { rechazados.push(it.tk + ': falta la divisa' + nota); return; }
+      if (it.divisa && div !== it.divisa) { rechazados.push(it.tk + ': la IA da el precio en ' + div + ' y tu valor cotiza en ' + it.divisa + ' (¿otra bolsa o un ADR?)' + nota); if (cambiaSim) ok.push(Object.assign(base, { soloSimbolo: true })); return; }
+      const fecha = String(r.fecha || '').trim();
+      if (!/^\d{4}-\d\d-\d\d$/.test(fecha) || isNaN(Date.parse(fecha))) { rechazados.push(it.tk + ': fecha no válida (' + (fecha || 'sin fecha') + ')'); return; }
+      const dias = diasDesde(fecha, hoy);
+      if (dias < 0) { rechazados.push(it.tk + ': fecha futura (' + fecha + ')'); return; }
+      if (dias > 10) { rechazados.push(it.tk + ': precio de hace ' + dias + ' días (' + fecha + '): demasiado viejo' + nota); return; }
+      if (!urlOk(String(r.fuente || ''))) { rechazados.push(it.tk + ': sin enlace a la fuente (sin fuente no se acepta)'); return; }
+      if (it.ultimo && it.ultimo.fecha && fecha < it.ultimo.fecha) { rechazados.push(it.tk + ': es más antiguo (' + fecha + ') que el que ya tienes (' + it.ultimo.fecha + ')'); return; }
+      if (!it.divisa) avisos.push(it.tk + ': no sé en qué divisa cotiza tu valor; la IA dice ' + div + '. Compruébalo.');
+      const salto = it.ultimo && it.ultimo.precio > 0 ? precio / it.ultimo.precio - 1 : null;
+      if (salto != null && Math.abs(salto) > 0.4) avisos.push(it.tk + ': cambia un ' + Math.round(salto * 100) + ' % frente a tu último precio (' + it.ultimo.precio + ' → ' + Math.round(precio * 100) / 100 + '). Compruébalo' + nota + '.');
+      ok.push(Object.assign(base, { precio, divisa: div, fecha, fuente: String(r.fuente).trim(), salto }));
+    });
+    items.filter(x => !vistos.has(x.tk)).forEach(x => rechazados.push(x.tk + ': la IA no lo devuelve'));
+    return { ok, rechazados, avisos };
+  }
+  /* simbolos.json con los símbolos corregidos delante (los que tenían espacios se quitan) */
+  function corregirSimbolos(cfg, cambios) {
+    const n = JSON.parse(JSON.stringify(cfg)), S = n.simbolos = n.simbolos || {}, hechos = [];
+    cambios.forEach(c => {
+      const tk = c.tk.replace('@ficha', ''), ficha = /@ficha$/.test(c.tk), e = S[tk] = S[tk] || { y: [] };
+      if (ficha) { if (e.ficha !== c.simbolo) { e.ficha = c.simbolo; hechos.push(c.tk + ' → ' + c.simbolo); } return; }
+      const y = (e.y || []).filter(x => SIMB_OK.test(x) && x.toUpperCase() !== c.simbolo && !(c.quitarAntes && c.simboloAntes && x.toUpperCase() === String(c.simboloAntes).toUpperCase()));
+      if ((e.y || [])[0] !== c.simbolo) { e.y = [c.simbolo].concat(y); hechos.push(tk + ' → ' + c.simbolo); }
+      delete e.pausa;
+    });
+    return { cfg: n, hechos };
+  }
+
   /* ───── Pesos y límites ───── */
   function pesos(d) {
     const filas = d.posiciones.map(p => ({ p, tk: tickerDe(d, p), eur: valorEur(d, p), sector: p.sector || (d.fichas[tickerDe(d, p)] || {}).sector || 'Sin sector' }));
@@ -923,7 +997,7 @@ const Logic = (function () {
     };
   }
 
-  return { jsonDeIA, resolverFuentes, urlOk, multiplosDeIA, objetosJSON, fotoDiaria, unirHistorico, isN, today, clone, nuevoDatos, normalizar, norm, coreName, sameCompany, findExisting, tickerDe, fxPorEur, aEur, precioPos, costeEur, mercadoEur, valorEur, variacion, diasDesde,
+  return { diagnosticoPrecio, promptPreciosIA, leerPreciosIA, corregirSimbolos, jsonDeIA, resolverFuentes, urlOk, multiplosDeIA, objetosJSON, fotoDiaria, unirHistorico, isN, today, clone, nuevoDatos, normalizar, norm, coreName, sameCompany, findExisting, tickerDe, fxPorEur, aEur, precioPos, costeEur, mercadoEur, valorEur, variacion, diasDesde,
     compra, venta, editar, eliminar, borrarMov, reverseMov, precioManual, precioFicha, matrizEntrada, auditoriaDivisas, provisional, promptBusqueda, extraerJSON, aplicarBusqueda, pendientesBusqueda, deshacerBusqueda, promptFase2, proponerMultiplos, aplicarMultiplos, deshacerMultiplos, calidadFichas, distorsion, previsualizarSoloFcf, aplicarSoloFcf, valoracion, renombrarTicker, tickerValido, claves, divisaCotizacion, mezclarManual, contrastar, lineasFaltantes, revision, precioRef, pesos, dashboard, informes, V };
 })();
 if (typeof module !== 'undefined') module.exports = Logic;

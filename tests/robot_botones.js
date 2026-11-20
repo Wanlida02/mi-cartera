@@ -61,6 +61,7 @@ async function run() {
   const elem = (scope, i) => pg.evaluateHandle(([sel, scope, i]) => { const R = document.querySelector(scope); const all = [...R.querySelectorAll(sel)].filter(el => { const r = el.getBoundingClientRect(); return (r.width > 0 || el.tagName === 'LABEL') && !el.closest('summary') && !(el.tagName === 'A' && !el.classList.contains('btn') && !el.hasAttribute('data-go')) && !el.matches('input,select,textarea,option'); })
     .filter((el, k, a) => !a.some(o => o !== el && o.contains(el) && o.matches('[data-pos],[data-inf],.row.click,[data-go]'))); return all[i]; }, [CAND, scope, i]);
   const pulsar = async (h, ruta) => {
+    if (await h.evaluate(el => el.disabled === true).catch(() => false)) return { ruta, nombre: await h.evaluate(el => el.textContent.trim()), r: 'ok (desactivado hasta tener datos)' };
     if (await h.evaluate(el => el.getAttribute('aria-pressed') === 'true').catch(() => false)) return { ruta, nombre: await h.evaluate(el => el.textContent.trim()), r: 'ok (ya seleccionado)' };   // pulsar la opción ya elegida no tiene que hacer nada
     const nombre = await h.evaluate(el => (el.textContent || el.getAttribute('aria-label') || el.title || '').trim().replace(/\s+/g, ' ').slice(0, 60) || el.outerHTML.slice(0, 60));
     await h.evaluate(el => el.scrollIntoView({ block: 'center' })).catch(() => {}); await pg.waitForTimeout(150);
