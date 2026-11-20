@@ -1,11 +1,7 @@
 {
- "generado": "2026-11-19",
+ "generado": "2026-11-20",
  "nota": "Fechas públicas de próximos resultados. confirmada=true: anunciada por la empresa. false: estimada (Nasdaq, o misma presentación del año anterior según la SEC); verifícala en la web de la empresa.",
  "fechas": {
-  "ESEA": {
-   "fecha": "2026-11-17",
-   "confirmada": false
-  },
   "CRWD": {
    "fecha": "2026-12-01",
    "confirmada": false,
