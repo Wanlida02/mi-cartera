@@ -1,5 +1,5 @@
 {
- "generado": "2026-11-17T12:23:50.219Z",
+ "generado": "2026-11-22T14:36:07.091Z",
  "nota": "Últimos 12 meses (10-Q) y último ejercicio anual (10-K) de la SEC. Solo empresas de EE. UU. con cuentas US-GAAP.",
  "empresas": {
   "ACMR": {
@@ -266,6 +266,52 @@
   },
   "ESEA": {
    "error": "No se encontraron ventas anuales (10-K) en la SEC."
+  },
+  "FDX": {
+   "nombre": "FedEx Corporation",
+   "ultimo_ejercicio": {
+    "anio": 2026,
+    "fin": "2026-05-31"
+   },
+   "ttm": null,
+   "anual": {
+    "anios": [
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025,
+     2026
+    ],
+    "ventas": [
+     60319,
+     65450,
+     69693,
+     69217,
+     83959,
+     93512,
+     90155,
+     87693,
+     87926,
+     94720
+    ],
+    "ebit": [
+     4566,
+     4272,
+     4466,
+     2417,
+     5857,
+     6245,
+     4912,
+     5559,
+     5217,
+     5463
+    ]
+   }
   },
   "FSLR": {
    "nombre": "First Solar, Inc.",
@@ -1560,12 +1606,6 @@
   },
   "COLLEGIUM PHARMACEUTICAL": {
    "error": "Ticker no válido"
-  },
-  "SOL SPA": {
-   "error": "Ticker no válido"
-  },
-  "NEURONES": {
-   "error": "«NEURONES» no está en la lista de la SEC: solo cubre empresas de EE. UU. Para otras, usa los informes anuales."
   },
   "BZU": {
    "error": "«BZU» no está en la lista de la SEC: solo cubre empresas de EE. UU. Para otras, usa los informes anuales."
