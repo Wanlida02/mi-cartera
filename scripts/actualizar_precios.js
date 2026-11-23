@@ -94,7 +94,7 @@ async function tencent(sym) {
   const r = await pedir('https://qt.gtimg.cn/q=' + q, 2); return leerTencent(Buffer.from(await r.arrayBuffer()).toString('latin1'), m[2] === 'SZ' || m[2] === 'SS' ? 'CNY' : 'HKD');
 }
 /* CNBC (JSON, sin clave; funciona desde GitHub). US: símbolo tal cual; resto: SIMBOLO-PAÍS */
-const CPAIS = { MC: ['ES', 'EUR'], PA: ['FR', 'EUR'], AT: ['GR', 'EUR'], TW: ['TW', 'TWD'], HK: ['HK', 'HKD'], L: ['GB', 'GBP'], DE: ['DE', 'EUR'], MI: ['IT', 'EUR'], AS: ['NL', 'EUR'], SW: ['CH', 'CHF'], T: ['JP', 'JPY'], SZ: ['CN', 'CNY'] };
+const CPAIS = { MC: ['ES', 'EUR'], PA: ['FR', 'EUR'], AT: ['GR', 'EUR'], TW: ['TW', 'TWD'], HK: ['HK', 'HKD'], L: ['GB', 'GBP'], DE: ['DE', 'EUR'], MI: ['IT', 'EUR'], AS: ['NL', 'EUR'], SW: ['CH', 'CHF'], T: ['JP', 'JPY'], SZ: ['CN', 'CNY'], ST: ['SE', 'SEK'], CO: ['DK', 'DKK'], OL: ['NO', 'NOK'], HE: ['FI', 'EUR'] };
 function leerCnbc(j, divDef) {
   const q = j && j.FormattedQuoteResult && j.FormattedQuoteResult.FormattedQuote && j.FormattedQuoteResult.FormattedQuote[0];
   if (!q || (q.code && q.code !== 0)) throw new Error('CNBC sin datos');
