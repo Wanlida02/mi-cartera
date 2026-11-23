@@ -262,13 +262,13 @@
     const d = D(), f = d.fichas[tk]; let j;
     j = await datosSEC(tk);
     if (!j || !j.anios || !j.hist) return U.toast('No hay datos de la SEC para ' + tk + ' (solo empresas de EE. UU.; el flujo semanal los genera)');
-    const an = (f.anios || []).map(Number), filas = [];
+    const an = (f.anios || []).map(Number), filas = [], off = L.desfaseSEC(f, j), iS = a => j.anios.indexOf(a - off);   // ejercicios que acaban en enero: la ficha los nombra un año después que la SEC
     CRITL.forEach(([k, nom]) => {
       const h = f.hist[k] || [], pares = [];
-      an.forEach((a, i) => { const x = h[i], y = (j.hist[k] || [])[j.anios.indexOf(a)]; if (isN(x) && isN(y)) pares.push({ a, x, y }); });
+      an.forEach((a, i) => { const x = h[i], y = (j.hist[k] || [])[iS(a)]; if (isN(x) && isN(y)) pares.push({ a, x, y }); });
       const ult = j.anios.length - 1, yS = (j.hist[k] || [])[ult], u3 = pares.slice(-3);
       const dif = u3.map(p => Math.abs(p.x - p.y) / Math.max(Math.abs(p.x), Math.abs(p.y), 1e-9));
-      const fichaUlt = h[an.length - 1], sec = j.hist[k] && j.hist[k][j.anios.indexOf(an[an.length - 1])];
+      const fichaUlt = h[an.length - 1], sec = j.hist[k] && j.hist[k][iS(an[an.length - 1])];
       let est, conf = (f.conf || {})[k];
       if (!isN(fichaUlt) && isN(sec)) est = 'falta'; else if (!isN(sec)) est = 'sin'; else if (u3.length >= 2 && dif.every(x => x <= 0.03)) est = 'coincide'; else if (u3.length) est = 'difiere'; else est = 'sin';
       filas.push({ k, nom, est, informe: fichaUlt, sec, conf, an: an[an.length - 1], max: dif.length ? Math.max.apply(null, dif) : null, sube: k === 'caja' && est === 'difiere' && isN(sec) && isN(fichaUlt) && sec > fichaUlt });
@@ -283,7 +283,7 @@
           const g = clone(f); g.conf = g.conf || {}; const ver = [], sub = [];
           filas.forEach(r => {
             const marcado = dd.querySelector('[data-sub="' + r.k + '"]'), usar = marcado && marcado.checked;
-            if (usar) { g.hist[r.k] = an.map((a, i) => { const y = (j.hist[r.k] || [])[j.anios.indexOf(a)]; return isN(y) ? y : (g.hist[r.k] || [])[i] != null ? g.hist[r.k][i] : null; }); g.conf[r.k] = 'P'; sub.push(r.nom); }
+            if (usar) { g.hist[r.k] = an.map((a, i) => { const y = (j.hist[r.k] || [])[iS(a)]; return isN(y) ? y : (g.hist[r.k] || [])[i] != null ? g.hist[r.k][i] : null; }); g.conf[r.k] = 'A'; sub.push(r.nom); }   // dato del 10-K: fuente primaria (antes «P» y contrastar de nuevo bajaba la fiabilidad)
             else if (r.est === 'coincide') { g.conf[r.k] = 'A'; ver.push(r.nom); }
           });
           g.notas = (g.notas || []).concat(['Contraste con la SEC el ' + hoy() + ': verificadas por coincidir con la SEC: ' + (ver.join(', ') || 'ninguna') + '. Sustituidas por el dato de la SEC: ' + (sub.join(', ') || 'ninguna') + '.']);
