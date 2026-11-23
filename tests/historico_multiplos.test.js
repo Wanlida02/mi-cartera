@@ -65,7 +65,7 @@ const srv = http.createServer((q, r) => { const p = path.join(root, q.url.split(
   await pg.goto('http://localhost:' + srv.address().port + '/'); await pg.click('#btn-ajustes'); await pg.setInputFiles('#a-imp', fn); await pg.waitForTimeout(800);
   await pg.click('[data-tab=valoracion]'); await pg.waitForTimeout(900); let t = await pg.textContent('#vista');
   assert(/1 fichas usan múltiplos genéricos/.test(t), 'VISTA: ' + t.slice(0, 500) + ' BODY: ' + (await pg.evaluate(() => document.body.innerText)).slice(0, 400));
-  await pg.click('[data-v=multglobal]'); await pg.waitForTimeout(600); const dl = await pg.evaluate(() => document.body.innerText); assert(/Múltiplos propios de 1 fichas/.test(dl) && /20,0x/.test(dl), 'DLG: ' + dl.slice(-700));
+  await pg.evaluate(() => document.querySelectorAll('details.vgrp').forEach(x => { x.open = true; })); await pg.click('[data-v=multglobal]'); await pg.waitForTimeout(600); const dl = await pg.evaluate(() => document.body.innerText); assert(/Múltiplos propios de 1 fichas/.test(dl) && /20,0x/.test(dl), 'DLG: ' + dl.slice(-700));
   assert(await pg.evaluate(() => Store.get().fichas.AAA.mult_hist.per) === 20);
   await pg.click('[data-a=cerrar]'); await pg.waitForTimeout(300); t = await pg.textContent('#vista'); assert(/Todas las fichas tienen múltiplos propios/.test(t) && /Deshacer los automáticos/.test(t), t.slice(0, 400));
   await pg.click('[data-v=deshacermult]'); await pg.waitForTimeout(400); assert(await pg.evaluate(() => Store.get().fichas.AAA.mult_hist) === undefined);

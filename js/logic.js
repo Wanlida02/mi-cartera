@@ -926,6 +926,12 @@ const Logic = (function () {
     return { cfg: n, hechos };
   }
 
+  /* ¿Estuvo en cartera? Por los movimientos guardados (la venta lleva la posición tal como estaba) y que hoy no está */
+  function estuvoEnCartera(d, tk) {
+    if (d.posiciones.some(p => tickerDe(d, p) === tk)) return false;
+    return d.movimientos.some(m => m && tickerDe(d, m.antes || { empresa: m.empresa, ticker: m.ticker }) === tk);
+  }
+
   /* ───── Pesos y límites ───── */
   function pesos(d) {
     const filas = d.posiciones.map(p => ({ p, tk: tickerDe(d, p), eur: valorEur(d, p), sector: p.sector || (d.fichas[tickerDe(d, p)] || {}).sector || 'Sin sector' }));
@@ -997,7 +1003,7 @@ const Logic = (function () {
     };
   }
 
-  return { diagnosticoPrecio, promptPreciosIA, leerPreciosIA, corregirSimbolos, jsonDeIA, resolverFuentes, urlOk, multiplosDeIA, objetosJSON, fotoDiaria, unirHistorico, isN, today, clone, nuevoDatos, normalizar, norm, coreName, sameCompany, findExisting, tickerDe, fxPorEur, aEur, precioPos, costeEur, mercadoEur, valorEur, variacion, diasDesde,
+  return { estuvoEnCartera, diagnosticoPrecio, promptPreciosIA, leerPreciosIA, corregirSimbolos, jsonDeIA, resolverFuentes, urlOk, multiplosDeIA, objetosJSON, fotoDiaria, unirHistorico, isN, today, clone, nuevoDatos, normalizar, norm, coreName, sameCompany, findExisting, tickerDe, fxPorEur, aEur, precioPos, costeEur, mercadoEur, valorEur, variacion, diasDesde,
     compra, venta, editar, eliminar, borrarMov, reverseMov, precioManual, precioFicha, matrizEntrada, auditoriaDivisas, provisional, promptBusqueda, extraerJSON, aplicarBusqueda, pendientesBusqueda, deshacerBusqueda, promptFase2, proponerMultiplos, aplicarMultiplos, deshacerMultiplos, calidadFichas, distorsion, previsualizarSoloFcf, aplicarSoloFcf, valoracion, renombrarTicker, tickerValido, claves, divisaCotizacion, mezclarManual, contrastar, lineasFaltantes, revision, precioRef, pesos, dashboard, informes, V };
 })();
 if (typeof module !== 'undefined') module.exports = Logic;

@@ -387,24 +387,40 @@
   U._lineasIA = { promptLineas, aplicarLineas, enlacesDatos };
 
   /* ───── Lista ───── */
+  /* Bloques plegables de la lista (calidad, grupos): se recuerda si los dejaste abiertos o cerrados */
+  const PLEG_K = 'mi-cartera:val-plegado', PLEG_DEF = { calidad: 0, cartera: 1, pasan: 1, excartera: 1, otras: 0, candidata: 1 };
+  let pleg = (() => { try { return Object.assign({}, PLEG_DEF, JSON.parse(localStorage.getItem(PLEG_K) || '{}')); } catch (e) { return Object.assign({}, PLEG_DEF); } })();
+  const bloque = (id, titulo, extra, cuerpo) => '<details class="vgrp" data-vg="' + id + '"' + (pleg[id] ? ' open' : '') + '><summary><span class="vg-t">' + titulo + '</span> ' + (extra || '') + '</summary>' + cuerpo + '</details>';
+  document.addEventListener('toggle', e => { const g = e.target && e.target.dataset && e.target.dataset.vg; if (!g) return; pleg[g] = e.target.open ? 1 : 0; try { localStorage.setItem(PLEG_K, JSON.stringify(pleg)); } catch (er) { } }, true);
   function vistaLista() {
     const d = D(), a = d.ajustes, q = L.norm(filtro), ks = Object.keys(d.fichas).filter(k => !q || L.norm(k + ' ' + (d.fichas[k].nombre || '')).includes(q));
     cargarSEC();
     const filas = ks.map(k => ({ k, est: estadoDe(k), v: L.valoracion(d, k, hoy()) })).filter(x => x.v);
-    const grupos = [['cartera', 'En cartera'], ['watchlist', 'Watchlist'], ['candidata', 'Candidatas']];
+    /* Watchlist: solo las que pasan el cribado y las que estuvieron en cartera (dos grupos); el resto, plegado aparte */
+    const pasa = k => !!(U.cribadoPasa && U.cribadoPasa(k)), exC = k => L.estuvoEnCartera(d, k);
+    const grupoDe = x => x.est === 'cartera' ? 'cartera' : x.est === 'candidata' ? 'candidata' : pasa(x.k) ? 'pasan' : exC(x.k) ? 'excartera' : 'otras';
+    const pend = Object.keys(d.cribado || {}).filter(k => !d.fichas[k] && pasa(k) && (!q || L.norm(k + ' ' + (d.cribado[k].nombre || '')).includes(q))).sort();
+    const grupos = [['cartera', 'En cartera', ''], ['pasan', 'Watchlist · pasan el cribado', 'Empresas fuera de tu cartera que pasan el cribado (también las que pasaste tú a mano).'], ['excartera', 'Watchlist · estuvieron en cartera', 'Las vendiste: sigue su valoración por si vuelven a estar baratas.'],
+      ['candidata', 'Candidatas', ''], ['otras', 'Otras fichas', 'Fuera de cartera, sin pasar el cribado y sin haber estado en cartera: no salen en la watchlist.']];
     let h = (U.lineaPrecios ? U.lineaPrecios() : '') + '<div class="tools"><button class="btn" data-v="nueva">+ Nueva ficha</button><button class="btn sec" data-v="releer" title="Vuelve a leer el índice de informes y rehace las fichas borrador">↻ Releer informes</button><input id="v-q" type="search" placeholder="Buscar" value="' + esc(filtro) + '"></div>';
-    h += panelCalidad(d) + calidadHtml(d);
-    grupos.forEach(([g, t]) => {
-      const rows = filas.filter(x => x.est === g).sort((x, y) => (y.v.ref == null ? -9 : y.v.ref) - (x.v.ref == null ? -9 : x.v.ref));
-      if (!rows.length) return;
-      h += '<h3 style="margin:14px 2px 6px">' + t + ' <span class="mut small">' + rows.length + '</span></h3><div class="card">' + rows.map(({ k, v }) => {
-        if (v.noSoportado || v.error) return '<div class="row click" data-v="abrir" data-k="' + esc(k) + '"><div class="main"><div class="name">' + esc(v.nombre) + '</div><div class="meta">' + esc(k) + (v.incompleta ? ' · <span class="pill warn">ficha incompleta</span> faltan ' + esc(v.incompleta.join(', ')) : v.error ? ' · error: ' + esc(v.error) : ' · tipo no soportado') + '</div></div></div>';
-        return '<div class="row click" data-v="abrir" data-k="' + esc(k) + '"><div class="main"><div class="name">' + esc(v.nombre) + calPill(k) + (v.graves ? ' <span class="pill warn">datos dudosos</span>' : '') + ((secDe(k, d.fichas[k]) || {}).nuevo ? ' <span class="pill">ejercicio ' + secDe(k, d.fichas[k]).nuevo + ' publicado</span>' : '') + (U.etiquetasResultados ? U.etiquetasResultados(k) : '') + '</div>' +
-          '<div class="meta">' + esc(k) + ' · ' + nf(v.precio, 2) + ' ' + esc(v.divisa) + (v.entrada ? ' · entrada ' + nf(v.entrada, 2) : '') + '</div></div>' +
-          '<div class="num"><span class="pill ' + tono(v.ref, a) + '">' + (v.ref == null ? '—' : pc(v.ref)) + '</span><div class="meta">anual · 5 años</div></div></div>';
-      }).join('') + '</div>';
+    const cal = panelCalidad(d) + calidadHtml(d), nc = x => CAL.filter(c => c.nivel === x).length;
+    if (cal) h += bloque('calidad', 'Calidad de las fichas', '<span class="small"><span class="pill bad">' + nc('r') + ' poco fiables</span> <span class="pill warn">' + nc('y') + ' a revisar</span></span>', cal);
+    const fila = ({ k, v }) => {
+      const extra = (grupoDe({ k, est: estadoDe(k) }) === 'pasan' && exC(k) ? ' <span class="pill">estuvo en cartera</span>' : '');
+      if (v.noSoportado || v.error) return '<div class="row click" data-v="abrir" data-k="' + esc(k) + '"><div class="main"><div class="name">' + esc(v.nombre) + extra + '</div><div class="meta">' + esc(k) + (v.incompleta ? ' · <span class="pill warn">ficha incompleta</span> faltan ' + esc(v.incompleta.join(', ')) : v.error ? ' · error: ' + esc(v.error) : ' · tipo sin método') + '</div></div></div>';
+      return '<div class="row click" data-v="abrir" data-k="' + esc(k) + '"><div class="main"><div class="name">' + esc(v.nombre) + extra + calPill(k) + (v.graves ? ' <span class="pill warn">datos dudosos</span>' : '') + ((secDe(k, d.fichas[k]) || {}).nuevo ? ' <span class="pill">ejercicio ' + secDe(k, d.fichas[k]).nuevo + ' publicado</span>' : '') + '</div>' +
+        '<div class="meta">' + esc(k) + ' · ' + nf(v.precio, 2) + ' ' + esc(v.divisa) + (v.entrada ? ' · entrada ' + nf(v.entrada, 2) : '') + '</div></div>' +
+        '<div class="num"><span class="pill ' + tono(v.ref, a) + '">' + (v.ref == null ? '—' : pc(v.ref)) + '</span><div class="meta">anual · 5 años</div></div></div>';
+    };
+    grupos.forEach(([g, t, ayuda]) => {
+      const rows = filas.filter(x => grupoDe(x) === g).sort((x, y) => (y.v.ref == null ? -9 : y.v.ref) - (x.v.ref == null ? -9 : x.v.ref));
+      const pp = g === 'pasan' ? pend : [];
+      if (!rows.length && !pp.length) return;
+      h += bloque(g, t, '<span class="mut small">' + (rows.length + pp.length) + (pp.length ? ' · ' + pp.length + ' pendiente' + (pp.length > 1 ? 's' : '') : '') + '</span>',
+        (ayuda ? '<p class="small mut vg-ayuda">' + ayuda + '</p>' : '') + '<div class="card">' + rows.map(fila).join('') +
+        pp.map(k => '<div class="row"><div class="main"><div class="name">' + esc(d.cribado[k].nombre || k) + ' <span class="pill warn">pendiente</span></div><div class="meta">' + esc(k) + ' · pasa el cribado pero aún no tiene ficha de valoración</div></div><button class="btn sm" data-v="nuevade" data-k="' + esc(k) + '">Crear ficha</button></div>').join('') + '</div>');
     });
-    if (!filas.length) h += '<div class="card empty">' + (ks.length ? 'Sin resultados.' : 'Aún no hay fichas. Importa tus datos o crea una nueva.') + '</div>';
+    if (!filas.length && !pend.length) h += '<div class="card empty">' + (ks.length ? 'Sin resultados.' : 'Aún no hay fichas. Importa tus datos o crea una nueva.') + '</div>';
     return h;
   }
 
@@ -519,8 +535,9 @@
       '},"precio_actual":n,"dividend_yield":0.0,"notas":["avisos útiles: reexpresiones, partidas puntuales…"],"dudas":["cifras de las que no estés seguro"]}\nCada serie tiene EXACTAMENTE tantos valores como "anios" (orden ascendente, años de cierre del ejercicio) y null donde falte el dato. Importes en MILLONES de la divisa de reporte; acciones en millones; intereses, impuestos y capex en positivo. ' +
       'Usa solo datos de los informes anuales (10-K/20-F/memoria) y no inventes ninguno. Deja null lo que no encuentres.';
   }
-  function nuevaDlg() {
-    U.dlg('<h2>Nueva ficha</h2><div class="f2">' + U.campo('n-tk', 'Ticker', '', 'text', 'autocapitalize="characters"') + U.campo('n-nom', 'Nombre', '') + U.campo('n-div', 'Divisa de reporte', 'USD') +
+  function nuevaDlg(tk0) {
+    const c0 = tk0 && (D().cribado || {})[tk0];
+    U.dlg('<h2>Nueva ficha</h2><div class="f2">' + U.campo('n-tk', 'Ticker', tk0 || '', 'text', 'autocapitalize="characters"') + U.campo('n-nom', 'Nombre', c0 && c0.nombre || '') + U.campo('n-div', 'Divisa de reporte', 'USD') +
       '<div><label for="n-tipo">Tipo</label><select id="n-tipo"><option value="industrial">Empresa normal</option><option value="banco">Banco</option><option value="seguro">Aseguradora</option><option value="arrendador">Arrendador</option></select></div></div>' +
       '<p class="small mut">Crea la ficha vacía y rellena las cuentas a mano, o pega el JSON de una IA (usa «Copiar prompt», pégalo en el asistente junto con el informe anual y vuelve con la respuesta).</p>' +
       '<div class="tools"><button class="btn sec sm" id="n-cp">Copiar prompt</button></div><label>JSON de la IA (opcional)</label><textarea id="n-json" rows="5" placeholder="{...}"></textarea>' +
@@ -565,6 +582,7 @@
   U.clicks.push(e => {
     const t = e.target.closest('[data-v]'); if (!t) return false; const a = t.dataset.v, d = D();
     if (a === 'nueva') nuevaDlg();
+    else if (a === 'nuevade') nuevaDlg(t.dataset.k);
     else if (a === 'cal') accionCal(t.dataset.k, t.dataset.ac);
     else if (a === 'multglobal') calcularMult(null);
     else if (a === 'multpropios') calcularMult([sel]);

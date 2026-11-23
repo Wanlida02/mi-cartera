@@ -49,7 +49,7 @@ const srv = http.createServer((q, r) => { const p = path.join(root, q.url.split(
   assert(/Calidad de las fichas/.test(t) && /Valorar solo con el flujo de caja/.test(t) && /Calcular múltiplos propios/.test(t) && /Cifras con una IA/.test(t), 'PANEL: ' + t.slice(0, 900));
   // acción: flujo de caja (vista previa → aplicar)
   const abre = () => pg.evaluate(() => document.querySelectorAll('details.cal-f').forEach(x => { x.open = true; }));
-  await abre(); await pg.click('button[data-ac=solofcf]'); await pg.waitForTimeout(400); let dl = await pg.evaluate(() => document.body.innerText); assert(/solo con el flujo de caja/.test(dl) && /Rentabilidad a 5 años/.test(dl), dl.slice(-600));
+  await abre(); await pg.evaluate(() => document.querySelectorAll('details.vgrp').forEach(x => { x.open = true; })); await pg.click('button[data-ac=solofcf]'); await pg.waitForTimeout(400); let dl = await pg.evaluate(() => document.body.innerText); assert(/solo con el flujo de caja/.test(dl) && /Rentabilidad a 5 años/.test(dl), dl.slice(-600));
   await pg.click('#v-sf-ok'); await pg.waitForTimeout(500); assert(await pg.evaluate(() => Store.get().fichas.AAA.solo_fcf) === true);
   t = await pg.textContent('#vista'); assert(/Volver al método normal/.test(t) && !/Valorar solo con el flujo de caja/.test(t), t.slice(0, 700));
   // acción: 12 meses fuera de la SEC → diálogo de IA

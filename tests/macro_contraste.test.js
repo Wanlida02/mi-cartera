@@ -21,7 +21,7 @@ const srv = http.createServer((q, r) => { const p = path.join(root, q.url.split(
   await pg.route('**/datos/resumen.json*', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ empresas: {} }) }));
   await pg.route('**/datos/macro.json*', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(macro) }));
   await pg.goto('http://localhost:' + srv.address().port + '/'); await pg.click('#btn-ajustes'); await pg.setInputFiles('#a-imp', fn); await pg.waitForTimeout(800);
-  await pg.click('[data-tab=valoracion]'); await pg.waitForTimeout(700); await pg.click('[data-v=abrir][data-k=CCC]'); await pg.waitForTimeout(900);
+  await pg.click('[data-tab=valoracion]'); await pg.waitForTimeout(700); await pg.evaluate(() => document.querySelectorAll('details.vgrp').forEach(x => { x.open = true; })); await pg.click('[data-v=abrir][data-k=CCC]'); await pg.waitForTimeout(900);
   const t = await pg.textContent('#vista');
   assert(/Contraste/.test(t) && /frente a/.test(t), 'contraste 12 meses: ' + t.slice(0, 1500));
   assert(/Entorno de tipos/.test(t) && /Entorno exigente/.test(t) && /diferencial de crédito/.test(t), 'aviso de tipos: ' + t.slice(0, 1500));

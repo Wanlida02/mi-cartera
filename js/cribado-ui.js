@@ -29,8 +29,13 @@
   }
   function evaluar(tk) {
     const d = D(), c = d.cribado[tk], p = precioDe(tk, c), inp = { precio: p ? p.precio : null, Y: d.ajustes.bono10 || 4.4, fx: d.ajustes.fx.USD || 1.15 };
-    const R = C.evaluate(c, inp, pfDeCartera(tk), tk); R.px = p; return R;
+    const R = C.evaluate(c, inp, pfDeCartera(tk), tk); R.px = p;
+    /* Paso manual: una empresa en «Vigilar» que tú decides pasar. Se guarda con fecha y nota; si el cálculo pasa a «Descartar», no se aplica (y se avisa) */
+    const pm = c.paso_manual;
+    if (pm) { R.calculado = R.veredicto; if (/^Vigilar/.test(R.veredicto)) { R.manual = pm; R.veredicto = 'Pasa el cribado · a mano'; R.tono = 'g'; R.sub = 'La pasaste tú el ' + pm.fecha + (pm.nota ? ': «' + pm.nota + '»' : '') + '. Según el cálculo: ' + R.calculado + '. ' + R.sub; } else if (/^Descartar/.test(R.veredicto)) R.manualIgnorado = pm; }
+    return R;
   }
+  U.cribadoPasa = tk => { try { return !!((D().cribado || {})[tk]) && catVer(tk) === 'pasa'; } catch (e) { return false; } };   // para la watchlist de Valoración
   function capEur(f) { const d = D(); return f && L.isN(f.precio) && f.hist && L.isN((f.hist.acciones || []).slice(-1)[0]) ? L.aEur(d, f.precio * f.hist.acciones.slice(-1)[0], f.divisa) : null; }
   function desdeFicha(tk, quiet) {
     const d = D(), f = d.fichas[tk]; if (!f) return { ok: false, msg: 'No hay ficha de valoración de ' + tk };
@@ -131,6 +136,15 @@
     return h;
   }
 
+  function pasarDlg(tk) {
+    const R = evaluar(tk);
+    U.dlg('<h2>Pasar ' + esc(tk) + ' a «Pasan el cribado»</h2><p class="small">Según el cálculo está en <b>' + esc(R.veredicto) + '</b> (calidad ' + (R.calidad == null ? '—' : nf(R.calidad, 0) + ' %') + '). Quedará marcada como pasada por ti, con la fecha y tu nota, y la podrás devolver a «Vigilar» cuando quieras.</p>' +
+      '<label for="pm-n">Por qué la pasas (opcional)</label><textarea id="pm-n" rows="3" placeholder="p. ej. el múltiplo está inflado por un año extraordinario"></textarea>' +
+      '<div class="acts"><button class="btn sec" data-a="cerrar">Cancelar</button><button class="btn" id="pm-ok">Pasar al grupo</button></div>', dd => {
+      dd.querySelector('#pm-ok').onclick = () => { const nota = dd.querySelector('#pm-n').value.trim().slice(0, 300); D().cribado[tk].paso_manual = { fecha: hoy(), nota, antes: R.veredicto }; U.guardar({ ok: true, msg: tk + ' pasa al grupo «Pasan el cribado» (a mano)' }); };
+    });
+  }
+
   /* ───── Informe ───── */
   const count = a => { const c = { g: 0, y: 0, r: 0, n: 0, i: 0 }; a.forEach(x => c[x.estado]++); return c; };
   const cntTxt = c => [c.g ? c.g + ' ✓' : '', c.y ? c.y + ' !' : '', c.r ? c.r + ' ✕' : '', c.n ? c.n + ' sin dato' : ''].filter(Boolean).join('  ');
@@ -180,7 +194,9 @@
     const px = R.px ? nf(R.px.precio, 2) + ' ' + esc(c.divisa_cotizacion || d.fichas[sel] && d.fichas[sel].divisa || '') + ' · ' + esc(R.px.fuente) : 'sin precio';
     let h = '<button class="btn sec sm" data-c="volver">← Cribado</button>' +
       '<div class="card" style="margin-top:10px;border-left:6px solid var(--' + ({ g: 'ok', y: 'warn', r: 'bad', n: 'mut' }[R.tono]) + ')"><div class="meta">' + esc(sel) + (c.nombre ? ' — ' + esc(c.nombre) : '') + '</div>' + (U.enlaces ? U.enlaces(sel, 'cri') : '') +
-      '<h2 style="font-size:22px;margin:4px 0">' + esc(R.veredicto) + (R.provisional ? ' (provisional)' : '') + '</h2><p style="margin:0 0 8px">' + esc(R.sub) + '</p><div class="chips">' + chips + '</div>' +
+      '<h2 style="font-size:22px;margin:4px 0">' + esc(R.veredicto) + (R.provisional ? ' (provisional)' : '') + '</h2><p style="margin:0 0 8px">' + esc(R.sub) + '</p>' +
+      (R.manual ? '<div class="tools" style="margin:0 0 8px"><button class="btn sec sm" data-c="despasar">Volver a «Vigilar» (quitar el paso manual)</button></div>' : /^Vigilar/.test(R.veredicto) ? '<div class="tools" style="margin:0 0 8px"><button class="btn sm" data-c="pasar">Pasar a «Pasan el cribado»</button></div>' : '') +
+      (R.manualIgnorado ? '<div class="alert warn">La pasaste a mano el ' + esc(R.manualIgnorado.fecha) + ', pero con los datos actuales se descarta: el paso manual no se aplica. <button class="btn sec sm" data-c="despasar">Quitar el paso manual</button></div>' : '') + '<div class="chips">' + chips + '</div>' +
       '<div style="margin-top:10px"><div class="small" style="display:flex;justify-content:space-between"><span>Calidad (A, B, C' + (R.S.length ? ', S' : '') + ')</span><b>' + (R.calidad == null ? '—' : nf(R.calidad, 0) + ' %') + '</b></div>' + barH(cc, calif.filter(x => x.estado !== 'n').length) +
       '<div class="small" style="display:flex;justify-content:space-between;margin-top:8px"><span>Múltiplo (D1, D3)</span><b>' + (R.precioPct == null ? '—' : nf(R.precioPct, 0) + ' %') + '</b></div>' + barH(cd, cd.g + cd.y + cd.r) + '</div>' +
       '<p class="small mut" style="margin:8px 0 0">Precio: ' + px + '</p></div>' +
@@ -402,6 +418,8 @@
     else if (a === 'cribartodas') { const d = D(); let n = 0; Object.keys(d.fichas).filter(k => !d.cribado[k] && !d.posiciones.some(p => L.tickerDe(d, p) === k)).forEach(k => { d.cribado[k] = { ticker: k, nombre: d.fichas[k].nombre, origen: 'ficha' }; if (desdeFicha(k, true).ok) n++; else delete d.cribado[k]; }); Store.save(); U.render(); U.toast(n + ' candidatas cribadas'); }
     else if (a === 'ficha') { const r = desdeFicha(sel); if (r.ok) { Store.save(); U.render(); } U.toast(r.msg); }
     else if (a === 'verif') { const c = D().cribado[sel]; if (confirm('¿Confirmas que has contrastado estos datos con el informe anual o una fuente fiable? Pasarán a «verificados» con fecha de hoy.')) { c.origen = 'verificado'; c.fecha_verificacion = hoy(); U.guardar({ ok: true, msg: 'Marcados como verificados hoy' }); } }
+    else if (a === 'pasar') pasarDlg(sel);
+    else if (a === 'despasar') { const k = sel; U.conDeshacer(() => { delete D().cribado[k].paso_manual; return { ok: true, msg: k + ' vuelve a su veredicto calculado' }; }); }
     else if (a === 'borrar') { U.conDeshacer(() => { const k = sel; delete D().cribado[k]; sel = null; return { ok: true, msg: 'Cribado de ' + k + ' eliminado (la ficha de valoración no se toca)' }; }); }
     else return false;
     return true;
