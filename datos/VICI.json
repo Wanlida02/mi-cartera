@@ -1,0 +1,276 @@
+{
+ "ticker": "VICI",
+ "nombre": "VICI Properties Inc.",
+ "cik": "0001705696",
+ "divisa": "USD",
+ "generado": "2026-11-23T12:43:18.688Z",
+ "fuente": "SEC EDGAR (XBRL, 10-K)",
+ "anios": [
+  2017,
+  2018,
+  2019,
+  2020,
+  2021,
+  2022,
+  2023,
+  2024,
+  2025
+ ],
+ "hist": {
+  "ventas": [
+   187.609,
+   897.977,
+   894.798,
+   1225.574,
+   1509.568,
+   2600.697,
+   3611.988,
+   3849.205,
+   4006.116
+  ],
+  "ebit": [
+   144.196,
+   140.023,
+   52.299,
+   321.018,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "da": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "intereses": [
+   63.354,
+   212.663,
+   248.384,
+   308.605,
+   392.39,
+   539.953,
+   818.056,
+   826.097,
+   843.614
+  ],
+  "impuestos": [
+   -1.901,
+   1.441,
+   1.705,
+   0.831,
+   2.887,
+   2.876,
+   -6.141,
+   9.704,
+   2.435
+  ],
+  "minoritarios": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "otros": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "acciones": [
+   null,
+   367.317,
+   439.153,
+   510.909,
+   577.066,
+   879.676,
+   1015.777,
+   1047.675,
+   1062.693
+  ],
+  "capex": [
+   null,
+   0.899,
+   2.724,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "leases": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "caja": [
+   183.646,
+   1098.76,
+   1161.367,
+   335.966,
+   739.614,
+   426.275,
+   522.574,
+   524.615,
+   607.9630000000001
+  ],
+  "deuda": [
+   4122.264,
+   4122.264,
+   4791.563,
+   6765.532,
+   4694.523,
+   13739.675,
+   16724.125,
+   16732.889,
+   16773.241
+  ],
+  "leases_deuda": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "goodwill": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "equity": [
+   4691.489,
+   6817.449,
+   7965.183,
+   9415.839,
+   12108.268,
+   21933.637,
+   25255.931,
+   26537.955,
+   27797.64
+  ],
+  "ni_reportado": [
+   44.537,
+   523.619,
+   545.964,
+   891.674,
+   1013.851,
+   1117.635,
+   2513.54,
+   2678.81,
+   2775.493
+  ],
+  "fco": [
+   null,
+   504.082,
+   682.159,
+   883.64,
+   896.35,
+   1943.396,
+   2181.009,
+   2381.498,
+   2509.991
+  ],
+  "sbc": [
+   null,
+   2.342,
+   5.223,
+   7.388,
+   9.371,
+   12.986,
+   15.536,
+   17.511,
+   16.195
+  ],
+  "dividendos": [
+   null,
+   262.682,
+   503.958,
+   612.205,
+   758.79,
+   1219.117,
+   1583.84,
+   1752.991,
+   1853.467
+  ],
+  "recompras": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "bpa": [
+   null,
+   1.43,
+   1.24,
+   1.75,
+   1.76,
+   1.27,
+   2.47,
+   2.56,
+   2.61
+  ]
+ },
+ "ttm": {
+  "fin": "2026-09-30",
+  "ventas": 4155.6,
+  "ni_reportado": 2346.212
+ },
+ "ultimo_ejercicio": {
+  "anio": 2025,
+  "fin": "2025-12-31"
+ },
+ "precio": {
+  "precio": 24.2,
+  "divisa": "USD",
+  "fecha": "2026-11-20"
+ },
+ "notas": [
+  "Datos automáticos de la SEC (XBRL de los 10-K). Revísalos contra el informe anual antes de decidir: pueden faltar líneas o haber reexpresiones.",
+  "Caja = efectivo + inversiones a corto plazo; deuda = deuda financiera (sin arrendamientos). Intereses = gasto bruto (no netos de ingresos). Minoritarios, otros y arrendamientos van a 0 o sin dato: complétalos si importan.",
+  "Líneas sin datos en la SEC: da, goodwill, recompras."
+ ],
+ "faltan": [
+  "da",
+  "goodwill",
+  "recompras"
+ ]
+}
