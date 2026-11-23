@@ -1,6 +1,9 @@
 /* Múltiplos propios (histórico de precios) y auditoría de divisas. Autocontenido. */
 const assert = require('assert'), { chromium } = require('playwright'), http = require('http'), fs = require('fs'), path = require('path');
 global.Val = require('../js/val.js'); const L = require('../js/logic.js'), V = global.Val, H = require('../scripts/historico_precios.js');
+/* Serie de Londres en peniques con precio en libras (ATYM): se pasa a libras; si ya cuadra o no es GBP, no se toca */
+assert.deepEqual(H.peniques({ cierres: { '2026-10': 700, '2026-11': 709 }, divisa: 'GBP' }, { precio: 7.575, divisa: 'GBP' }).cierres, { '2026-10': 7, '2026-11': 7.09 });
+assert.deepEqual(H.peniques({ cierres: { '2026-11': 709 } , divisa: 'USD' }, { precio: 7.5, divisa: 'USD' }).cierres, { '2026-11': 709 });
 const near = (a, b, t, m) => assert(Math.abs(a - b) <= t, m + ': ' + a + ' vs ' + b);
 // ── Parser de Yahoo ──
 const ts = []; for (let y = 2014; y <= 2026; y++) for (let m = 1; m <= 12; m++) ts.push(Date.UTC(y, m - 1, 1, 14) / 1000);
