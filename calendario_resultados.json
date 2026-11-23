@@ -1,12 +1,12 @@
 {
- "generado": "2026-11-20",
+ "generado": "2026-11-23",
  "nota": "Fechas públicas de próximos resultados. confirmada=true: anunciada por la empresa. false: estimada (Nasdaq, o misma presentación del año anterior según la SEC); verifícala en la web de la empresa.",
  "fechas": {
   "CRWD": {
    "fecha": "2026-12-01",
    "confirmada": false,
    "fuente": "SEC: misma fecha del año anterior",
-   "ultima": "2026-08-26"
+   "ultima": "2026-11-23"
   },
   "AZO": {
    "fecha": "2026-12-08",
@@ -221,6 +221,36 @@
    "confirmada": false,
    "fuente": "SEC: misma fecha del año anterior",
    "ultima": "2026-11-17"
+  },
+  "FDX": {
+   "fecha": "2026-12-17",
+   "confirmada": false,
+   "fuente": "SEC: misma fecha del año anterior",
+   "ultima": "2026-10-28"
+  },
+  "AVAV": {
+   "fecha": "2026-12-08",
+   "confirmada": false,
+   "fuente": "SEC: misma fecha del año anterior",
+   "ultima": "2026-09-09"
+  },
+  "VICI": {
+   "fecha": "2027-02-24",
+   "confirmada": false,
+   "fuente": "SEC: misma fecha del año anterior",
+   "ultima": "2026-10-28"
+  },
+  "CTRE": {
+   "fecha": "2027-02-11",
+   "confirmada": false,
+   "fuente": "SEC: misma fecha del año anterior",
+   "ultima": "2026-11-05"
+  },
+  "REPX": {
+   "fecha": "2027-03-03",
+   "confirmada": false,
+   "fuente": "SEC: misma fecha del año anterior",
+   "ultima": "2026-11-04"
   }
  }
 }
