@@ -139,6 +139,40 @@ async function pedir(url) {
   let ult; for (let i = 0; i < 3; i++) { try { const r = await fetch(url, { headers: UA, signal: AbortSignal.timeout(30000) }); if (r.ok) return r; ult = new Error('HTTP ' + r.status + ' en ' + url); if (r.status === 404) break; } catch (e) { ult = e; } await esperar(1500 * (i + 1)); }
   throw ult;
 }
+/* Complemento con los estados del último 10-K (FilingSummary → R*.htm) para lo que no está en los datos estructurados (companyfacts):
+   p. ej. NVIDIA etiqueta sus «Marketable securities» de FY2026 con una etiqueta propia y CareTrust no etiqueta sus mejoras de inmuebles.
+   Solo toca el último ejercicio y anota de dónde sale cada cifra. */
+function filasR(html) {
+  const txt = s => s.replace(/<[^>]+>/g, ' ').replace(/&nbsp;|&#160;/g, ' ').replace(/&amp;/g, '&').replace(/&#8217;|&rsquo;/g, "'").replace(/\s+/g, ' ').trim();
+  const esc = /In Millions/i.test(html) ? 1 : /In Thousands/i.test(html) ? 1e-3 : /In Billions/i.test(html) ? 1e3 : 1e-6;
+  const filas = [];
+  (html.match(/<tr[^>]*>[\s\S]*?<\/tr>/g) || []).forEach(tr => {
+    const tds = (tr.match(/<td[^>]*>[\s\S]*?<\/td>/g) || []).map(txt); if (tds.length < 2) return;
+    const nums = tds.slice(1).map(x => { const m = /^\$?\s*(\(?)\$?\s*([\d,]+(?:\.\d+)?)\s*\)?$/.exec(x); return m ? (m[1] ? -1 : 1) * Number(m[2].replace(/,/g, '')) * esc : null; });
+    if (nums[0] != null) filas.push({ et: tds[0], v: nums[0] });
+  });
+  return filas;
+}
+async function complementoEstados(cik, r, notas) {
+  const sub = await (await pedir('https://data.sec.gov/submissions/CIK' + cik + '.json')).json(), rec = sub.filings && sub.filings.recent; if (!rec) return;
+  const i = rec.form.findIndex(f => f === '10-K'); if (i < 0) return;
+  const acc = rec.accessionNumber[i].replace(/-/g, ''), base = 'https://www.sec.gov/Archives/edgar/data/' + Number(cik) + '/' + acc + '/', fin = rec.reportDate[i];
+  const n = r.anios.length - 1; if (!r.ultimo || r.ultimo.fin !== fin || Number(r.anios[n]) !== Number(r.ultimo.anio)) return;   // el último 10-K tiene que ser el último ejercicio de la serie
+  const fs0 = await (await pedir(base + 'FilingSummary.xml')).text();
+  const reps = [...fs0.matchAll(/<Report[^>]*>([\s\S]*?)<\/Report>/g)].map(m => ({ nombre: (/<ShortName>([^<]*)<\/ShortName>/.exec(m[1]) || [])[1] || '', html: (/<HtmlFileName>([^<]*)<\/HtmlFileName>/.exec(m[1]) || [])[1] }));
+  const busca = re => reps.find(x => x.html && re.test(x.nombre) && !/parenthetical|details|tables|policies/i.test(x.nombre));
+  const bal = busca(/balance sheet|financial (position|condition)/i), flu = busca(/cash flows/i), r1 = x => Math.round(x * 1000) / 1000;
+  if (bal) {
+    const F = filasR(await (await pedir(base + bal.html)).text());
+    const efe = F.find(x => /^cash and cash equivalents$/i.test(x.et)), inv = F.find(x => /^(marketable securities|short-term investments|investments, current|available-for-sale securities)$/i.test(x.et));
+    if (efe && inv && r.hist.caja[n] != null && Math.abs(r.hist.caja[n] - efe.v) < 0.005 * efe.v + 0.5) { r.hist.caja[n] = r1(efe.v + inv.v); notas.push('Caja ' + r.anios[n] + ': efectivo ' + efe.v + ' + «' + inv.et + '» ' + inv.v + ', del balance del 10-K (' + base + bal.html + '); no estaba en los datos estructurados.'); }
+  }
+  if (flu && r.hist.capex[n] == null) {
+    const F = filasR(await (await pedir(base + flu.html)).text());
+    const c = F.find(x => /^(purchases? of property(, plant)? and equipment|capital expenditures|purchases? of equipment, furniture,? and fixtures and improvements to real estate|improvements to real estate|purchases? of property, equipment and intangible assets|purchases related to property and equipment)/i.test(x.et));
+    if (c) { r.hist.capex[n] = r1(Math.abs(c.v)); notas.push('Capex ' + r.anios[n] + ': «' + c.et + '» ' + Math.abs(c.v) + ', del estado de flujos del 10-K (' + base + flu.html + ').'); }
+  }
+}
 async function principal(tk, opc = {}) {
   tk = String(tk || '').trim().toUpperCase(); if (!/^[A-Z0-9.\-]{1,10}$/.test(tk)) throw new Error('Ticker no válido');
   const mapa = opc.mapa || await (await pedir('https://www.sec.gov/files/company_tickers.json')).json();
@@ -146,6 +180,7 @@ async function principal(tk, opc = {}) {
   if (!e) throw new Error('«' + tk + '» no está en la lista de la SEC: solo cubre empresas de EE. UU. Para otras, usa los informes anuales.');
   const cik = String(e.cik_str).padStart(10, '0');
   const r = construir(await (await pedir('https://data.sec.gov/api/xbrl/companyfacts/CIK' + cik + '.json')).json());
+  if (!opc.sinEstados) try { await complementoEstados(cik, r, r.notas); } catch (x) { r.notas.push('No se pudieron leer los estados del último 10-K (' + x.message + ').'); }
   let precio = null; if (!opc.sinPrecio) try { const P = require('./actualizar_precios.js'); let p; try { p = await P.cnbc(tk); } catch (x) { p = await P.nasdaq(tk); } precio = { precio: p.precio, divisa: p.divisa, fecha: p.fecha }; } catch (x) { r.notas.push('Sin precio automático (' + x.message + ').'); }
   const salida = { ticker: tk, nombre: r.nombre || e.title, cik, divisa: 'USD', generado: new Date().toISOString(), fuente: 'SEC EDGAR (XBRL, 10-K)', anios: r.anios, hist: r.hist, ttm: r.ttm, ultimo_ejercicio: r.ultimo, precio, notas: r.notas, faltan: r.faltan };
   fs.mkdirSync(path.join(RAIZ, 'datos'), { recursive: true }); fs.writeFileSync(path.join(RAIZ, 'datos', tk.replace(/[^A-Z0-9]/g, '_') + '.json'), JSON.stringify(salida, null, 1) + '\n');
@@ -208,4 +243,4 @@ async function lotePublicado(lista) {
 if (require.main === module && process.argv[2] === '--publicado') lotePublicado((process.argv[3] || '').split(',').map(s => s.trim().toUpperCase()).filter(Boolean)).catch(e => { console.error('ERROR: ' + e.message); process.exit(1); });
 else if (require.main === module && process.argv[2] === '--todos') lote().catch(e => { console.error('ERROR: ' + e.message); process.exit(1); });
 else if (require.main === module) principal(process.argv[2]).catch(e => { console.error('ERROR: ' + e.message); fs.mkdirSync(path.join(RAIZ, 'datos'), { recursive: true }); try { fs.writeFileSync(path.join(RAIZ, 'datos', String(process.argv[2] || 'x').toUpperCase().replace(/[^A-Z0-9]/g, '_') + '.json'), JSON.stringify({ ticker: String(process.argv[2] || '').toUpperCase(), error: e.message, generado: new Date().toISOString() }, null, 1) + '\n'); } catch (x) { } process.exit(0); });
-module.exports = { construir, serie, anioDe, ttm, ultimoEjercicio, publicado };
+module.exports = { construir, serie, anioDe, ttm, ultimoEjercicio, publicado, filasR, complementoEstados };
