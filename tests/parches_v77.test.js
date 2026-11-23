@@ -28,7 +28,7 @@ function fichaAAPL() { const f = DatosWeb.aFicha(sec('AAPL'), '2026-11-23'); con
   const solo = { 2021: 847, 2022: 1990, 2023: 3389, 2024: 7280, 2025: 8589, 2026: 10605 }; f.hist.caja = f.anios.map(a => solo[a]); f._borrador = true;
   const d0 = L.normalizar(null); d0.fichas.NVDA = f; delete d0.ajustes.parches; const g = L.normalizar(d0).fichas.NVDA;
   assert.equal(g.hist.caja[f.anios.indexOf(2025)], 43210, 'FY2025 (SEC 2024): efectivo + valores negociables');
-  assert.equal(g.hist.caja[f.anios.indexOf(2026)], 10605, 'FY2026 no se toca (pendiente de constatar)'); assert(/PENDIENTE: caja de FY2026/.test(g.notas.join(' ')));
+  assert.equal(g.hist.caja[f.anios.indexOf(2026)], 62556, 'v78: FY2026 = efectivo 10.605 + valores negociables 51.951 del balance del 10-K'); assert(/R5\.htm/.test(g.fuentes.join(' ')));
 }
 /* VICI: EBIT con una sola definición (beneficio antes de impuestos + intereses), amortización y capex del 10-K */
 {
@@ -36,5 +36,15 @@ function fichaAAPL() { const f = DatosWeb.aFicha(sec('AAPL'), '2026-11-23'); con
   const d0 = L.normalizar(null); d0.fichas.VICI = f; delete d0.ajustes.parches; const g = L.normalizar(d0).fichas.VICI, i = a => g.anios.indexOf(a);
   assert.equal(g.hist.ebit[i(2019)], 804.37, 'EBIT 2019 = 555,986 + 248,384'); assert.equal(g.hist.ebit[i(2025)], 3664.593);
   assert.equal(g.hist.da[i(2025)], 3.637); assert.equal(g.hist.capex[i(2025)], 1.335); assert.equal(g.conf.ebit, 'P', 'calculado: confianza P');
+}
+/* v78: ficha europea contrastada con sus cuentas ESEF — Indra: verifica ventas/EBIT…, rellena el flujo operativo; no toca la deuda (definición distinta) */
+{
+  const an = [2019, 2020, 2021, 2022, 2023, 2024], f = { nombre: 'Indra Sistemas', divisa: 'EUR', anios: an, anio_base: 2024, hist: {
+    ventas: [3203.939, 3043.408, 3390.425, 3851.39, 4343.072, 4842.857], ebit: [221.022, -32.885, 255.529, 300.451, 346.994, 438.256], ni_reportado: [121.364, -65.153, 143.369, 171.895, 205.752, 277.541],
+    fco: an.map(() => null), deuda: [300, 310, 500, 975.64, 702.59, 529.51] }, conf: { ventas: 'P', ebit: 'P', deuda: 'P' } };
+  const d0 = L.normalizar(null); d0.fichas.IDR = f; delete d0.ajustes.parches; const g = L.normalizar(d0).fichas.IDR;
+  assert.deepEqual(g.hist.fco, [149.503, 195.851, 344.636, 350.261, 379.521, 450.895], 'flujo operativo de las cuentas oficiales');
+  assert.equal(g.conf.ventas, 'A'); assert.equal(g.conf.ebit, 'A'); assert.equal(g.conf.deuda, 'P', 'la deuda no se toca'); assert.equal(g.hist.deuda[5], 529.51);
+  assert(/ESEF/.test(g.notas.join(' ')) && /filings\.xbrl\.org/.test(g.fuentes.join(' ')));
 }
 console.log('parches v77 ok');
