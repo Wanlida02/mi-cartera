@@ -30,3 +30,10 @@ const r = d.resultados.find(x => x.tk === 'IDR'); assert(r && r.doce && r.doce.f
 const d2 = L.normalizar(clone(d)); assert.deepEqual(d2.fichas, d.fichas); assert.equal(d2.resultados.length, d.resultados.length);
 assert(['v79-duplicados', 'v79-danr-nfp', 'v79-csu-ifrs', 'v79-mes-azo', 'v79-mult-azo'].every(k => ya.includes(k)));
 console.log('parches v79 ok');
+/* v80: VICI y CTRE reciben múltiplos propios solo si no tenían ninguno */
+{
+  const x = L.normalizar(null); delete x.ajustes.parches; x.fichas = { VICI: ficha('VICI Properties', { divisa: 'USD' }), CTRE: ficha('CareTrust REIT', { divisa: 'USD', mult_hist: { per: 30 } }) };
+  const y = L.normalizar(x); assert.equal(y.fichas.VICI.mult_hist.pfcf, 17.8); assert(/REIT/.test(y.fichas.VICI.notas.join(' ')) && /mes 12/.test(y.fichas.VICI.mult_hist_auto.fuente));
+  assert.deepEqual(y.fichas.CTRE.mult_hist, { per: 30 }, 'si ya tenía múltiplos, no se tocan');
+  console.log('parches v80 ok');
+}
