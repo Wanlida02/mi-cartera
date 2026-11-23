@@ -29,7 +29,11 @@ const LINEAS = {
   deuda_lp: { tipo: 'saldo', tags: ['LongTermDebtNoncurrent', 'LongTermDebtAndCapitalLeaseObligations', 'LongTermDebt'] },
   deuda_cp: { tipo: 'saldo', tags: ['LongTermDebtCurrent', 'DebtCurrent', 'LongTermDebtAndCapitalLeaseObligationsCurrent'] },
   goodwill: { tipo: 'saldo', tags: ['Goodwill'] },
-  equity: { tipo: 'saldo', tags: ['StockholdersEquity', 'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'] }
+  equity: { tipo: 'saldo', tags: ['StockholdersEquity', 'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'] },
+  /* Minoritarios: el dato directo o, si no está etiquetado, beneficio total (ProfitLoss) − beneficio de la dominante (NetIncomeLoss) */
+  min_directo: { tipo: 'flujo', tags: ['NetIncomeLossAttributableToNoncontrollingInterest'] },
+  ni_total: { tipo: 'flujo', tags: ['ProfitLoss'] },
+  ni_dominante: { tipo: 'flujo', tags: ['NetIncomeLoss'] }
 };
 const dias = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
 /* Año de ejercicio: año de la fecha de cierre; si cierra en enero o febrero (comercio minorista), cuenta como el año anterior */
@@ -91,6 +95,13 @@ function ultimoEjercicio(gaap) {
     u.forEach(h => { if (/^10-K/.test(h.form || '') && h.start && h.end && dias(h.start, h.end) >= 350 && dias(h.start, h.end) <= 380 && (!fin || h.end > fin)) fin = h.end; }); }
   return fin ? { anio: anioDe(fin), fin } : null;
 }
+/* Beneficio atribuido a minoritarios de un año: etiqueta directa; si no, ProfitLoss − NetIncomeLoss (diferencias de redondeo < 0,05 M → 0); sin datos, 0 */
+function minoritariosDe(s, a) {
+  const v = k => (s[k] && isN(s[k][a]) ? s[k][a] : null), dir = v('min_directo');
+  if (dir != null) return dir;
+  const t = v('ni_total'), d = v('ni_dominante'); if (t == null || d == null) return 0;
+  const m = Math.round((t - d) * 1000) / 1000; return Math.abs(m) < 0.05 ? 0 : m;
+}
 /* Construye {anios, hist} a partir del JSON «companyfacts» de la SEC */
 function construir(cf) {
   const gaap = cf && cf.facts && cf.facts['us-gaap']; if (!gaap) throw new Error('Sin datos US-GAAP (¿empresa extranjera con 20-F/IFRS? Usa los informes anuales).');
@@ -103,7 +114,7 @@ function construir(cf) {
   const col = k => anios.map(a => (s[k] && isN(s[k][a]) ? s[k][a] : null));
   const suma = (...ks) => anios.map(a => { const v = ks.map(k => (s[k] && isN(s[k][a]) ? s[k][a] : null)); return v.every(x => x == null) ? null : v.reduce((p, c) => p + (c || 0), 0); });
   const hist = {
-    ventas: col('ventas'), ebit: col('ebit'), da: col('da'), intereses: col('intereses'), impuestos: col('impuestos'), minoritarios: anios.map(() => 0), otros: anios.map(() => 0),
+    ventas: col('ventas'), ebit: col('ebit'), da: col('da'), intereses: col('intereses'), impuestos: col('impuestos'), minoritarios: anios.map(a => minoritariosDe(s, a)), otros: anios.map(() => 0),
     acciones: col('acciones'), capex: col('capex'), leases: anios.map(() => null), caja: suma('caja', 'inv_cp'), deuda: suma('deuda_lp', 'deuda_cp'), leases_deuda: anios.map(() => null),
     goodwill: col('goodwill'), equity: col('equity'), ni_reportado: col('ni_reportado'), fco: col('fco'), sbc: col('sbc'), dividendos: col('dividendos'), recompras: col('recompras'), bpa: col('bpa')
   };
@@ -125,7 +136,7 @@ function construir(cf) {
   }
   const faltan = Object.keys(hist).filter(k => !['minoritarios', 'otros', 'leases', 'leases_deuda'].includes(k) && hist[k].every(x => x == null));
   const notas = ['Datos automáticos de la SEC (XBRL de los 10-K). Revísalos contra el informe anual antes de decidir: pueden faltar líneas o haber reexpresiones.',
-    'Caja = efectivo + inversiones a corto plazo; deuda = deuda financiera (sin arrendamientos). Intereses = gasto bruto (no netos de ingresos). Minoritarios, otros y arrendamientos van a 0 o sin dato: complétalos si importan.'];
+    'Caja = efectivo + inversiones a corto plazo; deuda = deuda financiera (sin arrendamientos). Intereses = gasto bruto (no netos de ingresos). Minoritarios de la SEC (atribuido a minoritarios, o beneficio total − el de la dominante); otros y arrendamientos van a 0 o sin dato: complétalos si importan.'];
   avisosSplit.forEach(x => notas.push(x));
   if (sinDeuda) notas.push('Deuda = 0: la SEC no registra deuda financiera y los intereses son menos del 5 % del EBIT. Confírmalo en el balance del informe anual.');
   if (faltan.length) notas.push('Líneas sin datos en la SEC: ' + faltan.join(', ') + '.');
