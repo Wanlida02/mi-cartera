@@ -86,6 +86,12 @@ async function sonda() {
     ['marketstack', 'https://api.marketstack.com/v1/eod?access_key=demo&symbols=AAPL'], ['fmp-demo', 'https://financialmodelingprep.com/api/v3/historical-price-full/AAPL?apikey=demo&serietype=line'], ['investing', 'https://api.investing.com/api/financialdata/6408/historical/chart/?period=P5Y&interval=P1M&pointscount=120']];
   for (const [n, url] of u) { try { const r = await fetch(url, { headers: UA, signal: AbortSignal.timeout(20000) }); const t = (await r.text()).replace(/\s+/g, ' ').slice(0, 140); console.log('SONDA ' + n + ' → HTTP ' + r.status + ' · ' + t); } catch (e) { console.log('SONDA ' + n + ' → ERROR ' + e.message); } await esperar(400); }
 }
+/* Algunas fuentes dan la serie de Londres en peniques (GBp) aunque el precio actual esté en libras: si el último cierre es ~100 veces el precio, se pasa a libras */
+function peniques(h, pr) {
+  const ks = Object.keys(h.cierres).sort(), u = h.cierres[ks[ks.length - 1]];
+  if (!pr || !(pr.precio > 0) || !u || !/^(GBP|ILS)$/.test(pr.divisa || h.divisa) || !(u / pr.precio > 65 && u / pr.precio < 135)) return h;
+  const c = {}; ks.forEach(k => { c[k] = Math.round(h.cierres[k] * 100) / 1e4; }); return Object.assign({}, h, { cierres: c, divisa: pr.divisa });
+}
 async function main() {
   if (process.argv.includes('--sonda')) return sonda();
   const cfg = EXTRA.length ? { simbolos: Object.fromEntries(EXTRA.map(t => [t, { y: [t] }])) } : JSON.parse(fs.readFileSync(path.join(RAIZ, 'simbolos.json'), 'utf8')), solo = (process.argv.find(a => a.startsWith('--solo=')) || '').slice(7).split(',').filter(Boolean);
@@ -95,7 +101,7 @@ async function main() {
   for (const tk of Object.keys(cfg.simbolos)) {
     const c = cfg.simbolos[tk]; if (solo.length && !solo.includes(tk)) continue;   // también los valores con precios en pausa: aquí se intenta igualmente
     let ok = null, ult;
-    for (const s of candidatos(c)) { try { const pr = precios[s === c.ficha ? tk + '@ficha' : tk]; const h = await pedirHist(s, pr && pr.divisa); if (!EXTRA.length) coherente(h, pr && pr.precio); ok = Object.assign({ simbolo: s }, h); break; } catch (e) { ult = e; } await esperar(500); }
+    for (const s of candidatos(c)) { try { const pr = precios[s === c.ficha ? tk + '@ficha' : tk]; const h = peniques(await pedirHist(s, pr && pr.divisa), pr); if (!EXTRA.length) coherente(h, pr && pr.precio); ok = Object.assign({ simbolo: s }, h); break; } catch (e) { ult = e; } await esperar(500); }
     if (ok) sim[tk] = Object.assign(ok, { actualizado: new Date().toISOString() });
     else { fallos.push({ ticker: tk, error: ult && ult.message }); try { if (prev[tk]) { coherente(prev[tk], (precios[tk] || {}).precio); sim[tk] = prev[tk]; } } catch (e) { /* el anterior tampoco vale */ } }
     await esperar(700);
@@ -105,4 +111,4 @@ async function main() {
   console.log('Histórico: ' + Object.keys(sim).length + ' valores · fallos: ' + (fallos.map(f => f.ticker).join(', ') || 'ninguno'));
 }
 if (require.main === module) main().catch(e => { console.error(e); process.exit(1); });
-module.exports = { coherente, leerCnbcHist, leerStooqHist, leerHistorico, candidatos, mesLocal };
+module.exports = { peniques, coherente, leerCnbcHist, leerStooqHist, leerHistorico, candidatos, mesLocal };
