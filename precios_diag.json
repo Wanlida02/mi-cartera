@@ -1,11 +1,11 @@
 {
- "generado": "2026-11-23T17:01:49.170Z",
+ "generado": "2026-11-23T19:26:44.376Z",
  "sonda": {
   "google": {
    "status": 200,
    "url": "https://www.google.com/finance/quote/AAPL:NASDAQ?hl=en",
-   "largo": 1438300,
-   "inicio": "<!doctype html><html lang=\"en\" dir=\"ltr\"><head><base href=\"https://www.google.com/finance/\"><link rel=\"preconnect\" href=\"//www.gstatic.com\"><meta name=\"referrer\" content=\"origin\"><script nonce=\"tKHrhHhpVVdSz4TrDmqvjQ\">window['ppConfig'] = {productName: 'FinHubUi', deleteIsEnforced:  true , sealIsEnf",
+   "largo": 1457249,
+   "inicio": "<!doctype html><html lang=\"en\" dir=\"ltr\"><head><base href=\"https://www.google.com/finance/\"><link rel=\"preconnect\" href=\"//www.gstatic.com\"><meta name=\"referrer\" content=\"origin\"><script nonce=\"LVc6BcsB9nk-2k0smvX0Rg\">window['ppConfig'] = {productName: 'FinHubUi', deleteIsEnforced:  true , sealIsEnf",
    "atributos": [],
    "tiene_consent": false
   },
@@ -36,8 +36,8 @@
   "cnbc": {
    "status": 200,
    "url": "https://quote.cnbc.com/quote-html-webservice/restQuote/symbolType/symbol?symbols=AAPL&requestMethod=itv&noform=1&partnerId=2&fund=1&exthrs=1&output=json&events=1",
-   "largo": 1865,
-   "inicio": "{\"FormattedQuoteResult\":{\"FormattedQuote\":[{\"symbol\":\"AAPL\",\"symbolType\":\"symbol\",\"code\":0,\"name\":\"Apple Inc.\",\"shortName\":\"AAPL\",\"onAirName\":\"Apple Inc.\",\"altName\":\"Apple Inc.\",\"last\":\"347.71\",\"last_timedate\":\"12:04 PM EST\",\"last_time\":\"2026-11-23T12:04:01.823-0500\",\"changetype\":\"UP\",\"type\":\"STOCK\",\"subType\":\"Common Stock\",\"exchange\":\"NASDAQ\",\"source\":\"Last NASDAQ LS, VOL From CTA\",\"open\":\"347.87\",\"high\":\"352.60\",\"low\":\"345.44\",\"change\":\"+5.15\",\"change_pct\":\"+1.50%\",\"currencyCode\":\"USD\",\"volume\":\"17,638,632\",\"volume_alt\":\"17.6M\",\"provider\":\"CNBC QUOTE CACHE\",\"previous_day_closing\":\"342.56\",\"altSymbol\":\"AAPL.O\",\"realTime\":\"true\",\"curmktstatus\":\"REG_MKT\",\"pe\":\"38.74\",\"mktcapView\":\"5.053T\",\"di",
+   "largo": 1864,
+   "inicio": "{\"FormattedQuoteResult\":{\"FormattedQuote\":[{\"symbol\":\"AAPL\",\"symbolType\":\"symbol\",\"code\":0,\"name\":\"Apple Inc.\",\"shortName\":\"AAPL\",\"onAirName\":\"Apple Inc.\",\"altName\":\"Apple Inc.\",\"last\":\"350.16\",\"last_timedate\":\"2:28 PM EST\",\"last_time\":\"2026-11-23T14:28:55.993-0500\",\"changetype\":\"UP\",\"type\":\"STOCK\",\"subType\":\"Common Stock\",\"exchange\":\"NASDAQ\",\"source\":\"Last NASDAQ LS, VOL From CTA\",\"open\":\"347.87\",\"high\":\"352.60\",\"low\":\"345.44\",\"change\":\"+7.60\",\"change_pct\":\"+2.22%\",\"currencyCode\":\"USD\",\"volume\":\"26,055,938\",\"volume_alt\":\"26.1M\",\"provider\":\"CNBC QUOTE CACHE\",\"previous_day_closing\":\"342.56\",\"altSymbol\":\"AAPL.O\",\"realTime\":\"true\",\"curmktstatus\":\"REG_MKT\",\"pe\":\"39.02\",\"mktcapView\":\"5.089T\",\"div",
    "atributos": [],
    "tiene_consent": false
   },
@@ -45,7 +45,7 @@
    "status": 200,
    "url": "https://api.nasdaq.com/api/quote/AAPL/info?assetclass=stocks",
    "largo": 1168,
-   "inicio": "{\"data\":{\"symbol\":\"AAPL\",\"companyName\":\"Apple Inc. Common Stock\",\"stockType\":\"Common Stock\",\"exchange\":\"NASDAQ-GS\",\"isNasdaqListed\":true,\"isNasdaq100\":true,\"isHeld\":false,\"primaryData\":{\"lastSalePrice\":\"$347.707\",\"netChange\":\"+5.147\",\"percentageChange\":\"+1.50%\",\"deltaIndicator\":\"up\",\"lastTradeTimest",
+   "inicio": "{\"data\":{\"symbol\":\"AAPL\",\"companyName\":\"Apple Inc. Common Stock\",\"stockType\":\"Common Stock\",\"exchange\":\"NASDAQ-GS\",\"isNasdaqListed\":true,\"isNasdaq100\":true,\"isHeld\":false,\"primaryData\":{\"lastSalePrice\":\"$350.1966\",\"netChange\":\"+7.6366\",\"percentageChange\":\"+2.23%\",\"deltaIndicator\":\"up\",\"lastTradeTime",
    "atributos": [],
    "tiene_consent": false
   },
@@ -65,7 +65,7 @@
    "status": 401,
    "url": "https://www.marketwatch.com/investing/stock/aapl",
    "largo": 459,
-   "inicio": "{\"url\":\"https://geo.captcha-delivery.com/interstitial/?initialCid=AHrlqAAAAAMAdSru4_5FRhAAMzmTnw==&cid=0TS7p2BEDK2bEE2WrxAOeETo3EqVrz~pTqoLt81DTiUjHZT3n1p_~Klk8Txnu78A2d5Pfuq6hzGt1zXDRAtlh6X~Dt0UylZt96USg7_NfXyLMdkBS6fbVBGdxVu~lcaH&referer=http%3A%2F%2Fwww.marketwatch.com%2Finvesting%2Fstock%2Faapl&",
+   "inicio": "{\"url\":\"https://geo.captcha-delivery.com/interstitial/?initialCid=AHrlqAAAAAMAvGDFfN8Do8IAOZdXFA==&cid=E30XabxLxTEI5~7HukrOAvxOOu4aw92z2dgO8BOFHBKW3LHXjs4Q14vS7au5lTy_hIOpBlya7jVZeUu6d0Oo6tc3l7cIiyhKTP~tZYcGGCoNupWG2i~WTpL~72ZF7RxZ&referer=http%3A%2F%2Fwww.marketwatch.com%2Finvesting%2Fstock%2Faapl&",
    "atributos": [],
    "tiene_consent": false
   },
@@ -88,8 +88,8 @@
   "cnbc_KRI-GR": {
    "status": 200,
    "url": "https://quote.cnbc.com/quote-html-webservice/restQuote/symbolType/symbol?symbols=KRI-GR&requestMethod=itv&noform=1&partnerId=2&fund=1&exthrs=1&output=json&events=1",
-   "largo": 1396,
-   "inicio": "{\"FormattedQuoteResult\":{\"FormattedQuote\":[{\"symbol\":\"KRI-GR\",\"symbolType\":\"symbol\",\"code\":0,\"name\":\"KRI-KRI Milk Industry S.A.\",\"shortName\":\"KRI\",\"onAirName\":\"KRI-KRI Milk Industry S.A.\",\"altName\":\"KRI-KRI Milk Industry S.A.\",\"last\":\"38.40\",\"last_timedate\":\"5:10 PM EET\",\"last_time\":\"2026-11-23T17:10:14.858+0200\",\"changetype\":\"DOWN\",\"type\":\"STOCK\",\"subType\":\"Common Stock\",\"exchange\":\"Athens Stock Exchange\",\"source\":\"Exchange\",\"open\":\"37.60\",\"high\":\"38.50\",\"low\":\"37.60\",\"change\":\"-0.40\",\"change_pct\":\"-1.03%\",\"currencyCode\":\"EUR\",\"volume\":\"76,909\",\"volume_alt\":\"76.9K\",\"provider\":\"CNBC Quote Cache\",\"previous_day_closing\":\"38.80\",\"altSymbol\":\"KRIr.AT\",\"realTime\":\"false\",\"curmktstatus\":\"REG_MKT\",",
+   "largo": 1397,
+   "inicio": "{\"FormattedQuoteResult\":{\"FormattedQuote\":[{\"symbol\":\"KRI-GR\",\"symbolType\":\"symbol\",\"code\":0,\"name\":\"KRI-KRI Milk Industry S.A.\",\"shortName\":\"KRI\",\"onAirName\":\"KRI-KRI Milk Industry S.A.\",\"altName\":\"KRI-KRI Milk Industry S.A.\",\"last\":\"38.45\",\"last_timedate\":\"5:14 PM EET\",\"last_time\":\"2026-11-23T17:14:29.137+0200\",\"changetype\":\"DOWN\",\"type\":\"STOCK\",\"subType\":\"Common Stock\",\"exchange\":\"Athens Stock Exchange\",\"source\":\"Exchange\",\"open\":\"37.60\",\"high\":\"38.50\",\"low\":\"37.60\",\"change\":\"-0.35\",\"change_pct\":\"-0.90%\",\"currencyCode\":\"EUR\",\"volume\":\"85,323\",\"volume_alt\":\"85.3K\",\"provider\":\"CNBC Quote Cache\",\"previous_day_closing\":\"38.80\",\"altSymbol\":\"KRIr.AT\",\"realTime\":\"false\",\"curmktstatus\":\"REG_MKT\",",
    "atributos": [],
    "tiene_consent": false
   },
@@ -112,8 +112,8 @@
   "cnbc_300750-CN": {
    "status": 200,
    "url": "https://quote.cnbc.com/quote-html-webservice/restQuote/symbolType/symbol?symbols=300750-CN&requestMethod=itv&noform=1&partnerId=2&fund=1&exthrs=1&output=json&events=1",
-   "largo": 1391,
-   "inicio": "{\"FormattedQuoteResult\":{\"FormattedQuote\":[{\"symbol\":\"300750-CN\",\"symbolType\":\"symbol\",\"code\":0,\"name\":\"Contemporary Amperex Technology Co., Limited\",\"shortName\":\"300750\",\"onAirName\":\"Contemporary Amperex\",\"altName\":\"Contemporary Amperex Technology Co., Limited\",\"last\":\"227.39\",\"last_timedate\":\"3:00 PM CTT\",\"last_time\":\"2026-11-23T15:00:00.000+0800\",\"changetype\":\"DOWN\",\"type\":\"STOCK\",\"subType\":\"Common Stock\",\"exchange\":\"Shenzhen Stock Exchange\",\"source\":\"Exchange\",\"open\":\"227.00\",\"high\":\"230.00\",\"low\":\"222.40\",\"change\":\"-0.39\",\"change_pct\":\"-0.17%\",\"currencyCode\":\"CNY\",\"volume\":\"38,019,833\",\"volume_alt\":\"38.0M\",\"provider\":\"CNBC Quote Cache\",\"previous_day_closing\":\"227.78\",\"altSymbol\":\"300750",
+   "largo": 1137,
+   "inicio": "{\"FormattedQuoteResult\":{\"FormattedQuote\":[{\"symbol\":\"300750-CN\",\"symbolType\":\"symbol\",\"code\":0,\"name\":\"Contemporary Amperex Technology Co., Limited\",\"shortName\":\"300750\",\"onAirName\":\"Contemporary Amperex Technology Co., Limited\",\"altName\":\"Contemporary Amperex Technology Co., Limited\",\"last\":\"227.39\",\"last_timedate\":\"3:00 PM CTT\",\"last_time\":\"2026-11-23T15:00:00.000+0800\",\"changetype\":\"DOWN\",\"type\":\"STOCK\",\"subType\":\"Common Stock\",\"exchange\":\"Shenzhen Stock Exchange\",\"source\":\"Exchange\",\"open\":\"227.00\",\"high\":\"230.00\",\"low\":\"222.40\",\"change\":\"-0.39\",\"change_pct\":\"-0.17%\",\"currencyCode\":\"CNY\",\"volume\":\"38,019,833\",\"volume_alt\":\"38.0M\",\"provider\":\"CNBC Quote Cache\",\"previous_day_closing\":\"227",
    "atributos": [],
    "tiene_consent": false
   },
