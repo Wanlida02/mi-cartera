@@ -185,6 +185,21 @@ async function principal() {
       await esperar(150);
     }
   }));
+  /* Segunda pasada: tras varios 429 seguidos se deja de preguntar a Yahoo y los últimos de la lista se quedaban sin precio (MIPS, DANR).
+     Se espera un minuto y se reintentan uno a uno, despacio. */
+  const limitados = fallos.filter(f => /429|limitad/i.test(f.motivo));
+  if (limitados.length) {
+    await esperar(+(process.env.ESPERA_REINTENTO || 60000)); yahooBloqueado = false; n429 = 0;
+    for (const f of limitados) {
+      const t = tareas.find(x => x.clave === f.ticker); if (!t) continue;
+      try {
+        const p = subunidad(await precioDe(t.cand));
+        precios[t.clave] = { ticker: t.tk, precio: p.precio, divisa: p.divisa, fecha_precio: p.fecha, hora: p.hora, simbolo: p.simbolo, fuente: p.fuente, actualizado: ahora, reintento: true };
+        fallos.splice(fallos.indexOf(f), 1); hechos++;
+      } catch (e) { f.motivo = (f.motivo + ' | 2.ª pasada: ' + e.message).slice(0, 400); }
+      await esperar(2500);
+    }
+  }
   const { fx, fallos: fxFallos } = await divisas(cfg.divisas || ['USD']);
   const fxFinal = Object.assign({}, previo.fx || {}, fx);                  // si una divisa falla, queda la anterior
   const salida = { generado: ahora, estado: { ok: hechos, total: tareas.length, fallos, divisas_fallidas: fxFallos }, fx: fxFinal, precios };
