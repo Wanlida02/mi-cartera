@@ -1,0 +1,300 @@
+{
+ "ticker": "REPX",
+ "nombre": "Riley Exploration Permian, Inc.",
+ "cik": "0001001614",
+ "divisa": "USD",
+ "generado": "2026-11-23T12:42:27.810Z",
+ "fuente": "SEC EDGAR (XBRL, 10-K)",
+ "anios": [
+  2016,
+  2017,
+  2018,
+  2019,
+  2020,
+  2021,
+  2022,
+  2023,
+  2024,
+  2025
+ ],
+ "hist": {
+  "ventas": [
+   4.672,
+   4.683,
+   5.871,
+   4.911,
+   3.038,
+   151.036,
+   321.743,
+   375.047,
+   410.181,
+   391.98
+  ],
+  "ebit": [
+   -4.098,
+   -0.794,
+   0.24,
+   -0.505,
+   -3.817,
+   59.876,
+   203.519,
+   171.893,
+   153.695,
+   133.279
+  ],
+  "da": [
+   1.139,
+   0.862,
+   0.795,
+   0.716,
+   0.644,
+   26.015,
+   32.113,
+   65.055,
+   74.9,
+   93.183
+  ],
+  "intereses": [
+   0.102,
+   0.053,
+   0.005,
+   0.01,
+   0.008,
+   4.534,
+   1.09,
+   31.816,
+   34.338,
+   31.364
+  ],
+  "impuestos": [
+   null,
+   -0.242,
+   -0.017,
+   -0.028,
+   0.718,
+   13.016,
+   32.844,
+   34.461,
+   28.074,
+   48.123
+  ],
+  "minoritarios": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "otros": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "acciones": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   16.021,
+   19.686,
+   20,
+   20.875,
+   21.194
+  ],
+  "capex": [
+   0.047,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "leases": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "caja": [
+   0.076,
+   0.185,
+   3.115,
+   3.055,
+   1.561,
+   8.317,
+   13.301,
+   15.319,
+   13.124,
+   17.889
+  ],
+  "deuda": [
+   2.5020000000000002,
+   0.09,
+   0.124,
+   null,
+   null,
+   null,
+   56,
+   355.959,
+   269.494,
+   247.855
+  ],
+  "leases_deuda": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "goodwill": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "equity": [
+   3.278,
+   5.175,
+   6.767,
+   6.348,
+   2.715,
+   237.838,
+   333.446,
+   421.595,
+   510.615,
+   634.242
+  ],
+  "ni_reportado": [
+   -4.199,
+   -0.574,
+   1.569,
+   -0.436,
+   -3.648,
+   -65.666,
+   118.011,
+   111.591,
+   88.897,
+   160.84
+  ],
+  "fco": [
+   -1.012,
+   0.154,
+   1.337,
+   0.226,
+   -1.549,
+   null,
+   170.288,
+   207.195,
+   246.274,
+   212.539
+  ],
+  "sbc": [
+   0.017,
+   0.014,
+   0.023,
+   0.017,
+   0.014,
+   6.104,
+   3.946,
+   6.978,
+   8.138,
+   9.13
+  ],
+  "dividendos": [
+   null,
+   null,
+   null,
+   null,
+   15.297,
+   18.286,
+   25.066,
+   27.706,
+   30.831,
+   33.325
+  ],
+  "recompras": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "bpa": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   -4.19,
+   5.99,
+   5.58,
+   4.26,
+   7.59
+  ]
+ },
+ "ttm": {
+  "fin": "2026-09-30",
+  "ventas": 578.211,
+  "ebit": 263.788,
+  "ni_reportado": 99.933,
+  "da": 110.117
+ },
+ "ultimo_ejercicio": {
+  "anio": 2025,
+  "fin": "2025-12-31"
+ },
+ "precio": {
+  "precio": 41.04,
+  "divisa": "USD",
+  "fecha": "2026-11-20"
+ },
+ "notas": [
+  "Datos automáticos de la SEC (XBRL de los 10-K). Revísalos contra el informe anual antes de decidir: pueden faltar líneas o haber reexpresiones.",
+  "Caja = efectivo + inversiones a corto plazo; deuda = deuda financiera (sin arrendamientos). Intereses = gasto bruto (no netos de ingresos). Minoritarios, otros y arrendamientos van a 0 o sin dato: complétalos si importan.",
+  "Acciones y BPA anteriores a 2021 descartados: saltan de 1 a 16 millones (probable split sin reexpresar), así que no son comparables.",
+  "Líneas sin datos en la SEC: goodwill, recompras."
+ ],
+ "faltan": [
+  "goodwill",
+  "recompras"
+ ]
+}
