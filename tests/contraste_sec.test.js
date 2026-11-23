@@ -12,6 +12,6 @@ const srv = http.createServer((q, r) => { const p = path.join(root, q.url.split(
   await pg.click('[data-v=contraste]'); await pg.waitForTimeout(400); const t = await pg.textContent('#dlg'); assert(/Capex.*falta en tu ficha/.test(t) && /Ventas.*coinciden/.test(t), t.slice(0, 400));
   await pg.click('#cs-ok'); await pg.waitForTimeout(300);
   const r = await pg.evaluate(() => { const f = Store.get().fichas.PRDO; return { falta: Logic.lineasFaltantes(f), p: Val.fiabilidad(f, '2026-11-12').puntuacion, A: f.conf.ventas, capex: f.hist.capex.slice(-1)[0], borr: !!f._borrador, v: Logic.valoracion(Store.get(), 'PRDO') }; });
-  assert.deepEqual(r.falta, []); assert.equal(r.A, 'A'); assert(r.capex > 5 && r.capex < 12, 'capex SEC'); assert(r.p > f0 + 15, 'sube la fiabilidad ' + f0 + ' → ' + r.p); assert(!r.borr && !r.v.error, JSON.stringify(r.v).slice(0, 200));
+  assert.deepEqual(r.falta, []); assert.equal(r.A, 'A'); assert(r.capex > 5 && r.capex < 12, 'capex SEC'); assert(r.p >= f0 && (f0 >= 95 || r.p > f0 + 15), 'la fiabilidad sube (o, si ya estaba verificada, no baja) ' + f0 + ' → ' + r.p); assert(!r.borr && !r.v.error, JSON.stringify(r.v).slice(0, 200));
   assert.deepEqual(errs, []); console.log('contraste_sec ok · fiabilidad ' + f0 + ' → ' + r.p); await b.close(); srv.close();
 });
