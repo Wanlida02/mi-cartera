@@ -44,7 +44,7 @@ const srv = http.createServer((q, r) => { const p = path.join(root, q.url.split(
   const b = await chromium.launch(), pg = await (await b.newContext()).newPage(); const errs = []; pg.on('pageerror', e => errs.push(e.message));
   await pg.route('https://api.github.com/**', r => r.fulfill({ status: 404, body: '' }));
   await pg.goto('http://localhost:' + srv.address().port + '/'); await pg.click('#btn-ajustes'); await pg.setInputFiles('#a-imp', fn); await pg.waitForTimeout(800);
-  await pg.click('[data-tab=valoracion]'); await pg.waitForTimeout(800); await pg.click('[data-v=abrir][data-k=CSU]'); await pg.waitForTimeout(600);
+  await pg.click('[data-tab=valoracion]'); await pg.waitForTimeout(800); await pg.evaluate(() => document.querySelectorAll('details.vgrp').forEach(x => { x.open = true; })); await pg.click('[data-v=abrir][data-k=CSU]'); await pg.waitForTimeout(600);
   const t = await pg.textContent('#vista');
   assert(/P\/FCFA2S/.test(t) && /convertido de CAD/.test(t), t.slice(0, 600)); const celdas = await pg.evaluate(() => [...document.querySelectorAll('#vista td:first-child')].map(x => x.textContent.trim())); assert(celdas.some(c => /P\/FCFA2S/.test(c)) && !celdas.some(c => /^(PER|EV\/|P\/FCF$)/.test(c)), 'tabla sin PER/EV: ' + celdas.join('|'));
   assert(/FCFA2S de salida/.test(await pg.evaluate(() => document.body.innerText)) || /P\/FCFA2S de salida/.test(t) || true);

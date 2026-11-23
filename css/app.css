@@ -204,3 +204,9 @@ input.mg-auto{border-color:var(--ok);background:var(--ok-bg)}
 /* Precios que no llegan (v75) */
 .pf-l{list-style:none;margin:8px 0 0;padding:0}.pf-l li{padding:7px 0;border-top:1px solid var(--line);font-size:14px;line-height:1.4}.pf-l li:first-child{border-top:0}
 #pi-tok{margin-top:10px}
+/* Valoración: bloques plegables (v76) */
+.vgrp{margin:14px 0 0}.vgrp>summary{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;cursor:pointer;list-style:none;padding:4px 2px 6px}
+.vgrp>summary::-webkit-details-marker{display:none}
+.vgrp>summary .vg-t{font-weight:700;font-size:15px}.vgrp>summary .vg-t::before{content:"›";display:inline-block;width:14px;color:var(--mut);transition:transform .15s}
+.vgrp[open]>summary .vg-t::before{transform:rotate(90deg)}
+.vg-ayuda{margin:0 2px 6px}
