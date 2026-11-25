@@ -5,6 +5,7 @@
    la fecha del precio es la de la última cotización en la hora local de la bolsa. */
 const fs = require('fs'), path = require('path');
 const RAIZ = path.join(__dirname, '..'), OUT = path.join(RAIZ, 'precios.json');
+const SPLITS = require('./splits');
 const UA = { 'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36', Accept: 'application/json,text/csv,*/*' };
 const esperar = ms => new Promise(r => setTimeout(r, ms));
 const num = v => (typeof v === 'number' && isFinite(v) && v > 0 ? v : null);
@@ -202,7 +203,11 @@ async function principal() {
   }
   const { fx, fallos: fxFallos } = await divisas(cfg.divisas || ['USD']);
   const fxFinal = Object.assign({}, previo.fx || {}, fx);                  // si una divisa falla, queda la anterior
-  const salida = { generado: ahora, estado: { ok: hechos, total: tareas.length, fallos, divisas_fallidas: fxFallos }, fx: fxFinal, precios };
+  /* Splits: un salto de precio que cuadra con un factor de split se confirma con el histórico ajustado y queda en datos/splits.json; la app ajusta sola fichas y posiciones */
+  let regSplits = SPLITS.leer();
+  try { const r = await SPLITS.revisar(previo.precios || {}, precios, { registro: regSplits }); regSplits = r.registro; SPLITS.guardar(regSplits); if (r.hechos.length) console.log('Splits detectados: ' + r.hechos.join(', ')); }
+  catch (e) { console.error('Splits: ' + e.message); }
+  const salida = { generado: ahora, estado: { ok: hechos, total: tareas.length, fallos, divisas_fallidas: fxFallos }, fx: fxFinal, precios, splits: regSplits.splits || {}, splits_pendientes: Object.keys(regSplits.pendientes || {}) };
   const ordenado = Object.assign({}, salida, { precios: Object.fromEntries(Object.keys(precios).sort().map(k => [k, precios[k]])) });
   if (hechos === 0 && tareas.length) {
     console.error('No se obtuvo ningún precio; no se sobrescribe precios.json (diagnóstico en precios_diag.json)'); fallos.slice(0, 3).forEach(f => console.error(f.ticker, f.motivo));

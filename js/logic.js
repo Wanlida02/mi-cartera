@@ -488,6 +488,78 @@ const Logic = (function () {
     return (a && indiceNombres(d.fichas).get(a)) || t || null;
   }
 
+
+  /* ───── Splits ─────
+     Registro (precios.json → splits, desde datos/splits.json): {TK: [{fecha, k}]}; k = acciones nuevas por cada antigua (8 en un split 8:1, 0,1 en un contrasplit 1:10).
+     Se aplica solo, una vez por split, a todo lo guardado en la escala antigua: fichas (acciones, BPA, precios por acción) con datos anteriores al split,
+     posiciones y movimientos comprados antes, cribado, precios de referencia de Resultados y precios manuales. Copia para deshacer en ajustes.copia_splits.
+     Posición o movimiento sin fecha: se decide por el precio (si el coste está más cerca de la escala antigua que de la nueva frente al precio de hoy). */
+  function aplicarSplits(d, reg, hoy) {
+    hoy = hoy || today(); d.ajustes = d.ajustes || {}; const hechos = d.ajustes.splits_aplicados = d.ajustes.splits_aplicados || [], res = [];
+    Object.keys(reg || {}).forEach(tk => (reg[tk] || []).filter(s => s && isN(s.k) && s.k > 0 && s.k !== 1 && s.fecha && s.estado !== 'descartado').sort((a, b) => a.fecha.localeCompare(b.fecha)).forEach(s => {
+      const id = tk + '|' + s.fecha; if (hechos.some(h => h.id === id)) return;
+      const k = s.k, antes = x => (x || '') < s.fecha, cambios = [], copia = {}, kk = k > 1 ? 'split ' + k + ' por 1' : 'contrasplit 1 por ' + Math.round(1 / k);
+      const nota = 'Ajustado por el ' + kk + ' del ' + s.fecha + ' (automático, ' + hoy + ')';
+      const pr = d.precios && d.precios[tk], prNuevo = pr && isN(pr.precio) && !antes(pr.fecha_precio) ? pr : null;   // precio ya en la escala nueva
+      /* ¿Importe en escala antigua? fecha anterior al split → sí; sin fecha → el coste está más cerca de precio×k que del precio de hoy */
+      const viejo = (fecha, precio, moneda) => {
+        if (fecha) return antes(fecha);
+        if (!prNuevo || !isN(precio)) return null;
+        const a = aEur(d, precio, moneda || prNuevo.divisa), b = aEur(d, prNuevo.precio, prNuevo.divisa); if (!(a > 0 && b > 0)) return null;
+        return Math.abs(Math.log(a / (b * k))) < Math.abs(Math.log(a / b));
+      };
+      /* Ficha (y la cotización «@ficha»): datos anteriores al split */
+      const f = d.fichas && d.fichas[tk];
+      if (f && antes(f.fecha_datos || '0000')) {
+        copia.ficha = clone(f); const h = f.hist || {};
+        ['acciones', 'acciones_cierre'].forEach(c => { if (Array.isArray(h[c])) h[c] = h[c].map(x => (isN(x) ? round8(x * k) : x)); });
+        ['bpa'].forEach(c => { if (Array.isArray(h[c])) h[c] = h[c].map(x => (isN(x) ? round8(x / k) : x)); });
+        if (Array.isArray(f.precios_cierre)) f.precios_cierre = f.precios_cierre.map((x, i) => (isN(x) && (!f.cierres || antes(f.cierres[i])) ? round8(x / k) : x));
+        if (f.extra_cribado && isN(f.extra_cribado.fcf_por_accion)) f.extra_cribado.fcf_por_accion = round8(f.extra_cribado.fcf_por_accion / k);
+        if (isN(f.precio) && antes(f.fecha_precio)) f.precio = round8(f.precio / k);
+        f.notas = (f.notas || []).concat([nota + ': acciones ×' + k + ', BPA y precios por acción ÷' + k + '.']); cambios.push('ficha');
+      }
+      /* Precios guardados (manuales, de IA o del feed) de antes del split */
+      [tk, tk + '@ficha'].forEach(c => { const p = d.precios && d.precios[c]; if (p && isN(p.precio) && antes(p.fecha_precio)) { copia['precio:' + c] = clone(p); p.precio = round8(p.precio / k); p.nota_split = nota; cambios.push('precio ' + c); } });
+      /* Posiciones y movimientos */
+      (d.posiciones || []).forEach((p, i) => {
+        if (tickerDe(d, p) !== tk) return; const v = viejo(p.fecha_compra, p.precio_medio_compra, p.moneda); if (!v) return;
+        copia['pos:' + i] = clone(p); p.cantidad = round8(p.cantidad * k); if (isN(p.precio_medio_compra)) p.precio_medio_compra = round8(p.precio_medio_compra / k); if (isN(p.precio_actual)) p.precio_actual = round8(p.precio_actual / k);
+        p.notas = ((p.notas || '') + (p.notas ? ' · ' : '') + nota).trim(); cambios.push('posición ' + (p.broker || i));
+      });
+      const empresas = new Set((d.posiciones || []).filter(p => tickerDe(d, p) === tk).map(p => coreName(p.empresa))); if (f) empresas.add(coreName(f.nombre));
+      (d.movimientos || []).forEach(m => {
+        const t = (m.antes && m.antes.ticker) || m.ticker; if (!((t && String(t).toUpperCase() === tk) || empresas.has(coreName(m.empresa)))) return;
+        const v = viejo(m.fecha, m.precio, m.moneda); if (!v) return;
+        copia['mov:' + m.id] = clone(m); if (isN(m.cantidad)) m.cantidad = round8(m.cantidad * k); if (isN(m.precio)) m.precio = round8(m.precio / k);
+        if (m.antes) { if (isN(m.antes.cantidad)) m.antes.cantidad = round8(m.antes.cantidad * k); if (isN(m.antes.precio_medio_compra)) m.antes.precio_medio_compra = round8(m.antes.precio_medio_compra / k); }
+        cambios.push('movimiento ' + (m.fecha || 's/f'));
+      });
+      /* Cribado: BPA, FCF y dividendo por acción, acciones */
+      const c = d.cribado && d.cribado[tk];
+      if (c && antes(c.fecha_datos || c.fecha_verificacion || '0000')) {
+        copia.cribado = clone(c); ['bpa_ttm', 'dividendo_por_accion', 'fcf_por_accion'].forEach(x => { if (isN(c[x])) c[x] = round8(c[x] / k); }); if (isN(c.acciones_diluidas_m)) c.acciones_diluidas_m = round8(c.acciones_diluidas_m * k);
+        c.nota_split = nota; cambios.push('cribado');
+      }
+      /* Resultados: precio de referencia de antes del split */
+      (d.resultados || []).forEach(r => { if (r.tk === tk && isN(r.precio_ref) && antes(r.precio_fecha)) { copia['res:' + r.id] = clone(r); r.precio_ref = round8(r.precio_ref / k); cambios.push('resultado ' + (r.periodo || '')); } });
+      d.ajustes.copia_splits = d.ajustes.copia_splits || {}; d.ajustes.copia_splits[id] = copia;
+      hechos.push({ id, tk, fecha: s.fecha, k, aplicado: hoy, cambios }); res.push({ tk, fecha: s.fecha, k, cambios });
+    }));
+    return res;
+  }
+
+  /* Red de seguridad: un precio que se divide o multiplica por 2 o más frente al guardado en la ficha (≤ 120 días), sin un split aplicado,
+     suele ser un split que aún no está en el registro: las acciones y el BPA no cuadran con el precio y la empresa parece un chollo (o una ganga al revés) */
+  function sospechaSplit(d, tk, hoy) {
+    const f = d.fichas && d.fichas[tk]; if (!f) return null;
+    if ((d.ajustes.splits_pendientes || []).includes(tk)) return 'Posible split: el precio ha saltado en un factor de split y aún no está confirmado. Hasta entonces la valoración puede salir falseada.';
+    const p = precioFicha(d, tk); if (!isN(f.precio) || !f.fecha_precio || !isN(p.precio) || !(p.fecha > f.fecha_precio)) return null;
+    const dias = Math.round((Date.parse(p.fecha) - Date.parse(f.fecha_precio)) / 864e5); if (dias > 120) return null;
+    if ((d.ajustes.splits_aplicados || []).some(h => h.tk === tk && h.fecha > f.fecha_precio)) return null;
+    const r = f.precio / p.precio; if (r < 1.9 && r > 1 / 1.9) return null;
+    return 'El precio ha pasado de ' + f.precio + ' (' + f.fecha_precio + ') a ' + round8(p.precio) + ' (' + p.fecha + '): ' + (r > 1 ? '÷' + r.toFixed(1) : '×' + (1 / r).toFixed(1)) + '. Si ha sido un split (o contrasplit), las acciones y el BPA de la ficha están en la escala antigua y la valoración sale falseada; si fue una caída o subida real, actualiza el precio de la ficha.';
+  }
   /* ───── Divisas y precios ───── */
   function fxPorEur(d, div) { if (div === 'EUR') return 1; const k = d.ajustes.fx[div]; return isN(k) && k > 0 ? k : null; }
   function aEur(d, importe, div) { const k = fxPorEur(d, div); return k ? importe / k : null; }
@@ -704,6 +776,7 @@ const Logic = (function () {
       const f = d.fichas[tk]; if (!f || !V.soportado(f)) return; const est = f.estado || null, iss = [], add = (nivel, cod, txt, acc, accTxt) => iss.push({ nivel, cod, txt, acc: acc || null, accTxt: accTxt || null });
       let v = null; try { v = valoracion(d, tk, hoy); } catch (e) { v = { error: e.message }; }
       /* 1 · datos y precio */
+      const ss = sospechaSplit(d, tk, hoy); if (ss) add('r', 'split', ss, 'precio', 'Revisar precio');
       if (v && v.incompleta) add('r', 'incompleta', 'Ficha incompleta: faltan ' + v.incompleta.join(', ') + '.', 'borrador', 'Completar datos');
       else if (v && v.sinPrecio) add('r', 'sinprecio', 'Sin precio de cotización.', 'precio', 'Poner precio');
       else if (v && v.error) add('r', 'error', v.error, 'abrir', 'Abrir ficha');
@@ -1077,7 +1150,7 @@ const Logic = (function () {
     };
   }
 
-  return { desfaseSEC, estuvoEnCartera, diagnosticoPrecio, promptPreciosIA, leerPreciosIA, corregirSimbolos, jsonDeIA, resolverFuentes, urlOk, multiplosDeIA, objetosJSON, fotoDiaria, unirHistorico, isN, today, clone, nuevoDatos, normalizar, norm, coreName, sameCompany, findExisting, tickerDe, fxPorEur, aEur, precioPos, costeEur, mercadoEur, valorEur, variacion, diasDesde,
+  return { aplicarSplits, sospechaSplit, desfaseSEC, estuvoEnCartera, diagnosticoPrecio, promptPreciosIA, leerPreciosIA, corregirSimbolos, jsonDeIA, resolverFuentes, urlOk, multiplosDeIA, objetosJSON, fotoDiaria, unirHistorico, isN, today, clone, nuevoDatos, normalizar, norm, coreName, sameCompany, findExisting, tickerDe, fxPorEur, aEur, precioPos, costeEur, mercadoEur, valorEur, variacion, diasDesde,
     compra, venta, editar, eliminar, borrarMov, reverseMov, precioManual, precioFicha, matrizEntrada, auditoriaDivisas, provisional, promptBusqueda, extraerJSON, aplicarBusqueda, pendientesBusqueda, deshacerBusqueda, promptFase2, proponerMultiplos, aplicarMultiplos, deshacerMultiplos, calidadFichas, distorsion, previsualizarSoloFcf, aplicarSoloFcf, valoracion, renombrarTicker, tickerValido, claves, divisaCotizacion, mezclarManual, contrastar, lineasFaltantes, revision, precioRef, pesos, dashboard, informes, V };
 })();
 if (typeof module !== 'undefined') module.exports = Logic;

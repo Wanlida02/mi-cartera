@@ -56,6 +56,7 @@ const Store = (function () {
   function ultimaCopia() { try { return (JSON.parse(localStorage.getItem(META) || '{}')).copia || null; } catch (e) { return null; } }
 
   /* precios.json: se fusiona solo si es más reciente que lo que ya hay (nunca pisa un precio manual más nuevo) */
+  let splitsNuevos = null;   // últimos splits aplicados (para avisar)
   async function cargarPreciosAuto(jIn) {
     try {
       let j = jIn; if (!j) { const r = await fetch('precios.json', { cache: 'no-store' }); if (!r.ok) return false; j = await r.json(); }
@@ -74,11 +75,15 @@ const Store = (function () {
         const nfx = Object.assign({}, fl, j.fx, { manual: false });
         if (Object.keys(nfx).some(k => nfx[k] !== fl[k])) { data.ajustes.fx = nfx; n++; }
       }
+      /* Splits: el registro viaja con los precios; se aplica solo y una vez a fichas, posiciones, movimientos, cribado y resultados */
+      if (j.splits && typeof Logic !== 'undefined' && Logic.aplicarSplits) { const sp = Logic.aplicarSplits(data, j.splits); if (sp.length) { n += sp.length; splitsNuevos = sp; } }
+      const pend = Array.isArray(j.splits_pendientes) ? j.splits_pendientes.map(x => String(x).split('@')[0]) : [];
+      if (JSON.stringify(pend) !== JSON.stringify(data.ajustes.splits_pendientes || [])) { data.ajustes.splits_pendientes = pend; n++; }
       try { localStorage.setItem(INFO, JSON.stringify({ generado: j.generado, estado: j.estado })); } catch (e) { /* sin info */ }
       info = { generado: j.generado, estado: j.estado };
       if (n) save(true);
       return n;
     } catch (e) { return false; }
   }
-  return { avisoCarga: () => avisoCarga, copiaIlegible: () => { try { return localStorage.getItem(ROTA); } catch (e) { return null; } }, restaurar, generacion: () => gen, foto, load, save, adopt, importar, exportar, marcarCopia, ultimaCopia, cargarPreciosAuto, get: () => data, preciosInfo: () => info, aviso: () => aviso, onChange: f => subs.push(f) };
+  return { splitsNuevos: () => { const x = splitsNuevos; splitsNuevos = null; return x; }, avisoCarga: () => avisoCarga, copiaIlegible: () => { try { return localStorage.getItem(ROTA); } catch (e) { return null; } }, restaurar, generacion: () => gen, foto, load, save, adopt, importar, exportar, marcarCopia, ultimaCopia, cargarPreciosAuto, get: () => data, preciosInfo: () => info, aviso: () => aviso, onChange: f => subs.push(f) };
 })();
