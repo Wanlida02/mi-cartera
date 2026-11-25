@@ -1,0 +1,15 @@
+{
+ "splits": {
+  "SNDK": [
+   {
+    "fecha": "2026-11-20",
+    "k": 8,
+    "estado": "confirmado",
+    "detectado": "2026-11-25",
+    "fuente": "Sandisk, 8-K de resultados del 29-10-2026: split 8 por 1 (registro el 9-11-2026), cotiza ajustado desde la apertura del 20-11-2026: https://www.sec.gov/Archives/edgar/data/0002023554/000162828026068243/sndk-20261029.htm"
+   }
+  ]
+ },
+ "pendientes": {},
+ "generado": "2026-11-25T00:00:00.000Z"
+}

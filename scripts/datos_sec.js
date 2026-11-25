@@ -41,7 +41,7 @@ const anioDe = fin => { const y = Number(fin.slice(0, 4)), m = Number(fin.slice(
 
 /* Serie anual {año: valor} de una línea: hechos de 10-K, periodo de 350–380 días (flujo) o instante (saldo); gana el más reciente presentado */
 function serie(gaap, def) {
-  const res = {};   // las empresas cambian de etiqueta con los años (p. ej. Apple): se rellenan los huecos con las etiquetas siguientes
+  const res = {}, meta = {};   // las empresas cambian de etiqueta con los años (p. ej. Apple): se rellenan los huecos con las etiquetas siguientes
   for (const tag of def.tags) {
     const t = gaap[tag]; if (!t || !t.units) continue;
     const u = t.units[def.unidad || 'USD']; if (!u) continue;
@@ -52,9 +52,11 @@ function serie(gaap, def) {
       const a = anioDe(h.end), p = por[a];
       if (!p || h.end > p.end || (h.end === p.end && (h.filed || '') > (p.filed || ''))) por[a] = h;
     }
-    Object.keys(por).forEach(a => { if (res[a] == null) res[a] = Math.round(por[a].val / (def.escala || 1e6) * 1000) / 1000; });
+    Object.keys(por).forEach(a => { if (res[a] == null) { res[a] = Math.round(por[a].val / (def.escala || 1e6) * 1000) / 1000; meta[a] = { filed: por[a].filed || '', end: por[a].end }; } });
   }
-  return Object.keys(res).length ? res : null;
+  if (!Object.keys(res).length) return null;
+  Object.defineProperty(res, '_meta', { value: meta, enumerable: false });   // fecha de presentación de cada dato (para los splits)
+  return res;
 }
 /* Últimos 12 meses (TTM) de una línea de flujo: suma de los 4 últimos trimestres consecutivos. Los trimestres que no se publican
    sueltos (el 4.º, o el 2.º/3.º cuando solo hay acumulados) se deducen restando periodos con el mismo inicio. Usa 10-K y 10-Q. */
@@ -103,9 +105,19 @@ function minoritariosDe(s, a) {
   const m = Math.round((t - d) * 1000) / 1000; return Math.abs(m) < 0.05 ? 0 : m;
 }
 /* Construye {anios, hist} a partir del JSON «companyfacts» de la SEC */
-function construir(cf) {
+/* Splits (datos/splits.json): un dato por acción presentado antes del split está en la escala antigua (los 10-K posteriores ya lo reexpresan).
+   acciones ×k y BPA ÷k solo en esos datos; así una ficha nueva desde la SEC no mezcla escalas. */
+function ajustarSplits(s, splits) {
+  const out = [];
+  (splits || []).forEach(sp => { if (!(sp.k > 0) || sp.k === 1 || !sp.fecha) return;
+    [['acciones', sp.k], ['bpa', 1 / sp.k]].forEach(([k, m]) => { const x = s[k]; if (!x || !x._meta) return;
+      Object.keys(x).forEach(a => { const mt = x._meta[a]; if (mt && (mt.filed || '0') < sp.fecha && (mt.end || '') < sp.fecha) { x[a] = Math.round(x[a] * m * 1e6) / 1e6; if (!out.includes(a)) out.push(a); } }); }); });
+  return out;
+}
+function construir(cf, splits) {
   const gaap = cf && cf.facts && cf.facts['us-gaap']; if (!gaap) throw new Error('Sin datos US-GAAP (¿empresa extranjera con 20-F/IFRS? Usa los informes anuales).');
   const s = {}; Object.keys(LINEAS).forEach(k => { s[k] = serie(gaap, LINEAS[k]); });
+  const ajSplit = ajustarSplits(s, splits);
   if (!s.ventas) throw new Error('No se encontraron ventas anuales (10-K) en la SEC.');
   const todos = [...new Set(Object.values(s).filter(Boolean).flatMap(o => Object.keys(o).map(Number)))].sort((a, b) => a - b);
   const ult = Math.max(...Object.keys(s.ventas).map(Number));
@@ -138,6 +150,7 @@ function construir(cf) {
   const notas = ['Datos automáticos de la SEC (XBRL de los 10-K). Revísalos contra el informe anual antes de decidir: pueden faltar líneas o haber reexpresiones.',
     'Caja = efectivo + inversiones a corto plazo; deuda = deuda financiera (sin arrendamientos). Intereses = gasto bruto (no netos de ingresos). Minoritarios de la SEC (atribuido a minoritarios, o beneficio total − el de la dominante); otros y arrendamientos van a 0 o sin dato: complétalos si importan.'];
   avisosSplit.forEach(x => notas.push(x));
+  if (ajSplit.length) notas.push('Acciones y BPA ajustados por split (' + (splits || []).map(x => (x.k > 1 ? x.k + ' por 1' : '1 por ' + Math.round(1 / x.k)) + ' del ' + x.fecha).join(', ') + ') en los ejercicios presentados antes: ' + ajSplit.sort().join(', ') + '.');
   if (sinDeuda) notas.push('Deuda = 0: la SEC no registra deuda financiera y los intereses son menos del 5 % del EBIT. Confírmalo en el balance del informe anual.');
   if (faltan.length) notas.push('Líneas sin datos en la SEC: ' + faltan.join(', ') + '.');
   const t12 = {}; ['ventas', 'ebit', 'ni_reportado', 'da'].forEach(k => { const x = ttm(gaap, LINEAS[k]); if (x) t12[k] = x; });
@@ -190,7 +203,8 @@ async function principal(tk, opc = {}) {
   const e = Object.values(mapa).find(x => x.ticker.toUpperCase() === tk.replace('.', '-')) || Object.values(mapa).find(x => x.ticker.toUpperCase() === tk);
   if (!e) throw new Error('«' + tk + '» no está en la lista de la SEC: solo cubre empresas de EE. UU. Para otras, usa los informes anuales.');
   const cik = String(e.cik_str).padStart(10, '0');
-  const r = construir(await (await pedir('https://data.sec.gov/api/xbrl/companyfacts/CIK' + cik + '.json')).json());
+  let splits = []; try { splits = (JSON.parse(fs.readFileSync(path.join(RAIZ, 'datos', 'splits.json'), 'utf8')).splits || {})[tk] || []; } catch (x) { /* sin registro */ }
+  const r = construir(await (await pedir('https://data.sec.gov/api/xbrl/companyfacts/CIK' + cik + '.json')).json(), splits);
   if (!opc.sinEstados) try { await complementoEstados(cik, r, r.notas); } catch (x) { r.notas.push('No se pudieron leer los estados del último 10-K (' + x.message + ').'); }
   let precio = null; if (!opc.sinPrecio) try { const P = require('./actualizar_precios.js'); let p; try { p = await P.cnbc(tk); } catch (x) { p = await P.nasdaq(tk); } precio = { precio: p.precio, divisa: p.divisa, fecha: p.fecha }; } catch (x) { r.notas.push('Sin precio automático (' + x.message + ').'); }
   const salida = { ticker: tk, nombre: r.nombre || e.title, cik, divisa: 'USD', generado: new Date().toISOString(), fuente: 'SEC EDGAR (XBRL, 10-K)', anios: r.anios, hist: r.hist, ttm: r.ttm, ultimo_ejercicio: r.ultimo, precio, notas: r.notas, faltan: r.faltan };
@@ -254,4 +268,4 @@ async function lotePublicado(lista) {
 if (require.main === module && process.argv[2] === '--publicado') lotePublicado((process.argv[3] || '').split(',').map(s => s.trim().toUpperCase()).filter(Boolean)).catch(e => { console.error('ERROR: ' + e.message); process.exit(1); });
 else if (require.main === module && process.argv[2] === '--todos') lote().catch(e => { console.error('ERROR: ' + e.message); process.exit(1); });
 else if (require.main === module) principal(process.argv[2]).catch(e => { console.error('ERROR: ' + e.message); fs.mkdirSync(path.join(RAIZ, 'datos'), { recursive: true }); try { fs.writeFileSync(path.join(RAIZ, 'datos', String(process.argv[2] || 'x').toUpperCase().replace(/[^A-Z0-9]/g, '_') + '.json'), JSON.stringify({ ticker: String(process.argv[2] || '').toUpperCase(), error: e.message, generado: new Date().toISOString() }, null, 1) + '\n'); } catch (x) { } process.exit(0); });
-module.exports = { construir, serie, anioDe, ttm, ultimoEjercicio, publicado, filasR, complementoEstados };
+module.exports = { ajustarSplits, construir, serie, anioDe, ttm, ultimoEjercicio, publicado, filasR, complementoEstados };

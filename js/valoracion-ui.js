@@ -450,6 +450,7 @@
     else if (ref5 >= m / 100) { t = 'y'; title = 'Watchlist: buena empresa, precio justo'; sub = 'Rentabilidad esperada ' + pc(ref5) + ': sobre tu mínimo (' + nf(m, 0) + ' %) pero bajo el objetivo. Compra por debajo de ' + nf(pe, 2) + '.'; }
     else if (!isN(ref5)) { t = 'y'; title = 'No valorable con estos supuestos'; sub = 'En el escenario conservador el valor teórico a 5 años no es positivo (pérdidas o EBIT negativo), así que no hay rentabilidad calculable. Revisa los márgenes o descarta la empresa: una valoración value necesita beneficios.'; }
     else sub = 'Rentabilidad esperada ' + pc(ref5) + ', bajo tu mínimo del ' + nf(m, 0) + ' %. Si la tienes, candidata a vender por sobrevaloración.';
+    const ssp = L.sospechaSplit ? L.sospechaSplit(D(), sel) : null; if (ssp) { t = 'y'; title = 'Revisar antes de decidir: ¿split?'; sub = ssp + ' ' + (sub || ''); }
     if (fi.graves) sub += ' Provisional: hay avisos graves en los datos.';
     if (fi.nivel !== 'profunda') sub += ' Valoración rápida: ' + (fi.nP + fi.nE) + ' de ' + (fi.nA + fi.nP + fi.nE) + ' líneas críticas sin contrastar con el informe anual.';
     if (mo) sub += ' Depende de una hipótesis de margen futuro.';

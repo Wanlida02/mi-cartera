@@ -36,7 +36,8 @@ const srv = http.createServer((q, r) => { const p = path.join(root, q.url.split(
     assert.equal(G.find(x => x.g === 'calidad').open, false, 'calidad plegada de entrada'); assert.equal(de(G, 'otras').open, false, 'otras plegadas');
     assert.equal(de(G, 'cartera').open, true);
     /* Plegar «En cartera» se recuerda al volver a abrir la app */
-    await pg.click('details.vgrp[data-vg="cartera"] > summary'); await pg.reload(); await pg.waitForTimeout(400); await pg.click('[data-tab=valoracion]'); await pg.waitForTimeout(200);
+    await pg.click('details.vgrp[data-vg="cartera"] > summary'); await pg.waitForFunction(() => JSON.parse(localStorage.getItem('mi-cartera:val-plegado') || '{}').cartera === 0);   /* el «toggle» guarda el estado un instante después del clic */
+    await pg.reload(); await pg.waitForTimeout(1200); await pg.evaluate(() => UI.irA('valoracion')); await pg.waitForTimeout(300);   /* tras recargar, el arranque puede repintar el inicio después de un clic temprano */
     assert.equal(de(await grupos(), 'cartera').open, false, 'se recuerda plegado');
     /* LIN pendiente → «Crear ficha» abre la ficha nueva con el ticker y el nombre */
     await pg.click('[data-v="nuevade"][data-k="LIN"]'); await pg.waitForTimeout(150);
