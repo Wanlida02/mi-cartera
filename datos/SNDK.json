@@ -3,7 +3,7 @@
  "nombre": "Sandisk Corporation",
  "cik": "0002023554",
  "divisa": "USD",
- "generado": "2026-11-22T14:36:17.712Z",
+ "generado": "2026-11-25T14:28:33.285Z",
  "fuente": "SEC EDGAR (XBRL, 10-K)",
  "anios": [
   2023,
@@ -55,10 +55,10 @@
    0
   ],
   "acciones": [
-   145,
-   145,
-   145,
-   155
+   1160,
+   1160,
+   1160,
+   1240
   ],
   "capex": [
    219,
@@ -133,10 +133,10 @@
    4524
   ],
   "bpa": [
-   -14.78,
-   -4.63,
-   -11.32,
-   73.76
+   -1.8475,
+   -0.57875,
+   -1.415,
+   9.22
   ]
  },
  "ttm": {
@@ -150,10 +150,15 @@
   "anio": 2026,
   "fin": "2026-07-03"
  },
- "precio": null,
+ "precio": {
+  "precio": 77.95,
+  "divisa": "USD",
+  "fecha": "2026-11-24"
+ },
  "notas": [
   "Datos automáticos de la SEC (XBRL de los 10-K). Revísalos contra el informe anual antes de decidir: pueden faltar líneas o haber reexpresiones.",
-  "Caja = efectivo + inversiones a corto plazo; deuda = deuda financiera (sin arrendamientos). Intereses = gasto bruto (no netos de ingresos). Minoritarios, otros y arrendamientos van a 0 o sin dato: complétalos si importan.",
+  "Caja = efectivo + inversiones a corto plazo; deuda = deuda financiera (sin arrendamientos). Intereses = gasto bruto (no netos de ingresos). Minoritarios de la SEC (atribuido a minoritarios, o beneficio total − el de la dominante); otros y arrendamientos van a 0 o sin dato: complétalos si importan.",
+  "Acciones y BPA ajustados por split (8 por 1 del 2026-11-20) en los ejercicios presentados antes: 2023, 2024, 2025, 2026.",
   "Líneas sin datos en la SEC: dividendos."
  ],
  "faltan": [
