@@ -93,3 +93,9 @@ async function revisar(previo, nuevos, opc) {
   return { registro: reg, hechos };
 }
 module.exports = { FACTORES, factorDe, confirmaAjustado, revisar, leer, guardar, ARCHIVO };
+/* Prueba desde GitHub Actions: node scripts/splits.js --probar SNDK → qué ven Yahoo y CNBC (no escribe nada) */
+if (require.main === module && process.argv[2] === '--probar') (async () => {
+  const sym = process.argv[3] || 'SNDK';
+  try { console.log('Yahoo splits:', JSON.stringify(await splitsYahoo(sym))); } catch (e) { console.log('Yahoo: ' + e.message); }
+  try { const d = await diariosCnbc(sym); console.log('CNBC diarios:', JSON.stringify(Object.fromEntries(Object.entries(d).slice(-12)))); } catch (e) { console.log('CNBC: ' + e.message); }
+})();
