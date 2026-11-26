@@ -304,22 +304,26 @@
     "SMWB": {
       "y": [
         "SMWB"
-      ]
+      ],
+      "pausa": true
     },
     "ASX": {
       "y": [
         "ASX"
-      ]
+      ],
+      "pausa": true
     },
     "REPX": {
       "y": [
         "REPX"
-      ]
+      ],
+      "pausa": true
     },
     "DEZ": {
       "y": [
         "DEZ.DE"
-      ]
+      ],
+      "pausa": true
     }
   },
   "divisas": [
